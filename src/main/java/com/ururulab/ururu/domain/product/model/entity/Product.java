@@ -1,7 +1,7 @@
 package com.ururulab.ururu.domain.product.model.entity;
 
 import com.ururulab.ururu.domain.product.model.entity.enumerated.Status;
-import com.ururulab.ururu.global.common.BaseEntity;
+import com.ururulab.ururu.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

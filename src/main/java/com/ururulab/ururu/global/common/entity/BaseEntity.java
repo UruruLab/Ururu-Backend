@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.common;
+package com.ururulab.ururu.global.common.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
