@@ -13,8 +13,6 @@ import org.hibernate.annotations.SQLRestriction;
 @Getter
 @Table(name = "Product")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE Product SET status = 'DELETED' WHERE id = ?")
-@SQLRestriction("status != 'DELETED'")  // DELETED가 아닌 것만 조회
 public class Product extends BaseEntity {
 
     @Id

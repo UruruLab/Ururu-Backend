@@ -16,8 +16,6 @@ import java.util.Map;
 @Getter
 @Table(name = "ProductOption")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLDelete(sql = "UPDATE ProductOption SET is_deleted = true WHERE id = ?")
-@SQLRestriction("is_deleted = false")  // @Where 대신 사용
 public class ProductOption extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
