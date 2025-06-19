@@ -40,7 +40,14 @@ public class Product {
 
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt; // 상품 수정날짜
+    private LocalDateTime updatedAt; /**
+     * Creates a new Product instance with the specified name, description, and status.
+     *
+     * @param name the name of the product
+     * @param description the description of the product
+     * @param status the status of the product
+     * @return a new Product initialized with the provided values
+     */
 
     public static Product of(
             //Seller seller,
