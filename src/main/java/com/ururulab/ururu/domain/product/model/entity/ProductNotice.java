@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.model.entity;
+package com.ururulab.ururu.domain.product.model.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
