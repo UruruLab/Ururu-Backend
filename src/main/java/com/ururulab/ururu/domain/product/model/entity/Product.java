@@ -1,20 +1,17 @@
-package com.ururulab.ururu.product.model.entity;
+package com.ururulab.ururu.domain.product.model.entity;
 
-import com.ururulab.ururu.product.model.entity.enumerated.Status;
+import com.ururulab.ururu.domain.product.model.entity.enumerated.Status;
+import com.ururulab.ururu.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Table(name = "Product")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Product {
+public class Product extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,14 +30,6 @@ public class Product {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Status status;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt; // 상품 생성날짜
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updatedAt; // 상품 수정날짜
 
     public static Product of(
             //Seller seller,
