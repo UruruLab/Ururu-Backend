@@ -1,4 +1,4 @@
-package com.ururulab.ururu.domain.product.model.entity.enumerated;
+package com.ururulab.ururu.product.domain.entity.enumerated;
 
 public enum Status {
     ACTIVE, //활성화
