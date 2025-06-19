@@ -5,10 +5,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -19,9 +15,9 @@ public class ProductOption extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "product_id", nullable = false)
-//    private Product product;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     @Column(nullable = false)
     private String name;
@@ -39,7 +35,7 @@ public class ProductOption extends BaseEntity {
     private boolean is_deleted = false;
 
     public static ProductOption of(
-            //Product product,
+            Product product,
             String name,
             int price,
             String image_url,
@@ -47,6 +43,7 @@ public class ProductOption extends BaseEntity {
             boolean is_deleted
     ){
         ProductOption productOption = new ProductOption();
+        productOption.product = product;
         productOption.name = name;
         productOption.price = price;
         productOption.image_url = image_url;
