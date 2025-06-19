@@ -1,5 +1,6 @@
 package com.ururulab.ururu.domain.product.model.entity;
 
+import com.ururulab.ururu.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "ProductNotice")
-public class ProductNotice {
+public class ProductNotice extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,14 +56,6 @@ public class ProductNotice {
 
     @Column(nullable = false, length = 30)
     private String customer_service_number; //고객센터 번호
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at; //생성일
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updated_at; //수정일
 
     public static ProductNotice of(
             ProductOption productOption,

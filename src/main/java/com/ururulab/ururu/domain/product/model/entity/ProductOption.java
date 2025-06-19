@@ -1,5 +1,6 @@
 package com.ururulab.ururu.domain.product.model.entity;
 
+import com.ururulab.ururu.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Getter
 @Table(name = "ProductOption")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProductOption {
+public class ProductOption extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -36,14 +37,6 @@ public class ProductOption {
 
     @Column(nullable = false)
     private boolean is_deleted = false;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at;
-
-    @UpdateTimestamp
-    @Column(nullable = false)
-    private LocalDateTime updated_at;
 
     public static ProductOption of(
             //Product product,
