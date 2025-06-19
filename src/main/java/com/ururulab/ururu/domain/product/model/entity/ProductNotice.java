@@ -33,16 +33,16 @@ public class ProductNotice extends BaseEntity {
     private String manufacturer; // 화장품 제조업자
 
     @Column(nullable = false, length = 100)
-    private String responsible_seller; // 화장품책임판매업자
+    private String responsibleSeller; // 화장품책임판매업자
 
     @Column(nullable = false, length = 50)
-    private String country_of_origin; //제조국
+    private String countryOfOrigin; //제조국
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String full_ingredients; // 전성분
+    private String fullIngredients; // 전성분
 
     @Column(nullable = false)
-    private boolean functional_cosmetics; // 기능성 여부
+    private boolean functionalCosmetics; // 기능성 여부
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String caution; // 사용 시 주의사항
@@ -51,7 +51,7 @@ public class ProductNotice extends BaseEntity {
     private String warranty; // 품질 보증 기준
 
     @Column(nullable = false, length = 30)
-    private String customer_service_number; //고객센터 번호
+    private String customerServiceNumber; //고객센터 번호
 
     public static ProductNotice of(
             ProductOption productOption,
@@ -59,13 +59,13 @@ public class ProductNotice extends BaseEntity {
             String expiry,
             String usage,
             String manufacturer,
-            String responsible_seller,
-            String country_of_origin,
-            String full_ingredients,
-            boolean functional_cosmetics,
+            String responsibleSeller,
+            String countryOfOrigin,
+            String fullIngredients,
+            boolean functionalCosmetics,
             String caution,
             String warranty,
-            String customer_service_number
+            String customerServiceNumber
     ){
         ProductNotice productNotice = new ProductNotice();
         productNotice.productOption = productOption;
@@ -73,13 +73,13 @@ public class ProductNotice extends BaseEntity {
         productNotice.expiry = expiry;
         productNotice.usage = usage;
         productNotice.manufacturer = manufacturer;
-        productNotice.responsible_seller = responsible_seller;
-        productNotice.country_of_origin = country_of_origin;
-        productNotice.full_ingredients = full_ingredients;
-        productNotice.functional_cosmetics = functional_cosmetics;
+        productNotice.responsibleSeller = responsibleSeller;
+        productNotice.countryOfOrigin = countryOfOrigin;
+        productNotice.fullIngredients = fullIngredients;
+        productNotice.functionalCosmetics = functionalCosmetics;
         productNotice.caution = caution;
         productNotice.warranty = warranty;
-        productNotice.customer_service_number = customer_service_number;
+        productNotice.customerServiceNumber = customerServiceNumber;
 
         return productNotice;
     }

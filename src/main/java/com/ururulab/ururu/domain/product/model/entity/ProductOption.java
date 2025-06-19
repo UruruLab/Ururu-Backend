@@ -6,8 +6,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 import java.util.Map;
@@ -32,30 +30,30 @@ public class ProductOption extends BaseEntity {
     private int price;
 
     @Column(nullable = false)
-    private String image_url;
+    private String imageUrl;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "JSON")
     private Map<String, String> specifications;
 
     @Column(nullable = false)
-    private boolean is_deleted = false;
+    private boolean isDeleted = false;
 
     public static ProductOption of(
             Product product,
             String name,
             int price,
-            String image_url,
+            String imageUrl,
             Map<String,String> specifications,
-            boolean is_deleted
+            boolean isDeleted
     ){
         ProductOption productOption = new ProductOption();
         productOption.product = product;
         productOption.name = name;
         productOption.price = price;
-        productOption.image_url = image_url;
+        productOption.imageUrl = imageUrl;
         productOption.specifications = specifications;
-        productOption.is_deleted = is_deleted;
+        productOption.isDeleted = isDeleted;
         return productOption;
     }
 }
