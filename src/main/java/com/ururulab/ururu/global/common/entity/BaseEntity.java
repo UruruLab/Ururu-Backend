@@ -5,8 +5,6 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.ZonedDateTime;
 
@@ -14,13 +12,11 @@ import java.time.ZonedDateTime;
 @MappedSuperclass
 public abstract class BaseEntity {
 
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private ZonedDateTime createdAt; // 생성 시간
 
-    @UpdateTimestamp
     @Column(nullable = false)
-    private ZonedDateTime updatedAt; // 생성 시간
+    private ZonedDateTime updatedAt; // 수정 시간
 
     @PrePersist
     public void prePersist() {
