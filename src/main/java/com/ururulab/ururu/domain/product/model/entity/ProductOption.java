@@ -44,8 +44,7 @@ public class ProductOption extends BaseEntity {
             String name,
             int price,
             String imageUrl,
-            Map<String,String> specifications,
-            boolean isDeleted
+            Map<String,String> specifications
     ){
         ProductOption productOption = new ProductOption();
         productOption.product = product;
@@ -53,7 +52,7 @@ public class ProductOption extends BaseEntity {
         productOption.price = price;
         productOption.imageUrl = imageUrl;
         productOption.specifications = specifications;
-        productOption.isDeleted = isDeleted;
+
         return productOption;
     }
 }
