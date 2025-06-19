@@ -5,11 +5,19 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
+
+import java.util.Map;
 
 @Entity
 @Getter
 @Table(name = "ProductOption")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE ProductOption SET is_deleted = true WHERE id = ?")
+@SQLRestriction("is_deleted = false")  // @Where 대신 사용
 public class ProductOption extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,8 +36,9 @@ public class ProductOption extends BaseEntity {
     @Column(nullable = false)
     private String image_url;
 
-    @Column(nullable = false)
-    private String specification;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "JSON")
+    private Map<String, String> specifications;
 
     @Column(nullable = false)
     private boolean is_deleted = false;
@@ -39,7 +48,7 @@ public class ProductOption extends BaseEntity {
             String name,
             int price,
             String image_url,
-            String specification,
+            Map<String,String> specifications,
             boolean is_deleted
     ){
         ProductOption productOption = new ProductOption();
@@ -47,7 +56,7 @@ public class ProductOption extends BaseEntity {
         productOption.name = name;
         productOption.price = price;
         productOption.image_url = image_url;
-        productOption.specification = specification;
+        productOption.specifications = specifications;
         productOption.is_deleted = is_deleted;
         return productOption;
     }

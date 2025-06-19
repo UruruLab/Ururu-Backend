@@ -6,11 +6,15 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @Table(name = "Product")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE Product SET status = 'DELETED' WHERE id = ?")
+@SQLRestriction("status != 'DELETED'")  // DELETED가 아닌 것만 조회
 public class Product extends BaseEntity {
 
     @Id
