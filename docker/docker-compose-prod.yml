@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  springboot-app:
+    image: juwon0909/ururu:latest
+    container_name: ururu
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
