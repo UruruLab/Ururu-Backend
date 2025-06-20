@@ -46,6 +46,14 @@ jobs:
       - name: Push image to DockerHub
         run: docker push juwon0909/ururu:latest
 
+      - name: Ensure remote app directory exists
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: mkdir -p /home/ec2-user/app
+
       - name: Upload docker-compose-prod.yml to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -53,7 +61,8 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker/docker-compose-prod.yml"
-          target: "/home/ec2-user/app/
+          target: "/home/ec2-user/app/"
+          recursive: false
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.6
