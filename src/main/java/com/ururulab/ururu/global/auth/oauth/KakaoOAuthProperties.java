@@ -5,6 +5,9 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import org.springframework.web.util.UriComponentsBuilder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 /**
  * 카카오 OAuth2 설정 프로퍼티.
  */
@@ -26,16 +29,30 @@ public final class KakaoOAuthProperties {
     private String scope;
 
     public String buildAuthorizationUrl(final String state) {
-        return String.format(
-                "%s?client_id=%s&redirect_uri=%s&response_type=%s&scope=%s&state=%s",
-                authorizationUri, clientId, redirectUri, RESPONSE_TYPE, scope, state
-        );
+    if (state == null || state.isBlank()) {
+        throw new IllegalArgumentException("state 매개변수는 필수입니다");
+    }
+    return UriComponentsBuilder.fromUriString(authorizationUri)
+            .queryParam("client_id", clientId)
+            .queryParam("redirect_uri", redirectUri)
+            .queryParam("response_type", RESPONSE_TYPE)
+            .queryParam("scope", scope)
+            .queryParam("state", state)
+            .build()
+            .toUriString();
     }
 
     public String buildTokenRequestBody(final String code) {
-        return String.format(
-                "grant_type=%s&client_id=%s&client_secret=%s&redirect_uri=%s&code=%s",
-                GRANT_TYPE, clientId, clientSecret, redirectUri, code
+    if (code == null || code.isBlank()) {
+        throw new IllegalArgumentException("인증 코드는 필수입니다");
+    }
+    return String.format(
+            "grant_type=%s&client_id=%s&client_secret=%s&redirect_uri=%s&code=%s",
+            URLEncoder.encode(GRANT_TYPE, StandardCharsets.UTF_8),
+            URLEncoder.encode(clientId, StandardCharsets.UTF_8),
+            URLEncoder.encode(clientSecret, StandardCharsets.UTF_8),
+            URLEncoder.encode(redirectUri, StandardCharsets.UTF_8),
+            URLEncoder.encode(code, StandardCharsets.UTF_8)
         );
     }
 }
