@@ -1,7 +1,7 @@
 package com.ururulab.ururu.user.domain.entity;
 
-import com.nimbusds.openid.connect.sdk.claims.Gender;
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.user.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.user.domain.entity.enumerated.Role;
 import com.ururulab.ururu.user.domain.entity.enumerated.SocialProvider;
 import jakarta.persistence.*;
