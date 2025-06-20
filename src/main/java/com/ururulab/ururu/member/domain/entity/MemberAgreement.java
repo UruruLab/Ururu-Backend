@@ -1,7 +1,7 @@
-package com.ururulab.ururu.user.domain.entity;
+package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.user.domain.entity.enumerated.AgreementType;
+import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

@@ -1,7 +1,7 @@
-package com.ururulab.ururu.user.domain.repository;
+package com.ururulab.ururu.member.domain.repository;
 
-import com.ururulab.ururu.user.domain.entity.Member;
-import com.ururulab.ururu.user.domain.entity.enumerated.SocialProvider;
+import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -28,12 +28,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean isNicknameAvailable(@Param("nickname") String nickname);
 
     @Query("SELECT m FROM Member m WHERE m.id = :memberId AND m.isDeleted = false")
-    Optional<Member> findForWithdrawalPreview(@Param("userId") Long userId);
+    Optional<Member> findForWithdrawalPreview(@Param("memberId") Long memberId);
 
     @Query("SELECT m FROM Member m WHERE m.isDeleted = false ORDER BY m.updatedAt DESC")
-    List<Member> findRecentActiveUsers(Pageable pageable);
+    List<Member> findRecentActiveMembers(Pageable pageable);
 
-    @Query("SELECT m FROM Member m LEFT JOIN FETCH m.beautyProfile LEFT JOIN FETCH m.shippingAddresses WHERE m.id = :userId AND m.isDeleted = false")
-    Optional<Member> findForDashboard(@Param("memberId") Long userId);
+    @Query("SELECT m FROM Member m LEFT JOIN FETCH m.beautyProfile LEFT JOIN FETCH m.shippingAddresses WHERE m.id = :memberId AND m.isDeleted = false")
+    Optional<Member> findForDashboard(@Param("memberId") Long memberId);
 
 }

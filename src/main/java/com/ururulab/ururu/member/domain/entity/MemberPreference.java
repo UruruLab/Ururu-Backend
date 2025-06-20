@@ -1,7 +1,7 @@
-package com.ururulab.ururu.user.domain.entity;
+package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.user.domain.entity.enumerated.PurchaseFrequency;
+import com.ururulab.ururu.member.domain.entity.enumerated.PurchaseFrequency;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

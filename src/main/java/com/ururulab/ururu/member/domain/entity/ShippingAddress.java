@@ -1,4 +1,4 @@
-package com.ururulab.ururu.user.domain.entity;
+package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
