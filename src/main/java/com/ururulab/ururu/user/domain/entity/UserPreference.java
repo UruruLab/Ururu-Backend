@@ -3,6 +3,8 @@ package com.ururulab.ururu.user.domain.entity;
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.user.domain.entity.enumerated.PurchaseFrequency;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +28,9 @@ public class UserPreference extends BaseEntity {
     // private Seller seller;
     private Long sellerId; // 임시로 Long 타입으로 처리
 
+    @Column(nullable = false)
+    @Min(value = 1, message = "선호도 레벨은 1 이상이어야 합니다")
+    @Max(value = 5, message = "선호도 레벨은 5 이하여야 합니다")
     private int preferenceLevel; // 1~5
 
     private int monthlyBudget;
