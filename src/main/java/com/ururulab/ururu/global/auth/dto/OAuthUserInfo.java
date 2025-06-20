@@ -42,7 +42,7 @@ public record OAuthUserInfo(
         if (obj == null) {
             return null;
         }
-        if (clazz.isInstance(obj)) {
+        if (!clazz.isInstance(obj)) {
             throw new IllegalArgumentException("예상하지 못한 카카오 API 응답 형식입니다");
         }
         return clazz.cast(obj);

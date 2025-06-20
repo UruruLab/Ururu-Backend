@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.nio.charset.StandardCharsets;
 
 /**
  * JWT 토큰 생성, 검증, 파싱을 담당하는 컴포넌트.
@@ -24,6 +25,15 @@ public final class JwtTokenProvider {
     private final JwtProperties jwtProperties;
 
     public String generateAccessToken(final Long memberId, final String email, final String role) {
+    if (memberId == null) {
+        throw new IllegalArgumentException("Member ID cannot be null");
+    }
+    if (email == null || email.isBlank()) {
+        throw new IllegalArgumentException("Email cannot be null or blank");
+    }
+    if (role == null || role.isBlank()) {
+        throw new IllegalArgumentException("Role cannot be null or blank");
+    }
         return createToken(memberId, email, role, TokenType.ACCESS, jwtProperties.getAccessTokenExpiry());
     }
 
@@ -33,7 +43,11 @@ public final class JwtTokenProvider {
 
     public Long getMemberId(final String token) {
         final Claims claims = parseToken(token);
-        return Long.valueOf(claims.getSubject());
+        try {
+            return Long.valueOf(claims.getSubject());
+        } catch (NumberFormatException e) {
+            throw new JwtException("Invalid member ID format in token", e);
+        }
     }
 
     public String getEmail(final String token) {
@@ -60,8 +74,12 @@ public final class JwtTokenProvider {
         try {
             final Claims claims = parseToken(token);
             return claims.getExpiration().before(new Date());
-        } catch (final JwtException e) {
+    } catch (final ExpiredJwtException e) {
             return true;
+    } catch (final JwtException e) {
+        // 다른 JWT 오류는 만료가 아님
+        log.debug("JWT parsing failed: {}", e.getMessage());
+        throw e;
         }
     }
 
@@ -100,7 +118,7 @@ public final class JwtTokenProvider {
     }
 
     private SecretKey getSecretKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
     public enum TokenType {
