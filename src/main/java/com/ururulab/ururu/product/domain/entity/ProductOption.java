@@ -29,15 +29,18 @@ public class ProductOption extends BaseEntity {
     @Column(nullable = false)
     private int price;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String imageUrl;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = false, columnDefinition = "JSON")
+    @Column(nullable = true, columnDefinition = "JSON")
     private Map<String, String> specifications;
 
     @Column(nullable = false)
     private boolean isDeleted = false;
+
+    @OneToOne(mappedBy = "productOption", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ProductNotice productNotice;
 
     public static ProductOption of(
             Product product,

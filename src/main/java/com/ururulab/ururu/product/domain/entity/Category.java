@@ -6,6 +6,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -30,6 +33,9 @@ public class Category extends BaseEntity {
 
     @Column(nullable = false, length = 500)
     private String path;
+
+    @OneToMany(mappedBy = "category")
+    private List<ProductCategory> productCategories = new ArrayList<>();
 
     public static Category of(
             Long parentId,
