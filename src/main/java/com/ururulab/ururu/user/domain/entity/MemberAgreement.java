@@ -11,17 +11,17 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(name = "UserAgreement")
+@Table(name = "MemberAgreement")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserAgreement extends BaseEntity {
+public class MemberAgreement extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     private AgreementType type;
@@ -30,16 +30,16 @@ public class UserAgreement extends BaseEntity {
 
     private LocalDateTime agreeAt;
 
-    public static UserAgreement of (
-            User user,
+    public static MemberAgreement of (
+            Member member,
             AgreementType type,
             boolean agreed
     ) {
-        UserAgreement userAgreement = new UserAgreement();
-        userAgreement.user = user;
-        userAgreement.type = type;
-        userAgreement.agreed = agreed;
-        userAgreement.agreeAt = agreed ? LocalDateTime.now() : null;
-        return userAgreement;
+        MemberAgreement memberAgreement = new MemberAgreement();
+        memberAgreement.member = member;
+        memberAgreement.type = type;
+        memberAgreement.agreed = agreed;
+        memberAgreement.agreeAt = agreed ? LocalDateTime.now() : null;
+        return memberAgreement;
     }
 }

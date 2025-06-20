@@ -22,7 +22,7 @@ public class BeautyProfile extends BaseEntity {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     private SkinType skinType;
@@ -43,7 +43,7 @@ public class BeautyProfile extends BaseEntity {
     private String additionalInfo;
 
     public static BeautyProfile of(
-            User user,
+            Member member,
             SkinType skinType,
             List<String> concerns,
             List<String> allergies,
@@ -51,7 +51,7 @@ public class BeautyProfile extends BaseEntity {
             String additionalInfo
     ) {
         BeautyProfile beautyProfile = new BeautyProfile();
-        beautyProfile.user = user;
+        beautyProfile.member = member;
         beautyProfile.skinType = skinType;
         beautyProfile.concerns = concerns;
         beautyProfile.allergies = allergies;

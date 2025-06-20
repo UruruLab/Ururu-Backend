@@ -13,9 +13,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(name = "User")
+@Table(name = "Member")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class User extends BaseEntity {
+public class Member extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,7 +51,7 @@ public class User extends BaseEntity {
 
     private boolean isDeleted = false;
 
-    public static User of(
+    public static Member of(
             String nickname,
             String email,
             SocialProvider socialProvider,
@@ -62,16 +62,16 @@ public class User extends BaseEntity {
             String profileImage,
             Role role
     ) {
-        User user = new User();
-        user.nickname = nickname;
-        user.email = email;
-        user.socialProvider = socialProvider;
-        user.socialId = socialId;
-        user.gender = gender;
-        user.birth = birth;
-        user.phone = phone;
-        user.profileImage = profileImage;
-        user.role = role != null ? role : Role.NORMAL;
-        return user;
+        Member member = new Member();
+        member.nickname = nickname;
+        member.email = email;
+        member.socialProvider = socialProvider;
+        member.socialId = socialId;
+        member.gender = gender;
+        member.birth = birth;
+        member.phone = phone;
+        member.profileImage = profileImage;
+        member.role = role != null ? role : Role.NORMAL;
+        return member;
     }
 }

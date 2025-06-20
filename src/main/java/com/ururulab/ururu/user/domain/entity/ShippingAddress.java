@@ -16,8 +16,8 @@ public class ShippingAddress extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Column(length = 30)
     private String label;
@@ -37,7 +37,7 @@ public class ShippingAddress extends BaseEntity {
     private boolean isDefault;
 
     public static ShippingAddress of(
-            User user,
+            Member member,
             String label,
             String phone,
             String zonecode,
@@ -46,7 +46,7 @@ public class ShippingAddress extends BaseEntity {
             boolean isDefault
     ) {
         ShippingAddress shippingAddress = new ShippingAddress();
-        shippingAddress.user = user;
+        shippingAddress.member = member;
         shippingAddress.label = label;
         shippingAddress.phone = phone;
         shippingAddress.zonecode = zonecode;
