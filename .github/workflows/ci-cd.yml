@@ -49,16 +49,17 @@ jobs:
       - name: Setup SSH for EC2
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 400 ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ururu-key.pem
+          chmod 400 ~/.ssh/ururu-key.pem
 
       - name: Upload docker-compose-prod.yml to EC2
         run: |
-          scp -o StrictHostKeyChecking=no docker/docker-compose-prod.yml ${{ secrets.EC2_USER_HOST }}:/home/ec2-user/app/docker-compose.yml
+          scp -i ~/.ssh/ururu-key.pem -o StrictHostKeyChecking=no \
+            docker/docker-compose-prod.yml ${{ secrets.EC2_USER_HOST }}:/home/ec2-user/app/docker-compose-prod.yml
 
       - name: Deploy on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/ururu-key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER_HOST }} << 'EOF'
             cd /home/ec2-user/app
             docker compose pull
             docker compose down || true
