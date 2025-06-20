@@ -19,7 +19,7 @@ public class MemberPreference extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
     //TODO 판매자 JOIN - Seller 엔티티 구현 후 추가
