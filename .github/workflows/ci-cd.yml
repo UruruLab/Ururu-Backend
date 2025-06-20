@@ -85,5 +85,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
+            docker rm -f ururu || true
             docker compose -f docker-compose-prod.yml pull
             docker compose -f docker-compose-prod.yml up -d --remove-orphans
