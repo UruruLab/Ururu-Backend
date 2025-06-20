@@ -62,7 +62,18 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker/docker-compose-prod.yml"
           target: "/home/ec2-user/app/"
-          recursive: false
+          strip_components: 1
+          overwrite: true
+
+      - name: Upload .env to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: ".env"
+          target: "/home/ec2-user/app/"
+          overwrite: true
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v0.1.6
