@@ -18,6 +18,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,6 +45,8 @@ public class Review extends BaseEntity {
 	@Column(nullable = false)
 	private Long productOptionId;
 
+	@Min(1)
+	@Max(5)
 	@Column(nullable = false)
 	private Integer rating;
 
