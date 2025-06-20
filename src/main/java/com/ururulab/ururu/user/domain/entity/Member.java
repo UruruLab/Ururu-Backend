@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -50,6 +52,19 @@ public class Member extends BaseEntity {
     private int point = 0;
 
     private boolean isDeleted = false;
+
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    private BeautyProfile beautyProfile;
+
+    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
+    private List<ShippingAddress> shippingAddresses = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
+    private List<MemberAgreement> memberAgreements = new ArrayList<>();
+
+    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY)
+    private List<MemberPreference> memberPreferences = new ArrayList<>();
+
 
     public static Member of(
             String nickname,
