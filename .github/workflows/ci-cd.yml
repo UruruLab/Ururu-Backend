@@ -55,13 +55,13 @@ jobs:
       - name: Upload docker-compose-prod.yml to EC2
         run: |
           scp -i ~/.ssh/ururu-key.pem -o StrictHostKeyChecking=no \
-            docker/docker-compose-prod.yml ${{ secrets.EC2_USER_HOST }}:/home/ec2-user/app/docker-compose-prod.yml
+            docker/docker-compose-prod.yml ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/app/docker-compose-prod.yml
 
       - name: Deploy on EC2
         run: |
-          ssh -i ~/.ssh/ururu-key.pem -o StrictHostKeyChecking=no ${{ secrets.EC2_USER_HOST }} << 'EOF'
+          ssh -i ~/.ssh/ururu-key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ec2-user/app
-            docker compose pull
-            docker compose down || true
-            docker compose up -d
+            docker compose -f docker-compose-prod.yml pull
+            docker compose -f docker-compose-prod.yml down || true
+            docker compose -f docker-compose-prod.yml up -d
           EOF
