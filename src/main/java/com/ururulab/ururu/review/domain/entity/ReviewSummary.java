@@ -1,5 +1,6 @@
 package com.ururulab.ururu.review.domain.entity;
 
+import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.product.domain.entity.Product;
 
 import jakarta.persistence.Column;
@@ -19,7 +20,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Table(name = "review_summary")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ReviewSummary {
+public class ReviewSummary extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,8 +1,8 @@
 package com.ururulab.ururu.review.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.member.domain.entity.Member;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -17,9 +17,9 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "review_image")
+@Table(name = "review_likes")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ReviewImage extends BaseEntity {
+public class ReviewLike extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,12 +29,7 @@ public class ReviewImage extends BaseEntity {
 	@JoinColumn(name = "review_id", nullable = false)
 	private Review review;
 
-	@Column(nullable = false)
-	private String imageUrl;
-
-	@Column(nullable = false)
-	private Integer displayOrder;
-
-	@Column(nullable = false)
-	private Boolean isDelete = false;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "member_id", nullable = false)
+	private Member member;
 }
