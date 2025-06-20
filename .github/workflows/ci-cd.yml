@@ -86,5 +86,4 @@ jobs:
           script: |
             cd /home/ec2-user/app
             docker compose -f docker-compose-prod.yml pull
-            docker compose -f docker-compose-prod.yml down --remove-orphans || true
-            docker compose -f docker-compose-prod.yml up -d
+            docker compose -f docker-compose-prod.yml up -d --remove-orphans
