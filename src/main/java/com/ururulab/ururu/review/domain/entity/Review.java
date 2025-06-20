@@ -1,7 +1,5 @@
 package com.ururulab.ururu.review.domain.entity;
 
-import java.time.LocalDateTime;
-
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
