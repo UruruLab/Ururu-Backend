@@ -1,7 +1,7 @@
-package com.ururulab.ururu.user.domain.entity;
+package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.user.domain.entity.enumerated.PurchaseFrequency;
+import com.ururulab.ururu.member.domain.entity.enumerated.PurchaseFrequency;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -11,16 +11,16 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "UserPreference")
+@Table(name = "MemberPreference")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserPreference extends BaseEntity {
+public class MemberPreference extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     //TODO 판매자 JOIN - Seller 엔티티 구현 후 추가
     // @ManyToOne(fetch = FetchType.LAZY)
@@ -41,21 +41,21 @@ public class UserPreference extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private PurchaseFrequency purchaseFrequency;
 
-    public static UserPreference of(
-            User user,
+    public static MemberPreference of(
+            Member member,
             Long sellerId,
             int preferenceLevel,
             int monthlyBudget,
             String preferredPriceRange,
             PurchaseFrequency purchaseFrequency
     ) {
-        UserPreference userPreference = new UserPreference();
-        userPreference.user = user;
-        userPreference.sellerId = sellerId;
-        userPreference.preferenceLevel = preferenceLevel;
-        userPreference.monthlyBudget = monthlyBudget;
-        userPreference.preferredPriceRange = preferredPriceRange;
-        userPreference.purchaseFrequency = purchaseFrequency;
-        return userPreference;
+        MemberPreference memberPreference = new MemberPreference();
+        memberPreference.member = member;
+        memberPreference.sellerId = sellerId;
+        memberPreference.preferenceLevel = preferenceLevel;
+        memberPreference.monthlyBudget = monthlyBudget;
+        memberPreference.preferredPriceRange = preferredPriceRange;
+        memberPreference.purchaseFrequency = purchaseFrequency;
+        return memberPreference;
     }
 }

@@ -1,7 +1,7 @@
-package com.ururulab.ururu.user.domain.entity;
+package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.user.domain.entity.enumerated.SkinType;
+import com.ururulab.ururu.member.domain.entity.enumerated.SkinType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -21,8 +21,8 @@ public class BeautyProfile extends BaseEntity {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     private SkinType skinType;
@@ -43,7 +43,7 @@ public class BeautyProfile extends BaseEntity {
     private String additionalInfo;
 
     public static BeautyProfile of(
-            User user,
+            Member member,
             SkinType skinType,
             List<String> concerns,
             List<String> allergies,
@@ -51,7 +51,7 @@ public class BeautyProfile extends BaseEntity {
             String additionalInfo
     ) {
         BeautyProfile beautyProfile = new BeautyProfile();
-        beautyProfile.user = user;
+        beautyProfile.member = member;
         beautyProfile.skinType = skinType;
         beautyProfile.concerns = concerns;
         beautyProfile.allergies = allergies;
