@@ -27,6 +27,11 @@ public class SecurityConfig {
                 )
                 .csrf(AbstractHttpConfigurer::disable
                 )
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.disable()) // H2 콘솔의 iframe 허용
+                        .contentTypeOptions(contentType -> contentType.disable())
+                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig.disable())
+                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
