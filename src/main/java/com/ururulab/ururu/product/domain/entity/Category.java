@@ -16,7 +16,8 @@ public class Category extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long parentId;
+    @Column(nullable = true)
+    private Long parentId; // 최상위 카테고리는 NULL
 
     @Column(nullable = false, length = 100)
     private String name;
