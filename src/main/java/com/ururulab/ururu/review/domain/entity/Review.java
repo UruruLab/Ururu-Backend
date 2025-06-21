@@ -68,4 +68,63 @@ public class Review extends BaseEntity {
 	@Column(nullable = false)
 	private Integer likeCount = 0;
 
+	public static Review ofCreate(
+			Member member,
+			Product product,
+			Long productOptionId,
+			Integer rating,
+			SkinType skinType,
+			AgeGroup ageGroup,
+			Gender gender,
+			String content
+	) {
+		validateRating(rating);
+		validateContent(content);
+
+		Review review = new Review();
+		review.member = validationMember(member);
+		review.product = validationProduct(product);
+		review.productOptionId = validationProductOptionId(productOptionId);
+		review.rating = rating;
+		review.skinType = skinType;
+		review.ageGroup = ageGroup;
+		review.gender = gender;
+		review.content = content;
+
+		return review;
+	}
+
+	private static Member validationMember(Member member) {
+		if (member == null) {
+			throw new IllegalArgumentException("Member는 필수입니다.");
+		}
+		return member;
+	}
+
+	private static Product validationProduct(Product product) {
+		if (product == null) {
+			throw new IllegalArgumentException("Product는 필수입니다.");
+		}
+		return product;
+	}
+
+	private static Long validationProductOptionId(Long productOptionId) {
+		if (productOptionId == null) {
+			throw new IllegalArgumentException("상품 옵션 ID는 필수입니다.");
+		}
+		return productOptionId;
+	}
+
+	private static void validateRating(Integer rating) {
+		if (rating == null || rating < 1 || rating > 5) {
+			throw new IllegalArgumentException("평점은 1부터 5 사이여야 합니다.");
+		}
+	}
+
+	private static void validateContent(String content) {
+		if (content != null && content.length() > 1000) {
+			throw new IllegalArgumentException("리뷰 내용은 최대 1000자까지 허용됩니다.");
+		}
+	}
+
 }
