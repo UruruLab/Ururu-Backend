@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.Controller;
+package com.ururulab.ururu.global.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
