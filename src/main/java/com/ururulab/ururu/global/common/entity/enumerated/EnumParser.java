@@ -2,11 +2,16 @@ package com.ururulab.ururu.global.common.entity.enumerated;
 
 import java.util.Arrays;
 
-public interface EnumParser<T extends Enum<T>> {
-	static <T extends Enum<T>> T fromString(Class<T> enumClass, String value, String typeName) {
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
+public class EnumParser {
+
+	public static <T extends Enum<T>> T fromString(Class<T> enumClass, String value, String typeName) {
 		if (value == null || value.isBlank()) {
 			throw new IllegalArgumentException(typeName + " 값이 비어있습니다.");
 		}
+
 		return Arrays.stream(enumClass.getEnumConstants())
 				.filter(e -> e.name().equalsIgnoreCase(value.trim()))
 				.findFirst()
