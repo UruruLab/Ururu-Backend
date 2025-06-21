@@ -57,7 +57,7 @@ public class Review extends BaseEntity {
 	@Min(RATING_MIN)
 	@Max(RATING_MAX)
 	@Column(nullable = false)
-	private Integer rating;
+	private int rating;
 
 	@Enumerated(EnumType.STRING)
 	private SkinType skinType;
@@ -75,7 +75,7 @@ public class Review extends BaseEntity {
 	private Boolean isDelete = false;
 
 	@Column(nullable = false)
-	private Integer likeCount = 0;
+	private int likeCount = 0;
 
 	@OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<ReviewTag> reviewTags = new ArrayList<>();
