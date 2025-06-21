@@ -4,9 +4,12 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ururulab.ururu.global.common.entity.enumerated.Gender;
+import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.review.domain.dto.validation.ValidationConstants;
 import com.ururulab.ururu.review.domain.dto.validation.ValidationMessages;
-import com.ururulab.ururu.review.domain.dto.validation.ValidationPatterns;
+import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
 import com.ururulab.ururu.review.domain.policy.ReviewImagePolicy;
 import com.ururulab.ururu.review.domain.policy.ReviewPolicy;
 
@@ -14,7 +17,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record ReviewRequest(
@@ -29,19 +31,13 @@ public record ReviewRequest(
 		@Max(value = ReviewPolicy.RATING_MAX, message = ValidationMessages.RATING_MAX)
 		Integer rating,
 
-		@Pattern(regexp = ValidationPatterns.SKIN_TYPE_PATTERN,
-				flags = Pattern.Flag.CASE_INSENSITIVE,
-				message = ValidationMessages.SKIN_TYPE_INVALID)
+		@EnumValue(enumClass = SkinType.class, message = ValidationMessages.SKIN_TYPE_INVALID)
 		String skinType,
 
-		@Pattern(regexp = ValidationPatterns.AGE_GROUP_PATTERN,
-				flags = Pattern.Flag.CASE_INSENSITIVE,
-				message = ValidationMessages.AGE_GROUP_INVALID)
+		@EnumValue(enumClass = AgeGroup.class, message = ValidationMessages.AGE_GROUP_INVALID)
 		String ageGroup,
 
-		@Pattern(regexp = ValidationPatterns.GENDER_PATTERN,
-				flags = Pattern.Flag.CASE_INSENSITIVE,
-				message = ValidationMessages.GENDER_INVALID)
+		@EnumValue(enumClass = Gender.class, message = ValidationMessages.GENDER_INVALID)
 		String gender,
 
 		@NotBlank(message = ValidationMessages.CONTENT_REQUIRED)
