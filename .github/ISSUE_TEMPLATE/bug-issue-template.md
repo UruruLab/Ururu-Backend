@@ -1,8 +1,8 @@
 ---
 name: bug issue template
 about: 이슈를 생성해주세요.
-title: 'fix: 작업 제목'
-labels: 'fix'
+title: '작업 제목'
+labels: 'Bug'
 assignees: ''
 
 ---

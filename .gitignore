@@ -613,4 +613,5 @@ FodyWeavers.xsd
 
 # End of https://www.toptal.com/developers/gitignore/api/gradle,java,intellij+all,macos,windows,git,visualstudio
 
-application-dev.yml
+/src/main/resources/application-*.yml
+/.env

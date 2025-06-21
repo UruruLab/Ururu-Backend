@@ -48,6 +48,7 @@ public class SecurityConfig {
     public SecurityFilterChain prodFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(csrf -> csrf
