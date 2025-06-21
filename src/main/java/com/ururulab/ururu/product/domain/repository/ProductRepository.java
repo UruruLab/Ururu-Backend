@@ -29,7 +29,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // 상품 ID와 상태로 조회
     Optional<Product> findByIdAndStatus(Long id, Status status);
 
-    // 상품 + 옵션들 함께 조회 (N+1 방지)
+    // 상품 + 옵션들 함께 조회
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.productOptions po WHERE p.id = :productId AND po.isDeleted = false")
     Optional<Product> findByIdWithOptions(@Param("productId") Long productId);
+
+    // 상품 + 정보고시 함께 조회 -> 엔티티 구조 변경 후 주석 제거
+//    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.productNotice WHERE p.id = :productId")
+//    Optional<Product> findByIdWithNotice(@Param("productId") Long productId);
 }
