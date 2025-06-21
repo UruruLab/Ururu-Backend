@@ -4,7 +4,9 @@ public enum SkinType {
 	OILY,
 	DRY,
 	SENSITIVE,
-	COMBINATION;
+	COMBINATION,
+	DRY_LIGHT,
+	NEUTRAL;
 
 	public static SkinType from(String value) {
 		return EnumParser.fromString(SkinType.class, value, "SkinType");
