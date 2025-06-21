@@ -55,8 +55,8 @@ public class Review extends BaseEntity {
 	@Column(nullable = false)
 	private Long productOptionId;
 
-	@Min(1)
-	@Max(5)
+	@Min(RATING_MIN)
+	@Max(RATING_MAX)
 	@Column(nullable = false)
 	private Integer rating;
 
@@ -69,7 +69,7 @@ public class Review extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private Gender gender;
 
-	@Column(length = 1000)
+	@Column(length = CONTENT_MAX_LENGTH)
 	private String content;
 
 	@Column(nullable = false)
