@@ -1,12 +1,21 @@
 package com.ururulab.ururu.review.domain.entity;
 
+import static com.ururulab.ururu.review.domain.policy.ReviewPolicy.*;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.common.entity.Tag;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
+import com.ururulab.ururu.review.domain.policy.ReviewPolicy;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -17,6 +26,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -68,6 +78,9 @@ public class Review extends BaseEntity {
 	@Column(nullable = false)
 	private Integer likeCount = 0;
 
+	@OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ReviewTag> reviewTags = new ArrayList<>();
+
 	public static Review ofCreate(
 			Member member,
 			Product product,
@@ -76,7 +89,8 @@ public class Review extends BaseEntity {
 			SkinType skinType,
 			AgeGroup ageGroup,
 			Gender gender,
-			String content
+			String content,
+			List<Tag> tags
 	) {
 		validateRating(rating);
 		validateContent(content);
@@ -91,9 +105,11 @@ public class Review extends BaseEntity {
 		review.gender = gender;
 		review.content = content;
 
+		addReviewTag(review, tags);
 		return review;
 	}
 
+	// TODO: CustomException
 	private static Member validationMember(Member member) {
 		if (member == null) {
 			throw new IllegalArgumentException("Member는 필수입니다.");
@@ -116,15 +132,31 @@ public class Review extends BaseEntity {
 	}
 
 	private static void validateRating(Integer rating) {
-		if (rating == null || rating < 1 || rating > 5) {
-			throw new IllegalArgumentException("평점은 1부터 5 사이여야 합니다.");
+		if (rating == null || rating < RATING_MIN || rating > RATING_MAX) {
+			throw new IllegalArgumentException(
+					"평점은 " + RATING_MIN + "부터 " + RATING_MAX + " 사이여야 합니다."
+			);
 		}
 	}
 
 	private static void validateContent(String content) {
-		if (content != null && content.length() > 1000) {
-			throw new IllegalArgumentException("리뷰 내용은 최대 1000자까지 허용됩니다.");
+		if (content != null && content.length() > CONTENT_MAX_LENGTH) {
+			throw new IllegalArgumentException(
+					"리뷰 내용은 최대 " + CONTENT_MAX_LENGTH + "자까지 허용됩니다."
+			);
 		}
+	}
+
+	private static void addReviewTag(Review review, List<Tag> tags) {
+		review.reviewTags = new LinkedList<>();
+		tags.forEach(
+				tag -> review.reviewTags.add(
+						ReviewTag.ofAdd(
+								review,
+								tag
+						)
+				)
+		);
 	}
 
 }
