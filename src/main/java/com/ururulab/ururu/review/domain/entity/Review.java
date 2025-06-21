@@ -13,7 +13,6 @@ import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
-import com.ururulab.ururu.review.domain.policy.ReviewPolicy;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
