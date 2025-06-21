@@ -6,6 +6,7 @@ public enum SkinType {
 	SENSITIVE,
 	COMBINATION,
 	DRY_LIGHT,
+	TROUBLE,
 	NEUTRAL;
 
 	public static SkinType from(String value) {
