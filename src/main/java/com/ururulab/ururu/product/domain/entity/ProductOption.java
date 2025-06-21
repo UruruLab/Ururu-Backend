@@ -39,15 +39,16 @@ public class ProductOption extends BaseEntity {
     @Column(nullable = false)
     private boolean isDeleted = false;
 
-    @OneToOne(mappedBy = "productOption", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ProductNotice productNotice;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String fullIngredients; // 전성분
 
     public static ProductOption of(
             Product product,
             String name,
             int price,
             String imageUrl,
-            Map<String,String> specifications
+            Map<String,String> specifications,
+            String fullIngredients
     ){
         ProductOption productOption = new ProductOption();
         productOption.product = product;
@@ -55,6 +56,7 @@ public class ProductOption extends BaseEntity {
         productOption.price = price;
         productOption.imageUrl = imageUrl;
         productOption.specifications = specifications;
+        productOption.fullIngredients = fullIngredients;
 
         return productOption;
     }

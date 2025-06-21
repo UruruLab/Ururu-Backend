@@ -17,8 +17,8 @@ public class ProductNotice extends BaseEntity {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_option_id")
-    private ProductOption productOption;
+    @JoinColumn(name = "product_id")
+    private Product product;
 
     @Column(nullable = false, length = 50)
     private String capacity; //용량
@@ -38,9 +38,6 @@ public class ProductNotice extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String countryOfOrigin; //제조국
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String fullIngredients; // 전성분
-
     @Column(nullable = false)
     private boolean functionalCosmetics; // 기능성 여부
 
@@ -54,28 +51,26 @@ public class ProductNotice extends BaseEntity {
     private String customerServiceNumber; //고객센터 번호
 
     public static ProductNotice of(
-            ProductOption productOption,
+            Product product,
             String capacity,
             String expiry,
             String usage,
             String manufacturer,
             String responsibleSeller,
             String countryOfOrigin,
-            String fullIngredients,
             boolean functionalCosmetics,
             String caution,
             String warranty,
             String customerServiceNumber
     ){
         ProductNotice productNotice = new ProductNotice();
-        productNotice.productOption = productOption;
+        productNotice.product = product;
         productNotice.capacity = capacity;
         productNotice.expiry = expiry;
         productNotice.usage = usage;
         productNotice.manufacturer = manufacturer;
         productNotice.responsibleSeller = responsibleSeller;
         productNotice.countryOfOrigin = countryOfOrigin;
-        productNotice.fullIngredients = fullIngredients;
         productNotice.functionalCosmetics = functionalCosmetics;
         productNotice.caution = caution;
         productNotice.warranty = warranty;
