@@ -13,7 +13,7 @@ import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
-import com.ururulab.ururu.review.domain.dto.reqeust.ReviewRequest;
+import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
 import com.ururulab.ururu.review.domain.entity.Review;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
 import com.ururulab.ururu.review.domain.repository.ReviewRepository;
@@ -47,7 +47,6 @@ public class ReviewService {
 				.orElseThrow(() -> new EntityNotFoundException("Member not found: " + memberId));
 
 		reviewImageService.storeImages(request.imageFiles());
-		List<Tag> tags = tagRepository.findAllById(request.tags());
 
 		reviewRepository.save(
 				Review.ofCreate(
@@ -59,8 +58,16 @@ public class ReviewService {
 						AgeGroup.from(request.ageGroup()),
 						Gender.from(request.gender()),
 						request.content(),
-						tags
+						getTags(request.tags())
 				)
 		);
+	}
+
+	private List<Tag> getTags(List<Long> tagIds) {
+		List<Tag> tags = tagRepository.findAllById(tagIds);
+		if (tags.size() != tagIds.size()) {
+			throw new IllegalArgumentException("Some tags not found");
+		}
+		return tags;
 	}
 }

@@ -4,5 +4,5 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class ReviewImagePolicy {
-	public final int MAX_IMAGE_COUNT = 5;
+	public static final int MAX_IMAGE_COUNT = 5;
 }

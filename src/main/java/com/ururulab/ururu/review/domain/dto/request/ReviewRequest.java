@@ -1,4 +1,4 @@
-package com.ururulab.ururu.review.domain.dto.reqeust;
+package com.ururulab.ururu.review.domain.dto.request;
 
 import java.util.List;
 

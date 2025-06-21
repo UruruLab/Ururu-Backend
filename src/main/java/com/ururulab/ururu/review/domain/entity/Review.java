@@ -95,9 +95,9 @@ public class Review extends BaseEntity {
 		validateContent(content);
 
 		Review review = new Review();
-		review.member = validationMember(member);
-		review.product = validationProduct(product);
-		review.productOptionId = validationProductOptionId(productOptionId);
+		review.member = validateMember(member);
+		review.product = validateProduct(product);
+		review.productOptionId = validateProductOptionId(productOptionId);
 		review.rating = rating;
 		review.skinType = skinType;
 		review.ageGroup = ageGroup;
@@ -109,21 +109,21 @@ public class Review extends BaseEntity {
 	}
 
 	// TODO: CustomException
-	private static Member validationMember(Member member) {
+	private static Member validateMember(Member member) {
 		if (member == null) {
 			throw new IllegalArgumentException("Member는 필수입니다.");
 		}
 		return member;
 	}
 
-	private static Product validationProduct(Product product) {
+	private static Product validateProduct(Product product) {
 		if (product == null) {
 			throw new IllegalArgumentException("Product는 필수입니다.");
 		}
 		return product;
 	}
 
-	private static Long validationProductOptionId(Long productOptionId) {
+	private static Long validateProductOptionId(Long productOptionId) {
 		if (productOptionId == null) {
 			throw new IllegalArgumentException("상품 옵션 ID는 필수입니다.");
 		}

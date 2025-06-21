@@ -13,7 +13,7 @@ import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import com.ururulab.ururu.review.domain.dto.reqeust.ReviewRequest;
+import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
 import com.ururulab.ururu.review.service.ReviewService;
 
 import jakarta.validation.Valid;
