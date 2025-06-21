@@ -1,4 +1,4 @@
-package com.ururulab.ururu.member.domain.entity.enumerated;
+package com.ururulab.ururu.global.common.entity.enumerated;
 
 public enum SkinType {
     OILY,
