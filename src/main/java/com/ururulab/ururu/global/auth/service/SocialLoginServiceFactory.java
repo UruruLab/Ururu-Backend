@@ -31,7 +31,13 @@ public final class SocialLoginServiceFactory {
         this.socialLoginServices = socialLoginServiceList.stream()
                 .collect(Collectors.toMap(
                         this::extractProviderFromService,
-                        Function.identity()
+                        Function.identity(),
+                        (existing, replacement) -> {
+                            log.warn("중복된 소셜 제공자 서비스가 감지되었습니다. Provider: {}, 기존: {}, 교체: {}",
+                                    extractProviderFromService(existing), existing.getClass().getSimpleName(),
+                                    replacement.getClass().getSimpleName());
+                            return replacement; // 또는 existing을 유지
+                            }
                 ));
 
         log.info("Registered social login services: {}", socialLoginServices.keySet());
