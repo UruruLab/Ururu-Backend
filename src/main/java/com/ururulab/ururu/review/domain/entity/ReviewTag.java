@@ -32,4 +32,11 @@ public class ReviewTag extends BaseEntity {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "tag_id", nullable = false)
 	private Tag tag;
+
+	static ReviewTag ofAdd(Review review, Tag tag) {
+		ReviewTag reviewTag = new ReviewTag();
+		reviewTag.review = review;
+		reviewTag.tag = tag;
+		return reviewTag;
+	}
 }
