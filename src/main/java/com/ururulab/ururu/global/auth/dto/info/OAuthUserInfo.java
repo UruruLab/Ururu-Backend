@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.dto;
+package com.ururulab.ururu.global.auth.dto.info;
 
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 
