@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.dto;
+package com.ururulab.ururu.global.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
