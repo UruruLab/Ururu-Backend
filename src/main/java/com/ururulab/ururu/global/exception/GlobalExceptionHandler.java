@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.common.exception;
+package com.ururulab.ururu.global.exception;
 
 import com.ururulab.ururu.global.auth.exception.SocialLoginException;
 import com.ururulab.ururu.global.auth.exception.SocialTokenExchangeException;

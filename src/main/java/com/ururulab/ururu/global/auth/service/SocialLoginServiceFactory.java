@@ -2,10 +2,13 @@ package com.ururulab.ururu.global.auth.service;
 
 import com.ururulab.ururu.global.auth.exception.UnsupportedSocialProviderException;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 소셜 로그인 서비스 팩토리.
@@ -13,11 +16,26 @@ import java.util.Map;
  * <p>SocialProvider enum을 기반으로 적절한 SocialLoginService 구현체를 반환합니다.
  * 전략 패턴을 통해 소셜 제공자별 서비스를 관리합니다.</p>
  */
+@Slf4j
 @Component
-@RequiredArgsConstructor
 public final class SocialLoginServiceFactory {
 
     private final Map<SocialProvider, SocialLoginService> socialLoginServices;
+
+    /**
+     * 생성자에서 SocialLoginService 구현체들을 Map으로 변환하여 저장.
+     *
+     * @param socialLoginServiceList 스프링이 주입하는 SocialLoginService 구현체 리스트
+     */
+    public SocialLoginServiceFactory(final List<SocialLoginService> socialLoginServiceList) {
+        this.socialLoginServices = socialLoginServiceList.stream()
+                .collect(Collectors.toMap(
+                        this::extractProviderFromService,
+                        Function.identity()
+                ));
+
+        log.info("Registered social login services: {}", socialLoginServices.keySet());
+    }
 
     /**
      * 소셜 제공자에 해당하는 로그인 서비스를 조회합니다.
@@ -40,5 +58,25 @@ public final class SocialLoginServiceFactory {
         }
 
         return service;
+    }
+
+    /**
+     * 서비스 구현체로부터 SocialProvider 추출.
+     *
+     * <p>현재는 임시로 클래스명 기반으로 추출하며,
+     * 실제 구현체에서는 getProvider() 메서드를 통해 반환하도록 수정 예정</p>
+     */
+    private SocialProvider extractProviderFromService(final SocialLoginService service) {
+        final String className = service.getClass().getSimpleName().toLowerCase();
+
+        if (className.contains("kakao")) {
+            return SocialProvider.KAKAO;
+        } else if (className.contains("google")) {
+            return SocialProvider.GOOGLE;
+        }
+
+        // 기본값으로 KAKAO 반환 (임시)
+        log.warn("Cannot determine provider for service: {}. Using KAKAO as default.", className);
+        return SocialProvider.KAKAO;
     }
 }
