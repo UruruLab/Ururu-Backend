@@ -23,7 +23,7 @@ public final class SocialLoginServiceFactory {
     private final Map<SocialProvider, SocialLoginService> socialLoginServices;
 
     /**
-     * 생성자에서 SocialLoginService 구현체들을 Map으로 변환하여 저장.
+     * 생성자에서 SocialLoginService 구현체들을 Map 으로 변환하여 저장.
      *
      * @param socialLoginServiceList 스프링이 주입하는 SocialLoginService 구현체 리스트
      */
@@ -67,16 +67,6 @@ public final class SocialLoginServiceFactory {
      * 실제 구현체에서는 getProvider() 메서드를 통해 반환하도록 수정 예정</p>
      */
     private SocialProvider extractProviderFromService(final SocialLoginService service) {
-        final String className = service.getClass().getSimpleName().toLowerCase();
-
-        if (className.contains("kakao")) {
-            return SocialProvider.KAKAO;
-        } else if (className.contains("google")) {
-            return SocialProvider.GOOGLE;
-        }
-
-        // 기본값으로 KAKAO 반환 (임시)
-        log.warn("Cannot determine provider for service: {}. Using KAKAO as default.", className);
-        return SocialProvider.KAKAO;
+        return service.getProvider(); // SocialLoginService 인터페이스에 getProvider() 메서드 추가 필요
     }
 }

@@ -2,6 +2,7 @@ package com.ururulab.ururu.global.auth.service;
 
 import com.ururulab.ururu.global.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.global.auth.dto.info.SocialMemberInfo;
+import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 
 /**
  * 소셜 로그인 서비스 공통 인터페이스.
@@ -48,4 +49,10 @@ public interface SocialLoginService {
      * @throws com.ururulab.ururu.global.auth.exception.SocialLoginException 로그인 처리 실패 시
      */
     SocialLoginResponse processLogin(String code);
+    /**
+     * 이 서비스가 지원하는 소셜 제공자 정보를 반환합니다.
+     *
+     * @return SocialProvider enum 값
+     */
+    SocialProvider getProvider();
 }
