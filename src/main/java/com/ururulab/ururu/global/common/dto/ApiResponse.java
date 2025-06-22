@@ -1,6 +1,7 @@
 package com.ururulab.ururu.global.common.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Getter;
 
 /**
  * API 응답 표준화를 위한 래퍼 클래스.
@@ -9,30 +10,22 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  *
  * @param <T> 응답 데이터 타입
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record ApiResponse<T>(
-        boolean success,
-        String message,
-        T data // null 가능, 에러 발생 시에는 null
-) {
+@Getter
+public final class ApiResponse<T> {
 
-    /**
-     * 성공 응답 생성 (데이터 포함).
-     *
-     * @param <T> 응답 데이터 타입
-     * @param data 응답 데이터
-     * @return 성공 응답
-     * @throws IllegalArgumentException data가 null인 경우
-     */
-    public static <T> ApiResponse<T> success(final T data) {
-        if (data == null) {
-            throw new IllegalArgumentException("성공 응답의 데이터는 null일 수 없습니다.");
-        }
-        return new ApiResponse<>(true, "성공", data);
+    private final boolean success;   // 요청 성공 여부
+    private final String message;    // 응답 메시지
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final T data;            // 실제 응답 데이터 (null 가능)
+
+    private ApiResponse(final boolean success, final String message, final T data) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
     }
 
     /**
-     * 성공 응답 생성 (커스텀 메시지 포함).
+     * 성공 응답 생성 (데이터 포함).
      *
      * @param <T> 응답 데이터 타입
      * @param message 성공 메시지
@@ -40,32 +33,28 @@ public record ApiResponse<T>(
      * @return 성공 응답
      */
     public static <T> ApiResponse<T> success(final String message, final T data) {
-        if (data == null) {
-            throw new IllegalArgumentException("성공 응답의 데이터는 null일 수 없습니다.");
-        }
         return new ApiResponse<>(true, message, data);
     }
 
     /**
-     * 성공 응답 생성 (메시지만 포함, 데이터 없음).
+     * 성공 응답 생성 (데이터 없음).
      *
+     * @param <T> 응답 데이터 타입
      * @param message 성공 메시지
      * @return 데이터가 없는 성공 응답
      */
-    public static ApiResponse<Void> success(final String message) {
+    public static <T> ApiResponse<T> success(final String message) {
         return new ApiResponse<>(true, message, null);
     }
 
     /**
      * 실패 응답 생성.
      *
-     * @param message 에러 메시지
+     * @param <T> 응답 데이터 타입
+     * @param message 실패 메시지
      * @return 실패 응답
      */
-    public static ApiResponse<Void> error(final String message) {
-        if (message == null || message.isBlank()) {
-            throw new IllegalArgumentException("에러 메시지는 필수입니다.");
-        }
+    public static <T> ApiResponse<T> fail(final String message) {
         return new ApiResponse<>(false, message, null);
     }
 }
