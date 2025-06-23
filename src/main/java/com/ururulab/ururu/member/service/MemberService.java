@@ -10,6 +10,7 @@ import com.ururulab.ururu.member.domain.dto.response.NicknameCheckResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -160,7 +161,7 @@ public class MemberService {
     private Member findActiveMemberById(final Long memberId) {
         return memberRepository.findById(memberId)
                 .filter(member -> !member.isDeleted())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
     }
 

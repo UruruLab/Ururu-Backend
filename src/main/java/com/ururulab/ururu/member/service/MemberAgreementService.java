@@ -5,6 +5,7 @@ import com.ururulab.ururu.member.domain.entity.MemberAgreement;
 import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class MemberAgreementService {
     @Transactional
     public void createAgreements(Long memberId, Map<AgreementType, Boolean> agreements) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
         List<MemberAgreement> memberAgreements = agreements.entrySet().stream()
