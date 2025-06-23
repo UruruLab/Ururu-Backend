@@ -41,13 +41,6 @@ public final class AuthController {
     private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtTokenProvider jwtTokenProvider;
 
-    /**
-     * 소셜 로그인 처리 (구매자 전용).
-     *
-     * <p>API 명세: POST /auth/social/sessions</p>
-     * @param request 소셜 로그인 요청
-     * @return JWT 토큰을 포함한 로그인 응답
-     */
     @PostMapping("/social/sessions")
     public ResponseEntity<ApiResponse<SocialLoginResponse>> socialLogin(
             @Valid @RequestBody final SocialLoginRequest request
@@ -70,6 +63,7 @@ public final class AuthController {
         }
     }
 
+
     @GetMapping("/social/providers")
     public ResponseEntity<ApiResponse<GetSocialProvidersResponse>> getSocialProviders() {
         final List<SocialProviderInfo> providers = Arrays.stream(SocialProvider.values())
@@ -88,18 +82,7 @@ public final class AuthController {
         );
     }
 
-    /**
-     * 카카오 OAuth 콜백 처리 (백엔드 단독 테스트용).
-     *
-     * <p>카카오 인증 후 리다이렉트되는 엔드포인트입니다.
-     * 인증 코드를 URL 파라미터로 받아 index.html로 전달합니다.</p>
-     *
-     * @param code 카카오에서 제공하는 인증 코드
-     * @param state CSRF 방지용 상태값
-     * @param error 인증 실패 시 에러 코드
-     * @return index.html로 리다이렉트 (파라미터 포함)
-     */
-    @GetMapping("/kakao/callback")
+    @GetMapping("/oauth/kakao")
     public RedirectView handleKakaoCallback(
             @RequestParam(required = false) final String code,
             @RequestParam(required = false) final String state,
@@ -112,22 +95,18 @@ public final class AuthController {
         redirectView.setContextRelative(true);
 
         if (error != null) {
-            // 인증 실패 시
             redirectView.setUrl("/?error=" + URLEncoder.encode(error, StandardCharsets.UTF_8));
             log.warn("Kakao authentication failed: error={}", error);
         } else if (code != null) {
-            // 인증 성공 시
             final StringBuilder url = new StringBuilder("/?code=")
                     .append(URLEncoder.encode(code, StandardCharsets.UTF_8));
 
             if (state != null) {
                 url.append("&state=").append(URLEncoder.encode(state, StandardCharsets.UTF_8));
             }
-
             redirectView.setUrl(url.toString());
             log.debug("Redirecting to index with auth code");
         } else {
-            // 파라미터 없음
             redirectView.setUrl("/?error=missing_parameters");
             log.warn("Kakao callback missing required parameters");
         }
@@ -138,7 +117,6 @@ public final class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout() {
         log.info("Member logout requested");
-
         return ResponseEntity.ok(
                 ApiResponse.success("로그아웃되었습니다.")
         );
@@ -170,7 +148,6 @@ public final class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(ApiResponse.fail("토큰이 유효하지 않습니다."));
             }
-
         } catch (final Exception e) {
             log.warn("Token validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
