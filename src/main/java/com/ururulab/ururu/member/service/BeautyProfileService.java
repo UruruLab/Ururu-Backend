@@ -53,7 +53,7 @@ public class BeautyProfileService {
             String additionalInfo
     ) {
         BeautyProfile beautyProfile = beautyProfileRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "뷰티 프로필을 찾을 수 없습니다. Member ID: " + memberId));
 
         beautyProfile.updateProfile(skinType, concerns, allergies, interestCategories, additionalInfo);
