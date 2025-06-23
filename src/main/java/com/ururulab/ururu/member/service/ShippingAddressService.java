@@ -53,12 +53,12 @@ public class ShippingAddressService {
     public ShippingAddress updateShippingAddress(Long memberId, Long addressId, String label, String phone, String zonecode, String address1, String address2, boolean isDefault
     ) {
         ShippingAddress shippingAddress = shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId));
 
         if (isDefault && !shippingAddress.isDefault()) {
             Member member = memberRepository.findById(memberId)
-                    .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                    .orElseThrow(() -> new EntityNotFoundException(
                             "회원을 찾을 수 없습니다. ID: " + memberId));
 
             shippingAddressRepository.findByMemberAndIsDefaultTrue(member)
@@ -79,7 +79,7 @@ public class ShippingAddressService {
     @Transactional
     public void deleteShippingAddress(Long memberId, Long addressId) {
         ShippingAddress shippingAddress = shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId));
 
         shippingAddressRepository.delete(shippingAddress);
@@ -89,11 +89,11 @@ public class ShippingAddressService {
     @Transactional
     public ShippingAddress setDefaultShippingAddress(Long memberId, Long addressId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
         ShippingAddress shippingAddress = shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId));
 
         shippingAddressRepository.findByMemberAndIsDefaultTrue(member)
@@ -113,7 +113,7 @@ public class ShippingAddressService {
     @Transactional
     public void unsetDefaultShippingAddress(Long memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
         shippingAddressRepository.findByMemberAndIsDefaultTrue(member)

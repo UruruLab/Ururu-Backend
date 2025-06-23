@@ -55,4 +55,28 @@ public class ShippingAddress extends BaseEntity {
         shippingAddress.isDefault = isDefault;
         return shippingAddress;
     }
+
+    public void updateAddress(
+            String label,
+            String phone,
+            String zonecode,
+            String address1,
+            String address2,
+            boolean isDefault
+    ) {
+        this.label = label;
+        this.phone = phone;
+        this.zonecode = zonecode;
+        this.address1 = address1;
+        this.address2 = address2;
+        this.isDefault = isDefault;
+    }
+
+    public void setAsDefault() {
+        this.isDefault = true;
+    }
+
+    public void unsetAsDefault() {
+        this.isDefault = false;
+    }
 }
