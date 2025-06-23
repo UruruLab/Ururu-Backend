@@ -57,7 +57,7 @@ public class Cart extends BaseEntity {
         if (cartItemId == null) {
             throw new IllegalArgumentException("장바구니 아이템 ID는 필수입니다.");
         }
-        cartItems.removeIf(item -> item.getId().equals(cartItemId));
+        cartItems.removeIf(item -> item.getId() != null && item.getId().equals(cartItemId));
     }
 
     public void clearItems() {
