@@ -56,6 +56,7 @@ public class ProductNotice extends BaseEntity {
     public static ProductNotice of(
             Product product,
             String capacity,
+            String spec,
             String expiry,
             String usage,
             String manufacturer,
@@ -69,6 +70,7 @@ public class ProductNotice extends BaseEntity {
         ProductNotice productNotice = new ProductNotice();
         productNotice.product = product;
         productNotice.capacity = capacity;
+        productNotice.spec = spec;
         productNotice.expiry = expiry;
         productNotice.usage = usage;
         productNotice.manufacturer = manufacturer;
