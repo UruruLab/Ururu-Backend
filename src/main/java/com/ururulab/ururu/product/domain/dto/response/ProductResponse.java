@@ -41,4 +41,24 @@ public record ProductResponse(
                 productNoticeResponse
         );
     }
+
+    // Service에서 사용
+    public static ProductResponse from(
+            Product product,
+            List<CategoryResponse> categoryResponses,
+            List<ProductOptionResponse> productOptionResponses,
+            ProductNoticeResponse productNoticeResponse
+    ) {
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getStatus(),
+                product.getCreatedAt(),
+                product.getUpdatedAt(),
+                categoryResponses,
+                productOptionResponses,
+                productNoticeResponse
+        );
+    }
 }
