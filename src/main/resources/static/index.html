@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우르르 - 카카오 로그인 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .login-btn {
+            background: #fee500;
+            color: #381e1f;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .login-btn:hover {
+            background: #fdd835;
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="logo">🛍️ 우르르</div>
+    <p>뷰티 공동구매 플랫폼</p>
+
+    <button id="loginBtn" class="login-btn">카카오로 로그인</button>
+
+    <div id="status" class="status"></div>
+    <div id="result" style="display:none; margin-top:1rem; text-align:left;"></div>
+</div>
+
+<script>
+    const loginBtn = document.getElementById('loginBtn');
+    const status = document.getElementById('status');
+    const result = document.getElementById('result');
+
+    function showStatus(type, message) {
+        status.className = `status ${type}`;
+        status.textContent = message;
+        status.style.display = 'block';
+    }
+
+    async function handleLogin() {
+        try {
+            showStatus('info', '카카오 로그인 URL 요청 중...');
+
+            const response = await fetch('/auth/social/providers');
+            const data = await response.json();
+
+            if (data.success) {
+                const kakao = data.data.providers.find(p => p.id === 'kakao');
+                if (kakao) {
+                    window.location.href = kakao.authUrl;
+                } else {
+                    showStatus('error', '카카오 로그인을 찾을 수 없습니다.');
+                }
+            } else {
+                showStatus('error', data.message || '로그인 URL 요청 실패');
+            }
+        } catch (error) {
+            showStatus('error', '요청 실패: ' + error.message);
+        }
+    }
+
+    async function handleCallback(code, state) {
+        try {
+            showStatus('info', '로그인 처리 중...');
+
+            const response = await fetch('/auth/social/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    provider: 'KAKAO',
+                    code: code,
+                    state: state
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showStatus('success', '로그인 성공!');
+                const memberInfo = data.data.memberInfo || data.data;
+                result.innerHTML = `
+                    <strong>회원 정보:</strong><br>
+                    ID: ${memberInfo.member_id}<br>
+                    이메일: ${memberInfo.email || '미제공'}<br>
+                    닉네임: ${memberInfo.nickname || '미제공'}
+                `;
+                result.style.display = 'block';
+            } else {
+                showStatus('error', data.message || '로그인 실패');
+            }
+        } catch (error) {
+            showStatus('error', '로그인 처리 실패: ' + error.message);
+        }
+    }
+
+    // 이벤트 리스너
+    loginBtn.addEventListener('click', handleLogin);
+
+    // 페이지 로드 시 콜백 확인
+    window.addEventListener('load', () => {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+        const error = params.get('error');
+
+        if (code) {
+            handleCallback(code, state);
+        } else if (error) {
+            showStatus('error', '카카오 인증 실패: ' + error);
+        }
+    });
+</script>
+</body>
+</html>
