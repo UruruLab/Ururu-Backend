@@ -1,14 +1,19 @@
 package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
+import com.ururulab.ururu.product.domain.dto.response.CategoryResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductNoticeResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
+import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.entity.Product;
+import com.ururulab.ururu.product.domain.entity.ProductCategory;
 import com.ururulab.ururu.product.domain.entity.ProductNotice;
 import com.ururulab.ururu.product.domain.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +35,11 @@ public class ProductService {
     public ProductResponse createProduct(ProductRequest productRequest) {
         Product savedProduct = productRepository.save(productRequest.toEntity());
 
+        // 2. 카테고리 유효성 검증 및 조회
+        List<Category> categories = validateAndGetCategories(productRequest.categoryIds());
+
+        List<CategoryResponse> categoryResponses = saveProductCategories(savedProduct, categories);
+
         // 상품 정보고시 저장
         ProductNoticeResponse productNoticeResponse = saveProductNotice(savedProduct, productRequest);
 
@@ -49,4 +59,41 @@ public class ProductService {
 
         return ProductNoticeResponse.from(savedProductNotice);
     }
+
+    /**
+     * 상품과 카테고리 간의 연관관계를 저장합니다.
+     *
+     * @param product 저장된 상품 엔티티
+     * @param categories 연관시킬 카테고리 목록
+     * @return 저장된 카테고리 응답 목록
+     */
+    private List<CategoryResponse> saveProductCategories(Product product, List<Category> categories){
+        List<ProductCategory> productCategories = categories.stream()
+                .map(category -> ProductCategory.of(product, category))
+                .toList();
+
+        productCategoryRepository.saveAll(productCategories);
+
+        return categories.stream()
+                .map(CategoryResponse::from)
+                .toList();
+    }
+
+    /**
+     * 카테고리 유효성을 검증하고 Category 엔티티들을 반환합니다.
+     *
+     * @param categoryIds 카테고리 ID 목록
+     * @return 검증된 Category 엔티티 목록
+     * @throws IllegalArgumentException 존재하지 않는 카테고리가 포함된 경우
+     */
+    private List<Category> validateAndGetCategories(List<Long> categoryIds) {
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+
+        if (categories.size() != categoryIds.size()) {
+            throw new IllegalArgumentException("유효하지 않은 카테고리가 포함되어 있습니다.");
+        }
+
+        return categories;
+    }
+
 }
