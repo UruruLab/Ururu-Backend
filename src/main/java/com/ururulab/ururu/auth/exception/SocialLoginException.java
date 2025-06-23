@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.exception;
+package com.ururulab.ururu.auth.exception;
 
 /**
  * 소셜 로그인 관련 최상위 예외 클래스.

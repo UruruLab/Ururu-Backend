@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.dto.request;
+package com.ururulab.ururu.auth.dto.request;
 
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.constraints.NotBlank;

@@ -1,15 +1,15 @@
-package com.ururulab.ururu.global.auth.service.social;
+package com.ururulab.ururu.auth.service.social;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ururulab.ururu.global.auth.dto.info.SocialMemberInfo;
-import com.ururulab.ururu.global.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.global.auth.exception.SocialMemberInfoException;
-import com.ururulab.ururu.global.auth.exception.SocialTokenExchangeException;
-import com.ururulab.ururu.global.auth.jwt.JwtProperties;
-import com.ururulab.ururu.global.auth.jwt.JwtTokenProvider;
-import com.ururulab.ururu.global.auth.oauth.KakaoOAuthProperties;
-import com.ururulab.ururu.global.auth.service.SocialLoginService;
+import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
+import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
+import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
+import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
+import com.ururulab.ururu.auth.jwt.JwtProperties;
+import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.oauth.KakaoOAuthProperties;
+import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;

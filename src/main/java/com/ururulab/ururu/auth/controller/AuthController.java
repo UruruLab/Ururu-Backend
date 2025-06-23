@@ -1,10 +1,10 @@
-package com.ururulab.ururu.global.auth.controller;
+package com.ururulab.ururu.auth.controller;
 
-import com.ururulab.ururu.global.auth.dto.request.SocialLoginRequest;
-import com.ururulab.ururu.global.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.global.auth.jwt.JwtTokenProvider;
-import com.ururulab.ururu.global.auth.service.SocialLoginService;
-import com.ururulab.ururu.global.auth.service.SocialLoginServiceFactory;
+import com.ururulab.ururu.auth.dto.request.SocialLoginRequest;
+import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
+import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.service.SocialLoginService;
+import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
 import com.ururulab.ururu.global.common.dto.ApiResponse;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.Valid;
