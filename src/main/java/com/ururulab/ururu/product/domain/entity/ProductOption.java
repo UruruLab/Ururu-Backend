@@ -5,10 +5,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import java.util.Map;
 
 @Entity
 @Getter
@@ -32,29 +28,25 @@ public class ProductOption extends BaseEntity {
     @Column(nullable = true)
     private String imageUrl;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(nullable = true, columnDefinition = "JSON")
-    private Map<String, String> specifications;
-
     @Column(nullable = false)
     private boolean isDeleted = false;
 
-    @OneToOne(mappedBy = "productOption", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ProductNotice productNotice;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String fullIngredients; // 전성분
 
     public static ProductOption of(
             Product product,
             String name,
             int price,
             String imageUrl,
-            Map<String,String> specifications
+            String fullIngredients
     ){
         ProductOption productOption = new ProductOption();
         productOption.product = product;
         productOption.name = name;
         productOption.price = price;
         productOption.imageUrl = imageUrl;
-        productOption.specifications = specifications;
+        productOption.fullIngredients = fullIngredients;
 
         return productOption;
     }
