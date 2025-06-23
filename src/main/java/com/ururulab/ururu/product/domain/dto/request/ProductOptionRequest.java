@@ -2,6 +2,7 @@ package com.ururulab.ururu.product.domain.dto.request;
 
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
+import io.micrometer.common.lang.Nullable;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,6 +22,7 @@ public record ProductOptionRequest(
         @Min(value = 0, message = OPTION_PRICE_MIN)
         int price,
 
+        @Nullable
         String imageUrl,
 
         @NotBlank(message = FULL_INGREDIENTS_REQUIRED)

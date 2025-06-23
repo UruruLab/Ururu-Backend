@@ -3,7 +3,6 @@ package com.ururulab.ururu.product.domain.dto.response;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -28,9 +27,7 @@ public record ProductResponse(
                 .map(ProductOptionResponse::from)
                 .toList();
 
-        ProductNoticeResponse productNoticeResponse = product.getProductNotice() != null
-                ? ProductNoticeResponse.from(product.getProductNotice())
-                : null;
+        ProductNoticeResponse productNoticeResponse = ProductNoticeResponse.from(product.getProductNotice());
 
         return new ProductResponse(
                 product.getId(),
