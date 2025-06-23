@@ -47,6 +47,9 @@ public class Cart extends BaseEntity {
     }
 
     public void removeItem(CartItem cartItem) {
+        if (cartItem == null) {
+            throw new IllegalArgumentException("장바구니 아이템은 필수입니다.");
+        }
         cartItems.remove(cartItem);
     }
 
