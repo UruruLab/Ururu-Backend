@@ -89,4 +89,23 @@ public class Member extends BaseEntity {
         member.role = role != null ? role : Role.NORMAL;
         return member;
     }
+
+    public void updateNickname(final String nickname) {
+        if (nickname == null || nickname.trim().isEmpty()) {
+            throw new IllegalArgumentException("닉네임은 필수입니다.");
+        }
+        this.nickname = nickname.trim();
+    }
+
+    public void updateGender(final Gender gender) {
+        this.gender = gender;
+    }
+
+    public void updateBirth(final LocalDateTime birth) {
+        this.birth = birth;
+    }
+
+    public void updatePhone(final String phone) {
+        this.phone = phone;
+    }
 }
