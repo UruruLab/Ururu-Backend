@@ -3,6 +3,7 @@ package com.ururulab.ururu.member.service;
 import com.ururulab.ururu.global.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.CreateMemberRequest;
+import com.ururulab.ururu.member.domain.dto.request.UpdateProfileRequest;
 import com.ururulab.ururu.member.domain.dto.response.EmailCheckResponse;
 import com.ururulab.ururu.member.domain.dto.response.MemberProfileResponse;
 import com.ururulab.ururu.member.domain.dto.response.NicknameCheckResponse;
@@ -21,6 +22,7 @@ import java.time.format.DateTimeParseException;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class MemberService {
 
     private final MemberRepository memberRepository;
@@ -83,6 +85,25 @@ public class MemberService {
         return MemberProfileResponse.from(member);
     }
 
+    @Transactional
+    public MemberProfileResponse updateProfile(final Long memberId, final UpdateProfileRequest request) {
+        final Member member = findActiveMemberById(memberId);
+
+        if (request.nickname() != null && !request.nickname().equals(member.getNickname())) {
+            if (!memberRepository.isNicknameAvailable(request.nickname())) {
+                throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+            }
+        }
+
+        updateMemberFields(member, request);
+
+        final Member updatedMember = memberRepository.save(member);
+        log.info("Member profile updated for ID: {}", memberId);
+
+        return MemberProfileResponse.from(updatedMember);
+    }
+
+
     private Member createNewMember(final SocialMemberInfo socialMemberInfo) {
         final Member member = Member.of(
                 socialMemberInfo.nickname(),
@@ -116,6 +137,31 @@ public class MemberService {
                 request.socialProvider(), request.socialId())) {
             throw new IllegalArgumentException("이미 등록된 소셜 계정입니다.");
         }
+    }
+
+    private void updateMemberFields(final Member member, final UpdateProfileRequest request) {
+        if (request.nickname() != null) {
+            member.updateNickname(request.nickname());
+        }
+
+        if (request.gender() != null) {
+            member.updateGender(parseGender(request.gender()));
+        }
+
+        if (request.birth() != null) {
+            member.updateBirth(parseBirthDate(request.birth()));
+        }
+
+        if (request.phone() != null) {
+            member.updatePhone(request.phone());
+        }
+    }
+
+    private Member findActiveMemberById(final Long memberId) {
+        return memberRepository.findById(memberId)
+                .filter(member -> !member.isDeleted())
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
+                        "회원을 찾을 수 없습니다. ID: " + memberId));
     }
 
     private Gender parseGender(final String genderString) {
