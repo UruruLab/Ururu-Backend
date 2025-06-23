@@ -1,4 +1,43 @@
 package com.ururulab.ururu.member.domain.dto.response;
 
-public record MemberProfileResponse() {
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ururulab.ururu.member.domain.entity.Member;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public record MemberProfileResponse(
+        @JsonProperty("member_id") Long memberId,
+        String nickname,
+        String email,
+        String gender,
+        String birth,
+        String phone,
+        @JsonProperty("profile_image") String profileImage,
+        int point
+) {
+    private static final DateTimeFormatter BIRTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    public static MemberProfileResponse from(final Member member) {
+        if (member == null) {
+            throw new IllegalArgumentException("Member는 필수입니다.");
+        }
+
+        return new MemberProfileResponse(
+                member.getId(),
+                member.getNickname(),
+                member.getEmail(),
+                member.getGender() != null ? member.getGender().name() : null,
+                formatBirthDate(member.getBirth()),
+                member.getPhone(),
+                member.getProfileImage(),
+                member.getPoint()
+        );
+    }
+    private static String formatBirthDate(final LocalDateTime birth) {
+        if (birth == null) {
+            return null;
+        }
+        return birth.format(BIRTH_FORMATTER);
+    }
 }
