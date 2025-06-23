@@ -6,6 +6,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.*;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -17,28 +19,28 @@ public class ProductNotice extends BaseEntity {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = CAPACITY_MAX)
     private String capacity; //용량
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = SPEC_MAX)
     private String spec; // 제품 주요 사양
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = EXPIRY_MAX)
     private String expiry; // 사용기한
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String usage; //사용 방법
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = MANUFACTURER_MAX)
     private String manufacturer; // 화장품 제조업자
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = RESPONSIBLE_SELLER_MAX)
     private String responsibleSeller; // 화장품책임판매업자
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = COUNTRY_OF_ORIGIN_MAX)
     private String countryOfOrigin; //제조국
 
     @Column(nullable = false)
@@ -50,7 +52,7 @@ public class ProductNotice extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String warranty; // 품질 보증 기준
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = CUSTOMER_SERVICE_NUMBER_MAX)
     private String customerServiceNumber; //고객센터 번호
 
     public static ProductNotice of(

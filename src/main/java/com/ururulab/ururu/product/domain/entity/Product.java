@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.PRODUCT_NAME_MAX;
+
 @Entity
 @Getter
 @Table(name = "Product")
@@ -25,7 +27,7 @@ public class Product extends BaseEntity {
 //    @JoinColumn(name = "seller_id", nullable = false)
 //    private Seller seller;
 
-    @Column(nullable = false , length = 255)
+    @Column(nullable = false , length = PRODUCT_NAME_MAX)
     private String name;
     @Column(nullable = false , columnDefinition = "TEXT")
     private String description;
