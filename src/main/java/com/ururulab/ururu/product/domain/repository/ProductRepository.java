@@ -34,6 +34,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByIdWithOptions(@Param("productId") Long productId);
 
     //상품 + 정보고시 함께 조회 -> 엔티티 구조 변경 후 주석 제거
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.productNotices WHERE p.id = :productId")
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.productNotice WHERE p.id = :productId")
     Optional<Product> findByIdWithNotice(@Param("productId") Long productId);
 }

@@ -23,6 +23,9 @@ public class ProductNotice extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String capacity; //용량
 
+    @Column(nullable = false, length = 50)
+    private String spec; // 제품 주요 사양
+
     @Column(nullable = false, length = 100)
     private String expiry; // 사용기한
 
