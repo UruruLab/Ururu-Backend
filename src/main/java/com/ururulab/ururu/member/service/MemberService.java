@@ -2,11 +2,8 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.global.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
-import com.ururulab.ururu.member.domain.dto.request.CreateMemberRequest;
-import com.ururulab.ururu.member.domain.dto.request.UpdateProfileRequest;
-import com.ururulab.ururu.member.domain.dto.response.EmailCheckResponse;
-import com.ururulab.ururu.member.domain.dto.response.MemberProfileResponse;
-import com.ururulab.ururu.member.domain.dto.response.NicknameCheckResponse;
+import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
+import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
@@ -50,7 +47,7 @@ public class MemberService {
      * @return 생성된 회원
      */
     @Transactional
-    public Member createMember(final CreateMemberRequest request) {
+    public Member createMember(final MemberRequest request) {
         validateMemberCreation(request);
 
         final Member member = Member.of(
@@ -71,23 +68,23 @@ public class MemberService {
         return savedMember;
     }
 
-    public EmailCheckResponse checkEmail(final String email) {
+    public MemberResponse checkEmail(final String email) {
         final boolean isAvailable = memberRepository.isEmailAvailable(email);
-        return EmailCheckResponse.of(isAvailable);
+        return MemberResponse.ofAvailabilityCheck(isAvailable);
     }
 
-    public NicknameCheckResponse checkNickname(final String nickname) {
+    public MemberResponse checkNickname(final String nickname) {
         final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
-        return NicknameCheckResponse.of(isAvailable);
+        return MemberResponse.ofAvailabilityCheck(isAvailable);
     }
 
-    public MemberProfileResponse getMemberProfile(final Long memberId) {
+    public MemberResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        return MemberProfileResponse.from(member);
+        return MemberResponse.of(member);
     }
 
     @Transactional
-    public MemberProfileResponse updateProfile(final Long memberId, final UpdateProfileRequest request) {
+    public MemberResponse updateProfile(final Long memberId, final MemberRequest request) {
         final Member member = findActiveMemberById(memberId);
 
         if (request.nickname() != null && !request.nickname().equals(member.getNickname())) {
@@ -101,7 +98,7 @@ public class MemberService {
         final Member updatedMember = memberRepository.save(member);
         log.info("Member profile updated for ID: {}", memberId);
 
-        return MemberProfileResponse.from(updatedMember);
+        return MemberResponse.of(updatedMember);
     }
 
 
@@ -111,9 +108,9 @@ public class MemberService {
                 socialMemberInfo.email(),
                 socialMemberInfo.provider(),
                 socialMemberInfo.socialId(),
-                null, // gender
-                null, // birth
-                null, // phone
+                null,
+                null,
+                null,
                 socialMemberInfo.profileImage(),
                 Role.NORMAL
         );
@@ -125,7 +122,7 @@ public class MemberService {
         return savedMember;
     }
 
-    private void validateMemberCreation(final CreateMemberRequest request) {
+    private void validateMemberCreation(final MemberRequest request) {
         if (memberRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
@@ -140,7 +137,7 @@ public class MemberService {
         }
     }
 
-    private void updateMemberFields(final Member member, final UpdateProfileRequest request) {
+    private void updateMemberFields(final Member member, final MemberRequest request) {
         if (request.nickname() != null) {
             member.updateNickname(request.nickname());
         }

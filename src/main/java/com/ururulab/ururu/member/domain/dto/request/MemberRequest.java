@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 
-public record CreateMemberRequest(
+public record MemberRequest(
         @NotBlank(message = MemberValidationMessages.NICKNAME_REQUIRED)
         @Size(min = MemberValidationConstants.NICKNAME_MIN_LENGTH,
                 max = MemberValidationConstants.NICKNAME_MAX_LENGTH,
