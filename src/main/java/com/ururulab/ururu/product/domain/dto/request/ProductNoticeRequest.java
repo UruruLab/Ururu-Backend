@@ -23,6 +23,7 @@ public record ProductNoticeRequest(
         String expiry,
 
         @NotBlank(message = USAGE_REQUIRED)
+        @Size(max = USAGE_MAX, message = USAGE_SIZE)
         String usage,
 
         @NotBlank(message = MANUFACTURER_REQUIRED)
@@ -41,9 +42,11 @@ public record ProductNoticeRequest(
         Boolean functionalCosmetics,
 
         @NotBlank(message = CAUTION_REQUIRED)
+        @Size(max = CAUTION_MAX, message = CAUTION_SIZE)
         String caution,
 
         @NotBlank(message = WARRANTY_REQUIRED)
+        @Size(max = WARRANTY_MAX, message = WARRANTY_SIZE)
         String warranty,
 
         @NotBlank(message = CUSTOMER_SERVICE_NUMBER_REQUIRED)

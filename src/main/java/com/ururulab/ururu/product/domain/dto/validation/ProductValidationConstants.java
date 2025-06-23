@@ -6,6 +6,7 @@ import lombok.experimental.UtilityClass;
 public class ProductValidationConstants {
     // Product 필드 길이 제한
     public static final int PRODUCT_NAME_MAX = 100;
+    public static final int PRODUCT_DESCRIPTION_MAX = 1000;
 
     // ProductOption 필드 길이 제한 (필요시 추가)
     public static final int PRODUCT_OPTION_NAME_MAX = 100;
@@ -17,5 +18,8 @@ public class ProductValidationConstants {
     public static final int MANUFACTURER_MAX = 100;
     public static final int RESPONSIBLE_SELLER_MAX = 100;
     public static final int COUNTRY_OF_ORIGIN_MAX = 50;
+    public static final int CAUTION_MAX = 1000;
+    public static final int WARRANTY_MAX = 1000;
+    public static final int USAGE_MAX = 1000;
     public static final int CUSTOMER_SERVICE_NUMBER_MAX = 30;
 }

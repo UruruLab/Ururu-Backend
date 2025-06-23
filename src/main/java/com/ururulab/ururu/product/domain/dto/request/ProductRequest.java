@@ -19,6 +19,7 @@ public record ProductRequest(
         String name,
 
         @NotBlank(message = PRODUCT_DESCRIPTION_REQUIRED)
+        @Size(max = PRODUCT_DESCRIPTION_MAX, message = PRODUCT_DESCRIPTION_SIZE)
         String description,
 
         @NotEmpty(message = CATEGORIES_REQUIRED)
