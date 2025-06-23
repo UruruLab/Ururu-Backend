@@ -26,6 +26,7 @@ public record ProductOptionRequest(
         String imageUrl,
 
         @NotBlank(message = FULL_INGREDIENTS_REQUIRED)
+        @Size(max = FULL_INGREDIENTS_MAX, message = FULL_INGREDIENTS_SIZE)
         String fullIngredients
 ) {
     public ProductOption toEntity(Product product) {

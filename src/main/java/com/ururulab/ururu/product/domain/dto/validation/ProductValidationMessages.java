@@ -20,9 +20,9 @@ public class ProductValidationMessages {
     public static final String OPTION_NAME_REQUIRED = "옵션명은 필수입니다";
     public static final String OPTION_PRICE_REQUIRED = "가격은 필수입니다";
     public static final String FULL_INGREDIENTS_REQUIRED = "전성분은 필수입니다";
+    public static final String FULL_INGREDIENTS_SIZE = "전성분은 " + FULL_INGREDIENTS_MAX + "자를 초과할 수 없습니다";
     public static final String OPTION_NAME_SIZE = "옵션명은 " + PRODUCT_OPTION_NAME_MAX + "자를 초과할 수 없습니다";
     public static final String OPTION_PRICE_MIN = "가격은 0 이상이어야 합니다";
-
 
 
     // ProductNotice 관련 메시지

@@ -10,6 +10,7 @@ public class ProductValidationConstants {
 
     // ProductOption 필드 길이 제한 (필요시 추가)
     public static final int PRODUCT_OPTION_NAME_MAX = 100;
+    public static final int FULL_INGREDIENTS_MAX = 1000;
 
     // ProductNotice 필드 길이 제한
     public static final int CAPACITY_MAX = 50;
