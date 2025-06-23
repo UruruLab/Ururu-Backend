@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -58,5 +59,19 @@ public class BeautyProfile extends BaseEntity {
         beautyProfile.interestCategories = interestCategories;
         beautyProfile.additionalInfo = additionalInfo;
         return beautyProfile;
+    }
+
+    public void updateProfile(
+            SkinType skinType,
+            List<String> concerns,
+            List<String> allergies,
+            List<String> interestCategories,
+            String additionalInfo
+    ) {
+        this.skinType = skinType;
+        this.concerns = concerns != null ? new ArrayList<>(concerns) : null;
+        this.allergies = allergies != null ? new ArrayList<>(allergies) : null;
+        this.interestCategories = interestCategories != null ? new ArrayList<>(interestCategories) : null;
+        this.additionalInfo = additionalInfo;
     }
 }
