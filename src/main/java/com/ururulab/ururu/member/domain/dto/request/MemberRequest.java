@@ -1,15 +1,15 @@
 package com.ururulab.ururu.member.domain.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.member.domain.dto.validation.MemberValidationConstants;
 import com.ururulab.ururu.member.domain.dto.validation.MemberValidationMessages;
 import com.ururulab.ururu.member.domain.dto.validation.MemberValidationPatterns;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
+
+import java.time.LocalDate;
 
 
 public record MemberRequest(
@@ -35,9 +35,10 @@ public record MemberRequest(
         @EnumValue(enumClass = Gender.class, message = MemberValidationMessages.GENDER_INVALID, allowNull = true)
         String gender,
 
-        @Pattern(regexp = MemberValidationPatterns.BIRTH_PATTERN,
-                message = MemberValidationMessages.BIRTH_FORMAT)
-        String birth,
+        @NotNull(message = MemberValidationMessages.BIRTH_REQUIRED)
+        @Past(message = MemberValidationMessages.BIRTH_INVALID)
+        @JsonFormat(pattern = "yyyy-MM-dd")
+        LocalDate birth,
 
         @Size(max = MemberValidationConstants.PHONE_STRING_MAX_LENGTH,
                 message = MemberValidationMessages.PHONE_SIZE)

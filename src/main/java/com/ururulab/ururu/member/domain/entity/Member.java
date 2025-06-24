@@ -9,7 +9,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +38,7 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    private LocalDateTime birth;
+    private LocalDate birth;
 
     @Column(length = 20)
     private String phone;
@@ -72,7 +72,7 @@ public class Member extends BaseEntity {
             SocialProvider socialProvider,
             String socialId,
             Gender gender,
-            LocalDateTime birth,
+            LocalDate birth,
             String phone,
             String profileImage,
             Role role
@@ -101,7 +101,7 @@ public class Member extends BaseEntity {
         this.gender = gender;
     }
 
-    public void updateBirth(final LocalDateTime birth) {
+    public void updateBirth(final LocalDate birth) {
         this.birth = birth;
     }
 

@@ -16,8 +16,7 @@ public class MemberValidationMessages {
     public static final String PHONE_SIZE = "전화번호는 20자 이하여야 합니다.";
 
     public static final String BIRTH_REQUIRED = "생년월일은 필수입니다.";
-    public static final String BIRTH_FORMAT = "생년월일 형식: yyyy-MM-dd";
-    public static final String BIRTH_RANGE = "올바른 생년월일을 입력해주세요. (14세-100세)";
+    public static final String BIRTH_INVALID = "생년월일은 현재 날짜보다 이전이어야 합니다.";
 
     public static final String GENDER_INVALID = "성별이 유효하지 않습니다.";
 
