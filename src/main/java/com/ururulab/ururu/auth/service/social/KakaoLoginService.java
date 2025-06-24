@@ -11,22 +11,19 @@ import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.oauth.KakaoOAuthProperties;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
-import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * 카카오 소셜 로그인 서비스.
  *
- * <p>카카오 OAuth 2.0 플로우를 처리하며, 기존 프로젝트 구조에 맞춰 구현되었습니다.</p>
+ * <p>카카오 OAuth 2.0 플로우를 처리하며, 트랜잭션 최적화를 적용했습니다.
+ * 외부 API 호출과 데이터베이스 작업을 분리하여 성능을 개선했습니다.</p>
  */
 @Slf4j
 @Service
@@ -41,9 +38,11 @@ public class KakaoLoginService implements SocialLoginService {
     private final KakaoOAuthProperties kakaoOAuthProperties;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
-    private final MemberRepository memberRepository;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
+
+    // 트랜잭션 처리를 위한 별도 서비스 의존성 주입
+    private final MemberTransactionService memberTransactionService;
 
     @Override
     public String getAuthorizationUrl(final String state) {
@@ -106,17 +105,15 @@ public class KakaoLoginService implements SocialLoginService {
     }
 
     @Override
-    @Transactional
     public SocialLoginResponse processLogin(final String code) {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("인증 코드는 필수입니다.");
         }
 
         final String accessToken = getAccessToken(code);
-
         final SocialMemberInfo socialMemberInfo = getMemberInfo(accessToken);
 
-        final Member member = findOrCreateMember(socialMemberInfo);
+        final Member member = memberTransactionService.findOrCreateMember(socialMemberInfo);
 
         final String jwtAccessToken = jwtTokenProvider.generateAccessToken(
                 member.getId(),
@@ -128,7 +125,7 @@ public class KakaoLoginService implements SocialLoginService {
         return SocialLoginResponse.of(
                 jwtAccessToken,
                 jwtRefreshToken,
-                jwtProperties.getAccessTokenExpiry(), // 기존 설정 활용
+                jwtProperties.getAccessTokenExpiry(),
                 SocialLoginResponse.MemberInfo.of(
                         member.getId(),
                         member.getEmail(),
@@ -166,48 +163,11 @@ public class KakaoLoginService implements SocialLoginService {
             @SuppressWarnings("unchecked")
             final Map<String, Object> attributes = objectMapper.convertValue(jsonNode, Map.class);
 
-            // 기존 SocialMemberInfo.fromKakaoAttributes 메서드 활용
             return SocialMemberInfo.fromKakaoAttributes(attributes);
         } catch (final Exception e) {
             log.error("Failed to parse member info from response");
             throw new SocialMemberInfoException("회원 정보 파싱에 실패했습니다.", e);
         }
-    }
-
-    /**
-     * 회원 조회 또는 신규 생성.
-     *
-     * <p>구매자 전용 소셜 로그인이므로 NORMAL 권한으로 생성합니다.</p>
-     */
-    private Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
-        final Optional<Member> existingMember = memberRepository
-                .findBySocialProviderAndSocialId(
-                        socialMemberInfo.provider(),
-                        socialMemberInfo.socialId()
-                );
-
-        if (existingMember.isPresent()) {
-            final Member member = existingMember.get();
-            log.debug("Existing member found: {}", member.getId());
-            return member;
-        }
-
-        final Member newMember = Member.of(
-                socialMemberInfo.nickname(),
-                socialMemberInfo.email(),
-                socialMemberInfo.provider(),
-                socialMemberInfo.socialId(),
-                null, // gender - 카카오에서 제공하지 않음
-                null, // birth - 카카오에서 제공하지 않음
-                null, // phone - 카카오에서 제공하지 않음
-                socialMemberInfo.profileImage(),
-                Role.NORMAL // 구매자는 NORMAL 권한 (API 명세 준수)
-        );
-
-        final Member savedMember = memberRepository.save(newMember);
-        log.info("New buyer member created via Kakao: {}", savedMember.getId());
-
-        return savedMember;
     }
 
     private String maskSensitiveData(final String data) {
