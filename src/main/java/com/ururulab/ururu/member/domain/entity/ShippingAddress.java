@@ -1,6 +1,7 @@
 package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.member.domain.dto.validation.ShippingAddressValidationConstants;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,19 +20,18 @@ public class ShippingAddress extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(length = 30, nullable = false)
+    @Column(length = ShippingAddressValidationConstants.LABEL_MAX_LENGTH, nullable = false)
     private String label;
 
-    @Column(length = 20, nullable = false)
+    @Column(length = ShippingAddressValidationConstants.PHONE_MAX_LENGTH, nullable = false)
     private String phone;
 
-    @Column(length = 5, nullable = false)
+    @Column(length = ShippingAddressValidationConstants.ZONECODE_LENGTH, nullable = false)
     private String zonecode;
 
-    @Column(length = 255, nullable = false)
+    @Column(nullable = false)
     private String address1;
 
-    @Column(length = 255)
     private String address2;
 
     @Column(nullable = false)

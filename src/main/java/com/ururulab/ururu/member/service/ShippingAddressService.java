@@ -43,11 +43,13 @@ public class ShippingAddressService {
 
         ShippingAddress savedAddress = shippingAddressRepository.save(shippingAddress);
         log.info("ShippingAddress created for member ID: {}", memberId);
-
         return savedAddress;
     }
 
     public List<ShippingAddress> getShippingAddresses(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "회원을 찾을 수 없습니다. ID: " + memberId));
         return shippingAddressRepository.findByMemberId(memberId);
     }
 

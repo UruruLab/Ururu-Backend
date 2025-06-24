@@ -2,6 +2,7 @@ package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
+import com.ururulab.ururu.member.domain.dto.validation.MemberValidationConstants;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.persistence.*;
@@ -23,17 +24,17 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = MemberValidationConstants.NICKNAME_MAX_LENGTH, nullable = false)
     private String nickname;
 
-    @Column(length = 100, unique = true, nullable = false)
+    @Column(length = MemberValidationConstants.EMAIL_MAX_LENGTH, unique = true, nullable = false)
     private String email;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SocialProvider socialProvider;
 
-    @Column(length = 100, nullable = false)
+    @Column(length = MemberValidationConstants.SOCIAL_ID_MAX_LENGTH, nullable = false)
     private String socialId;
 
     @Enumerated(EnumType.STRING)
@@ -43,10 +44,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private LocalDate birth;
 
-    @Column(length = 20)
+    @Column(length = MemberValidationConstants.PHONE_STRING_MAX_LENGTH)
     private String phone;
 
-    @Column(length = 255)
     private String profileImage;
 
     @Enumerated(EnumType.STRING)

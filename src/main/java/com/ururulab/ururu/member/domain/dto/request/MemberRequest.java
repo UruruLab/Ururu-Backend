@@ -30,6 +30,8 @@ public record MemberRequest(
         SocialProvider socialProvider,
 
         @NotBlank(message = MemberValidationMessages.SOCIAL_ID_REQUIRED)
+        @Size(max = MemberValidationConstants.SOCIAL_ID_MAX_LENGTH,
+                message = MemberValidationMessages.SOCIAL_ID_SIZE)
         String socialId,
 
         @EnumValue(enumClass = Gender.class, message = MemberValidationMessages.GENDER_INVALID, allowNull = true)
