@@ -2,6 +2,7 @@ package com.ururulab.ururu.review.service;
 
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
 import com.ururulab.ururu.review.domain.entity.Review;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
 import com.ururulab.ururu.review.domain.repository.ReviewRepository;
+import com.ururulab.ururu.review.event.ReviewCreatedEvent;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReviewService {
 
+	private final ApplicationEventPublisher publisher;
 	private final ReviewRepository reviewRepository;
 	private final MemberRepository memberRepository;
 	private final ReviewImageService reviewImageService;
@@ -46,9 +49,9 @@ public class ReviewService {
 		Member member = memberRepository.findById(memberId)
 				.orElseThrow(() -> new EntityNotFoundException("Member not found: " + memberId));
 
-		reviewImageService.storeImages(request.imageFiles());
+		reviewImageService.validateImages(request.imageFiles());
 
-		reviewRepository.save(
+		Review review = reviewRepository.save(
 				Review.ofCreate(
 						member,
 						product,
@@ -61,6 +64,8 @@ public class ReviewService {
 						getTags(request.tags())
 				)
 		);
+
+		publisher.publishEvent(new ReviewCreatedEvent(review.getId(), request.imageFiles()));
 	}
 
 	private List<Tag> getTags(List<Long> tagIds) {
