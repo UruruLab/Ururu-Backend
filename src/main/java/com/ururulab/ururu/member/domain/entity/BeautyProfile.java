@@ -142,7 +142,7 @@ public class BeautyProfile extends BaseEntity {
         }
     }
 
-    private static void validateAllergyConsistency(boolean hasAllergy, List<String> allergies) {
+    private static void validateAllergyConsistency(Boolean hasAllergy, List<String> allergies) {
         if (hasAllergy && (allergies == null || allergies.isEmpty())) {
             throw new IllegalArgumentException(BeautyProfileValidationMessages.ALLERGY_INCONSISTENCY);
         }
