@@ -13,10 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -24,7 +20,6 @@ import java.time.format.DateTimeParseException;
 public class MemberService {
 
     private final MemberRepository memberRepository;
-    private static final DateTimeFormatter BIRTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /**
      * 소셜 회원 정보로 새 회원을 생성하거나 기존 회원을 조회합니다.
@@ -56,7 +51,7 @@ public class MemberService {
                 request.socialProvider(),
                 request.socialId(),
                 parseGender(request.gender()),
-                parseBirthDate(request.birth()),
+                request.birth(),
                 request.phone(),
                 request.profileImage(),
                 Role.NORMAL
@@ -138,21 +133,13 @@ public class MemberService {
     }
 
     private void updateMemberFields(final Member member, final MemberRequest request) {
-        if (request.nickname() != null) {
-            member.updateNickname(request.nickname());
-        }
+        if (request.nickname() != null) { member.updateNickname(request.nickname());}
 
-        if (request.gender() != null) {
-            member.updateGender(parseGender(request.gender()));
-        }
+        if (request.gender() != null) { member.updateGender(parseGender(request.gender()));}
 
-        if (request.birth() != null) {
-            member.updateBirth(parseBirthDate(request.birth()));
-        }
+        if (request.birth() != null) { member.updateBirth(request.birth());}
 
-        if (request.phone() != null) {
-            member.updatePhone(request.phone());
-        }
+        if (request.phone() != null) { member.updatePhone(request.phone());}
     }
 
     private Member findActiveMemberById(final Long memberId) {
@@ -167,17 +154,5 @@ public class MemberService {
             return null;
         }
         return Gender.from(genderString);
-    }
-
-    private LocalDateTime parseBirthDate(final String birthString) {
-        if (birthString == null) {
-            return null;
-        }
-
-        try {
-            return LocalDateTime.parse(birthString + "T00:00:00");
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("올바른 생년월일 형식이 아닙니다: " + birthString, e);
-        }
     }
 }
