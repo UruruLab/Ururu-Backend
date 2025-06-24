@@ -1,5 +1,8 @@
 package com.ururulab.ururu.member.domain.dto.validation;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class BeautyProfileValidationMessages {
     public static final String SKIN_TYPE_REQUIRED = "피부 타입은 필수입니다.";
     public static final String SKIN_TYPE_INVALID = "유효하지 않은 피부 타입입니다.";

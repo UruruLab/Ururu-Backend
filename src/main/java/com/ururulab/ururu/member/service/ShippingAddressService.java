@@ -1,5 +1,6 @@
 package com.ururulab.ururu.member.service;
 
+import com.ururulab.ururu.member.domain.dto.request.ShippingAddressRequest;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.ShippingAddress;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
@@ -21,22 +22,23 @@ public class ShippingAddressService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public ShippingAddress createShippingAddress(Long memberId, String label, String phone, String zonecode, String address1, String address2, boolean isDefault
-    ) {
+    public ShippingAddress createShippingAddress(Long memberId, ShippingAddressRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
-        if (isDefault) {
-            shippingAddressRepository.findByMemberAndIsDefaultTrue(member)
-                    .ifPresent(defaultAddress -> {
-                        defaultAddress.unsetAsDefault();
-                        shippingAddressRepository.save(defaultAddress);
-                    });
+        if (request.isDefault()) {
+            unsetExistingDefaultAddress(member);
         }
 
         ShippingAddress shippingAddress = ShippingAddress.of(
-                member, label, phone, zonecode, address1, address2, isDefault
+                member,
+                request.label(),
+                request.phone(),
+                request.zonecode(),
+                request.address1(),
+                request.address2(),
+                request.isDefault()
         );
 
         ShippingAddress savedAddress = shippingAddressRepository.save(shippingAddress);
@@ -50,25 +52,31 @@ public class ShippingAddressService {
     }
 
     @Transactional
-    public ShippingAddress updateShippingAddress(Long memberId, Long addressId, String label, String phone, String zonecode, String address1, String address2, boolean isDefault
+    public ShippingAddress updateShippingAddress(
+            Long memberId,
+            Long addressId,
+            ShippingAddressRequest request
     ) {
         ShippingAddress shippingAddress = shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId));
 
-        if (isDefault && !shippingAddress.isDefault()) {
+        if (request.isDefault() && !shippingAddress.isDefault()) {
             Member member = memberRepository.findById(memberId)
                     .orElseThrow(() -> new EntityNotFoundException(
                             "회원을 찾을 수 없습니다. ID: " + memberId));
 
-            shippingAddressRepository.findByMemberAndIsDefaultTrue(member)
-                    .ifPresent(defaultAddress -> {
-                        defaultAddress.unsetAsDefault();
-                        shippingAddressRepository.save(defaultAddress);
-                    });
+            unsetExistingDefaultAddress(member);
         }
 
-        shippingAddress.updateAddress(label, phone, zonecode, address1, address2, isDefault);
+        shippingAddress.updateAddress(
+                request.label(),
+                request.phone(),
+                request.zonecode(),
+                request.address1(),
+                request.address2(),
+                request.isDefault()
+        );
 
         ShippingAddress updatedAddress = shippingAddressRepository.save(shippingAddress);
         log.info("ShippingAddress updated for member ID: {}, address ID: {}", memberId, addressId);
@@ -96,12 +104,7 @@ public class ShippingAddressService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId));
 
-        shippingAddressRepository.findByMemberAndIsDefaultTrue(member)
-                .ifPresent(defaultAddress -> {
-                    defaultAddress.unsetAsDefault();
-                    shippingAddressRepository.save(defaultAddress);
-                });
-
+        unsetExistingDefaultAddress(member);
         shippingAddress.setAsDefault();
 
         ShippingAddress updatedAddress = shippingAddressRepository.save(shippingAddress);
@@ -116,11 +119,14 @@ public class ShippingAddressService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
+        unsetExistingDefaultAddress(member);
+    }
+
+    private void unsetExistingDefaultAddress(Member member) {
         shippingAddressRepository.findByMemberAndIsDefaultTrue(member)
                 .ifPresent(defaultAddress -> {
                     defaultAddress.unsetAsDefault();
                     shippingAddressRepository.save(defaultAddress);
-                    log.info("Default shipping address unset for member ID: {}", memberId);
                 });
     }
 }
