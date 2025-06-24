@@ -1,0 +1,40 @@
+package com.ururulab.ururu.member.domain.dto.request;
+
+import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.validation.EnumValue;
+import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationMessages;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.util.List;
+
+public record BeautyProfileRequest(
+        @NotNull(message = BeautyProfileValidationMessages.SKIN_TYPE_REQUIRED)
+        @EnumValue(enumClass = SkinType.class, message = BeautyProfileValidationMessages.SKIN_TYPE_INVALID)
+        SkinType skinType,
+
+        @Size(max = 3, message = BeautyProfileValidationMessages.SKIN_CONCERNS_SIZE)
+        List<@Size(max = 50, message = BeautyProfileValidationMessages.SKIN_CONCERN_ITEM_SIZE)
+                String> concerns,
+
+        @NotNull(message = BeautyProfileValidationMessages.HAS_ALLERGY_REQUIRED)
+        Boolean hasAllergy,
+
+        List<@Size(max = 50, message = BeautyProfileValidationMessages.ALLERGY_ITEM_SIZE)
+                String> allergies,
+
+        @NotNull(message = BeautyProfileValidationMessages.INTEREST_CATEGORIES_REQUIRED)
+        List<@Size(max = 50, message = BeautyProfileValidationMessages.INTEREST_CATEGORY_ITEM_SIZE)
+                String> interestCategories,
+
+        @Min(value = 0, message = BeautyProfileValidationMessages.MIN_PRICE_INVALID)
+        int minPrice,
+
+        @Min(value = 0, message = BeautyProfileValidationMessages.MAX_PRICE_INVALID)
+        int maxPrice,
+
+        @Size(max = 1000, message = BeautyProfileValidationMessages.ADDITIONAL_INFO_SIZE)
+        String additionalInfo
+) {
+}

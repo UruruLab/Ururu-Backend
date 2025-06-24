@@ -26,37 +26,53 @@ public class BeautyProfile extends BaseEntity {
     private Member member;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SkinType skinType;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "JSON")
+    @Column(columnDefinition = "JSON", nullable = false)
     private List<String> concerns;
+
+    @Column(nullable = false)
+    private boolean hasAllergy;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON")
     private List<String> allergies;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "JSON")
+    @Column(columnDefinition = "JSON", nullable = false)
     private List<String> interestCategories;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false)
+    private int minPrice;
+
+    @Column(nullable = false)
+    private int maxPrice;
+
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String additionalInfo;
 
     public static BeautyProfile of(
             Member member,
             SkinType skinType,
             List<String> concerns,
+            boolean hasAllergy,
             List<String> allergies,
             List<String> interestCategories,
+            int minPrice,
+            int maxPrice,
             String additionalInfo
     ) {
         BeautyProfile beautyProfile = new BeautyProfile();
         beautyProfile.member = member;
         beautyProfile.skinType = skinType;
         beautyProfile.concerns = concerns;
-        beautyProfile.allergies = allergies;
+        beautyProfile.hasAllergy = hasAllergy;
+        beautyProfile.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
         beautyProfile.interestCategories = interestCategories;
+        beautyProfile.minPrice = minPrice;
+        beautyProfile.maxPrice = maxPrice;
         beautyProfile.additionalInfo = additionalInfo;
         return beautyProfile;
     }
@@ -64,14 +80,20 @@ public class BeautyProfile extends BaseEntity {
     public void updateProfile(
             SkinType skinType,
             List<String> concerns,
+            boolean hasAllergy,
             List<String> allergies,
             List<String> interestCategories,
+            int minPrice,
+            int maxPrice,
             String additionalInfo
     ) {
         this.skinType = skinType;
         this.concerns = concerns != null ? new ArrayList<>(concerns) : null;
-        this.allergies = allergies != null ? new ArrayList<>(allergies) : null;
+        this.hasAllergy = hasAllergy;
+        this.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : null;
         this.interestCategories = interestCategories != null ? new ArrayList<>(interestCategories) : null;
+        this.minPrice = minPrice;
+        this.maxPrice = maxPrice;
         this.additionalInfo = additionalInfo;
     }
 }
