@@ -1,5 +1,8 @@
 package com.ururulab.ururu.member.domain.dto.validation;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class MemberValidationMessages {
     public static final String NICKNAME_REQUIRED = "닉네임은 필수입니다.";
     public static final String NICKNAME_SIZE = "닉네임은 2-50자 사이여야 합니다.";
