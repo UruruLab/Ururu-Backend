@@ -23,21 +23,24 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 50)
+    @Column(length = 50, nullable = false)
     private String nickname;
 
-    @Column(length = 100, unique = true)
+    @Column(length = 100, unique = true, nullable = false)
     private String email;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private SocialProvider socialProvider;
 
-    @Column(length = 100)
+    @Column(length = 100, nullable = false)
     private String socialId;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Gender gender;
 
+    @Column(nullable = false)
     private LocalDate birth;
 
     @Column(length = 20)
@@ -47,10 +50,13 @@ public class Member extends BaseEntity {
     private String profileImage;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
 
+    @Column(nullable = false)
     private int point = 0;
 
+    @Column(nullable = false)
     private boolean isDeleted = false;
 
     @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)

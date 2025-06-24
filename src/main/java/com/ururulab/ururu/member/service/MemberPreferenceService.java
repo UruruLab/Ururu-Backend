@@ -48,7 +48,7 @@ public class MemberPreferenceService {
 
         MemberPreference preference = MemberPreference.of(
                 member, sellerId, preferenceLevel, monthlyBudget,
-                preferredPriceRange, purchaseFrequency
+                purchaseFrequency
         );
 
         MemberPreference savedPreference = memberPreferenceRepository.save(preference);

@@ -19,21 +19,22 @@ public class ShippingAddress extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(length = 30)
+    @Column(length = 30, nullable = false)
     private String label;
 
-    @Column(length = 20)
+    @Column(length = 20, nullable = false)
     private String phone;
 
-    @Column(length = 5)
+    @Column(length = 5, nullable = false)
     private String zonecode;
 
-    @Column(length = 255)
+    @Column(length = 255, nullable = false)
     private String address1;
 
     @Column(length = 255)
     private String address2;
 
+    @Column(nullable = false)
     private boolean isDefault;
 
     public static ShippingAddress of(
