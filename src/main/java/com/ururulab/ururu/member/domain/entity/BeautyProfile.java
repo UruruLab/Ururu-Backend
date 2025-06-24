@@ -72,13 +72,13 @@ public class BeautyProfile extends BaseEntity {
         BeautyProfile beautyProfile = new BeautyProfile();
         beautyProfile.member = member;
         beautyProfile.skinType = skinType;
-        beautyProfile.concerns = concerns;
+        beautyProfile.concerns = concerns != null ? new ArrayList<>(concerns) : new ArrayList<>();
         beautyProfile.hasAllergy = hasAllergy;
         beautyProfile.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
-        beautyProfile.interestCategories = interestCategories;
+        beautyProfile.interestCategories = interestCategories != null ? new ArrayList<>(interestCategories) : new ArrayList<>();
         beautyProfile.minPrice = minPrice;
         beautyProfile.maxPrice = maxPrice;
-        beautyProfile.additionalInfo = additionalInfo;
+        beautyProfile.additionalInfo = additionalInfo != null ? additionalInfo : "";
         return beautyProfile;
     }
 
@@ -96,13 +96,13 @@ public class BeautyProfile extends BaseEntity {
                 interestCategories, minPrice, maxPrice, additionalInfo);
 
         this.skinType = skinType;
-        this.concerns = concerns != null ? new ArrayList<>(concerns) : null;
+        this.concerns = concerns != null ? new ArrayList<>(concerns) : new ArrayList<>();
         this.hasAllergy = hasAllergy;
-        this.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : null;
-        this.interestCategories = interestCategories != null ? new ArrayList<>(interestCategories) : null;
+        this.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
+        this.interestCategories = interestCategories != null ? new ArrayList<>(interestCategories) : new ArrayList<>();
         this.minPrice = minPrice;
         this.maxPrice = maxPrice;
-        this.additionalInfo = additionalInfo;
+        this.additionalInfo = additionalInfo != null ? additionalInfo : "";
     }
 
     private static void validateCreationParameters(
@@ -169,7 +169,13 @@ public class BeautyProfile extends BaseEntity {
         }
     }
 
-    private static void validatePriceRange(int minPrice, int maxPrice) {
+    private static void validatePriceRange(Integer minPrice, Integer maxPrice) {
+        if (minPrice == null) {
+            throw new IllegalArgumentException(BeautyProfileValidationMessages.MIN_PRICE_INVALID);
+        }
+        if (maxPrice == null) {
+            throw new IllegalArgumentException(BeautyProfileValidationMessages.MAX_PRICE_INVALID);
+        }
         if (minPrice < BeautyProfileValidationConstants.MIN_PRICE_VALUE) {
             throw new IllegalArgumentException(BeautyProfileValidationMessages.MIN_PRICE_INVALID);
         }
