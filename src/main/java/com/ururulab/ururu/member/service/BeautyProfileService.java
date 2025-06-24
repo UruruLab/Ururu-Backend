@@ -25,6 +25,18 @@ public class BeautyProfileService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
+        if (request.hasAllergy() && (request.allergies() == null || request.allergies().isEmpty())) {
+            throw new IllegalArgumentException("알러지가 있다고 선택하셨습니다. 알러지 목록을 입력해주세요.");
+        }
+
+        if (!request.hasAllergy() && request.allergies() != null && !request.allergies().isEmpty()) {
+            throw new IllegalArgumentException("알러지가 없다고 선택하셨습니다. 알러지 목록을 비워주세요.");
+        }
+
+        if (request.minPrice() > request.maxPrice()) {
+            throw new IllegalArgumentException("최소 가격은 최대 가격보다 작거나 같아야 합니다.");
+        }
+
         BeautyProfile beautyProfile = BeautyProfile.of(
                 member,
                 request.skinType(),

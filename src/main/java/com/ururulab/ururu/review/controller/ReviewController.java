@@ -1,7 +1,13 @@
 package com.ururulab.ururu.review.controller;
 
-import java.time.LocalDateTime;
-
+import com.ururulab.ururu.global.common.entity.enumerated.Gender;
+import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.member.domain.entity.enumerated.Role;
+import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
+import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
+import com.ururulab.ururu.review.service.ReviewService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,15 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ururulab.ururu.global.common.entity.enumerated.Gender;
-import com.ururulab.ururu.member.domain.entity.Member;
-import com.ururulab.ururu.member.domain.entity.enumerated.Role;
-import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
-import com.ururulab.ururu.review.service.ReviewService;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -31,7 +29,7 @@ public class ReviewController {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			LocalDateTime.now(),
+			LocalDate.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL
