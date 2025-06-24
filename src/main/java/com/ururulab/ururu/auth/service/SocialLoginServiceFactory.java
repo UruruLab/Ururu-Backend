@@ -1,6 +1,6 @@
-package com.ururulab.ururu.global.auth.service;
+package com.ururulab.ururu.auth.service;
 
-import com.ururulab.ururu.global.auth.exception.UnsupportedSocialProviderException;
+import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

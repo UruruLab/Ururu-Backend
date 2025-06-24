@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.jwt;
+package com.ururulab.ururu.auth.jwt;
 
 import lombok.Getter;
 import lombok.Setter;

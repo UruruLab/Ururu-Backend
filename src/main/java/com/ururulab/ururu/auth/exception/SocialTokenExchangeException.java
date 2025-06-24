@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.exception;
+package com.ururulab.ururu.auth.exception;
 
 /**
  * 소셜 토큰 교환 실패 예외.
