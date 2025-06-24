@@ -1,6 +1,6 @@
 package com.ururulab.ururu.member.service;
 
-import com.ururulab.ururu.global.auth.dto.info.SocialMemberInfo;
+import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
