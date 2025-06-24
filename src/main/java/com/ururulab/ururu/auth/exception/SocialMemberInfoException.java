@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.auth.exception;
+package com.ururulab.ururu.auth.exception;
 
 /**
  * 소셜 회원 정보 조회 실패 예외.
