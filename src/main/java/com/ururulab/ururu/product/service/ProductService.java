@@ -33,6 +33,8 @@ public class ProductService {
      */
     @Transactional
     public ProductResponse createProduct(ProductRequest productRequest) {
+        validateProductRequest(productRequest);
+
         Product savedProduct = productRepository.save(productRequest.toEntity());
 
         // 2. 카테고리 유효성 검증 및 조회
@@ -96,4 +98,23 @@ public class ProductService {
         return categories;
     }
 
+    /**
+     * 상품 등록 요청 데이터를 검증합니다.
+     *
+     * @param productRequest 검증할 상품 요청 데이터
+     * @throws IllegalArgumentException 유효하지 않은 데이터가 있는 경우
+     */
+    private void validateProductRequest(ProductRequest productRequest) {
+        if (productRequest.categoryIds() == null || productRequest.categoryIds().isEmpty()) {
+            throw new IllegalArgumentException("카테고리는 최소 1개 이상 선택해야 합니다.");
+        }
+
+        if (productRequest.productOptions() == null || productRequest.productOptions().isEmpty()) {
+            throw new IllegalArgumentException("상품 옵션은 최소 1개 이상 등록해야 합니다.");
+        }
+
+        if (productRequest.productNotice() == null) {
+            throw new IllegalArgumentException("상품 정보고시는 필수 입력 항목입니다.");
+        }
+    }
 }
