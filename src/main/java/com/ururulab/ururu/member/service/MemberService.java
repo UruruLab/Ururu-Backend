@@ -153,6 +153,10 @@ public class MemberService {
         if (genderString == null) {
             return null;
         }
-        return Gender.from(genderString);
+        try {
+            return Gender.from(genderString);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("올바른 성별 값이 아닙니다: " + genderString, e);
+        }
     }
 }
