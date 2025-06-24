@@ -36,7 +36,7 @@ public class BeautyProfile extends BaseEntity {
     private List<String> concerns;
 
     @Column(nullable = false)
-    private boolean hasAllergy;
+    private Boolean hasAllergy;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON")
@@ -47,10 +47,10 @@ public class BeautyProfile extends BaseEntity {
     private List<String> interestCategories;
 
     @Column(nullable = false)
-    private int minPrice;
+    private Integer minPrice;
 
     @Column(nullable = false)
-    private int maxPrice;
+    private Integer maxPrice;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String additionalInfo;
@@ -59,11 +59,11 @@ public class BeautyProfile extends BaseEntity {
             Member member,
             SkinType skinType,
             List<String> concerns,
-            boolean hasAllergy,
+            Boolean hasAllergy,
             List<String> allergies,
             List<String> interestCategories,
-            int minPrice,
-            int maxPrice,
+            Integer minPrice,
+            Integer maxPrice,
             String additionalInfo
     ) {
         validateCreationParameters(skinType, concerns, hasAllergy, allergies,
@@ -85,11 +85,11 @@ public class BeautyProfile extends BaseEntity {
     public void updateProfile(
             SkinType skinType,
             List<String> concerns,
-            boolean hasAllergy,
+            Boolean hasAllergy,
             List<String> allergies,
             List<String> interestCategories,
-            int minPrice,
-            int maxPrice,
+            Integer minPrice,
+            Integer maxPrice,
             String additionalInfo
     ) {
         validateCreationParameters(skinType, concerns, hasAllergy, allergies,
@@ -108,11 +108,11 @@ public class BeautyProfile extends BaseEntity {
     private static void validateCreationParameters(
             SkinType skinType,
             List<String> concerns,
-            boolean hasAllergy,
+            Boolean hasAllergy,
             List<String> allergies,
             List<String> interestCategories,
-            int minPrice,
-            int maxPrice,
+            Integer minPrice,
+            Integer maxPrice,
             String additionalInfo
     ) {
         validateSkinType(skinType);

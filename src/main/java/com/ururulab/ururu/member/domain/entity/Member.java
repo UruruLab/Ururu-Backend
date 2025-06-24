@@ -54,7 +54,7 @@ public class Member extends BaseEntity {
     private Role role;
 
     @Column(nullable = false)
-    private int point = 0;
+    private Integer point = 0;
 
     @Column(nullable = false)
     private boolean isDeleted = false;

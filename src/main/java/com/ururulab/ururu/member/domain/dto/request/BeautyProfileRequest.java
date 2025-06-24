@@ -45,4 +45,24 @@ public record BeautyProfileRequest(
                 message = BeautyProfileValidationMessages.ADDITIONAL_INFO_SIZE)
         String additionalInfo
 ) {
+        public void validatePriceRange() {
+                if (minPrice > maxPrice) {
+                        throw new IllegalArgumentException(BeautyProfileValidationMessages.PRICE_RANGE_INVALID);
+                }
+        }
+
+        public void validateAllergyConsistency() {
+                if (hasAllergy && (allergies == null || allergies.isEmpty())) {
+                        throw new IllegalArgumentException(BeautyProfileValidationMessages.ALLERGY_INCONSISTENCY);
+                }
+
+                if (!hasAllergy && allergies != null && !allergies.isEmpty()) {
+                        throw new IllegalArgumentException(BeautyProfileValidationMessages.NO_ALLERGY_INCONSISTENCY);
+                }
+        }
+
+        public void validateBusinessRules() {
+                validatePriceRange();
+                validateAllergyConsistency();
+        }
 }
