@@ -1,5 +1,6 @@
 package com.ururulab.ururu.image.service;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,9 +54,18 @@ public class ImageService {
 			if (img == null) {
 				throw new InvalidImageFormatException("이미지 파싱 실패");
 			}
-			BufferedImage clean = new BufferedImage(img.getWidth(), img.getHeight(),
-					BufferedImage.TYPE_INT_RGB);
-			clean.getGraphics().drawImage(img, 0, 0, null);
+
+			BufferedImage clean = new BufferedImage(
+					img.getWidth(), img.getHeight(),
+					BufferedImage.TYPE_INT_ARGB
+			);
+
+			Graphics2D g = clean.createGraphics();
+			try {
+				g.drawImage(img, 0, 0, null);
+			} finally {
+				g.dispose();
+			}
 
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 				ImageIO.write(clean, fmt.getExtension(), baos);

@@ -36,20 +36,56 @@ public class ReviewImageService {
 					"이미지는 최대 " + MAX_IMAGE_COUNT + "개까지 첨부할 수 있습니다."
 			);
 		}
-		images.forEach(file -> {
-			String filename = Optional.ofNullable(file.getOriginalFilename())
-					.filter(n -> n.contains("."))
-					.orElseThrow(() ->
-							new InvalidImageFormatException("파일명이 없거나 확장자를 찾을 수 없습니다.")
-					);
-			int lastDotIndex = filename.lastIndexOf('.');
-			if (lastDotIndex == filename.length() - 1) {
-				throw new InvalidImageFormatException("파일명이 마침표로 끝납니다: " + filename);
-			}
-			String ext = filename.substring(lastDotIndex + 1).toLowerCase();
-			ImageFormat.fromExtension(ext)
-					.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 확장자: " + ext));
-		});
+		images.forEach(this::validateSingleImage);
+	}
+
+	private void validateSingleImage(MultipartFile file) {
+		ImageFormat extFmt = parseExtension(file);
+
+		ImageFormat mimeFmt = parseMimeType(file);
+
+		ensureMatchingFormats(extFmt, mimeFmt, file);
+	}
+
+	private ImageFormat parseExtension(MultipartFile file) {
+		String filename = Optional.ofNullable(file.getOriginalFilename())
+				.filter(n -> n.contains("."))
+				.orElseThrow(() ->
+						new InvalidImageFormatException("파일명이 없거나 확장자를 찾을 수 없습니다.")
+				);
+		int idx = filename.lastIndexOf('.');
+		if (idx == filename.length() - 1) {
+			throw new InvalidImageFormatException("파일명이 마침표로 끝납니다: " + filename);
+		}
+		String ext = filename.substring(idx + 1).toLowerCase();
+		return ImageFormat.fromExtension(ext)
+				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 확장자: " + ext));
+	}
+
+	private ImageFormat parseMimeType(MultipartFile file) {
+		String mime = Optional.ofNullable(file.getContentType())
+				.orElseThrow(() ->
+						new InvalidImageFormatException("MIME 타입을 확인할 수 없습니다.")
+				);
+		return ImageFormat.fromMimeType(mime)
+				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 MIME 타입: " + mime));
+	}
+
+	private void ensureMatchingFormats(
+			ImageFormat extFmt,
+			ImageFormat mimeFmt,
+			MultipartFile file
+	) {
+		if (extFmt != mimeFmt) {
+			throw new InvalidImageFormatException(
+					String.format(
+							"확장자(%s)와 MIME(%s)이 일치하지 않습니다: file=%s",
+							extFmt.getExtension(),
+							mimeFmt.getMimeType(),
+							file.getOriginalFilename()
+					)
+			);
+		}
 	}
 
 	@Async("imageUploadExecutor")

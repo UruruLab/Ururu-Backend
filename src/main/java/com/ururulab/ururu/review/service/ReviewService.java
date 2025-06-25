@@ -1,6 +1,7 @@
 package com.ururulab.ururu.review.service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -55,7 +56,7 @@ public class ReviewService {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			LocalDateTime.now(),
+			LocalDate.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL
