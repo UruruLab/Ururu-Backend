@@ -1,9 +1,10 @@
 package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
+import com.ururulab.ururu.order.domain.policy.OrderPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -20,7 +21,7 @@ import java.util.UUID;
 public class Order extends BaseEntity {
 
     @Id
-    @Column(length = 36)
+    @Column(length = OrderPolicy.ID_LENGTH)
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,19 +36,19 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus status;
 
-    @Column(length = 20, nullable = false)
+    @Column(length = OrderPolicy.PHONE_MAX_LENGTH, nullable = false)
     private String phone;
 
-    @Column(length = 5, nullable = false)
+    @Column(length = OrderPolicy.ZONECODE_MAX_LENGTH, nullable = false)
     private String zonecode;
 
-    @Column(length = 255, nullable = false)
+    @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH, nullable = false)
     private String address1;
 
-    @Column(length = 255)
+    @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH)
     private String address2;
 
-    @Column(length = 50)
+    @Column(length = OrderPolicy.TRACKING_NUMBER_MAX_LENGTH)
     private String trackingNumber;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -65,10 +66,10 @@ public class Order extends BaseEntity {
             String address2
     ) {
         if (groupBuy == null) {
-            throw new IllegalArgumentException("공동구매 ID는 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.GROUPBUY_REQUIRED);
         }
         if (member == null) {
-            throw new IllegalArgumentException("회원 정보는 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.MEMBER_REQUIRED);
         }
 
         Order order = new Order();
@@ -81,14 +82,14 @@ public class Order extends BaseEntity {
         order.address1 = address1;
         order.address2 = address2;
 
-        order.addOrderHistory(OrderStatus.ORDERED, "주문이 생성되었습니다.");
+        order.addOrderHistory(OrderStatus.ORDERED, OrderPolicy.ORDER_CREATION_MESSAGE);
 
         return order;
     }
 
     public void addOrderItem(OrderItem orderItem) {
         if (orderItem == null) {
-            throw new IllegalArgumentException("주문 아이템은 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.ORDER_ITEM_REQUIRED);
         }
         orderItems.add(orderItem);
         orderItem.assignOrder(this);
@@ -101,7 +102,7 @@ public class Order extends BaseEntity {
 
     public void changeStatus(OrderStatus status, String reason) {
         if (status == null) {
-            throw new IllegalArgumentException("주문 상태는 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.STATUS_REQUIRED);
         }
         this.status = status;
         addOrderHistory(status, reason);
