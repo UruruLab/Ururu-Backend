@@ -6,6 +6,9 @@ public enum PayMethod {
     TOSS_PAY;   // 토스페이
 
     public static PayMethod from(String method, String easyPayProvider) {
+        if (method == null) {
+            throw new IllegalArgumentException("결제 방식은 필수입니다.");
+        }
         if ("카드".equals(method) && easyPayProvider == null) {
             return CARD;
         } else if ("계좌이체".equals(method) && easyPayProvider == null) {
