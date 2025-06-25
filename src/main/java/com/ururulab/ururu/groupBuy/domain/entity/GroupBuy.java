@@ -1,0 +1,92 @@
+package com.ururulab.ururu.groupBuy.domain.entity;
+
+import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
+import com.ururulab.ururu.product.domain.entity.Product;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationConstants.*;
+
+@Entity
+@Getter
+@Table(name = "GroupBuy")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class GroupBuy extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    //TODO 판매자 JOIN
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "seller_id", nullable = false)
+//    private Seller seller;
+
+    @Column(nullable = false, length = GROUP_BUY_TITLE_MAX)
+    private String title; // 공동구매 타이틀
+
+    @Column(columnDefinition = "TEXT")
+    private String description; // 공동구매 상세설명
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String thumbnailUrl; // 대표 이미지
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "JSON", nullable = false)
+    private String discountStages; // 달성 인원에 따른 할인율
+
+    @Column(nullable = false)
+    private Integer limitQuantityPerMember; // 1인 최대 수량 제한
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GroupBuyStatus status; // 공동구매 상태
+
+    @Column(nullable = false)
+    private LocalDateTime startAt; // 공동구매 시작일
+
+    @Column(nullable = false)
+    private LocalDateTime endsAt; // 공동구매 종료일
+
+    @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GroupBuyImage> groupBuyImages = new ArrayList<>();
+
+    public static GroupBuy of(
+            Product product,
+            //Seller seller,
+            String title,
+            String description,
+            String thumbnailUrl,
+            String discountStages,
+            Integer limitQuantityPerMember,
+            GroupBuyStatus status,
+            LocalDateTime startAt,
+            LocalDateTime endsAt
+    ) {
+        GroupBuy groupBuy = new GroupBuy();
+        groupBuy.product = product;
+        //groupBuy.seller = seller;
+        groupBuy.title = title;
+        groupBuy.description = description;
+        groupBuy.thumbnailUrl = thumbnailUrl;
+        groupBuy.discountStages = discountStages;
+        groupBuy.limitQuantityPerMember = limitQuantityPerMember;
+        groupBuy.status = status;
+        groupBuy.startAt = startAt;
+        groupBuy.endsAt = endsAt;
+        return groupBuy;
+    }
+}

@@ -45,6 +45,9 @@ public class Product extends BaseEntity {
     @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private ProductNotice productNotice;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProductTag> productTags = new ArrayList<>();
+
     public static Product of(
             //Seller seller,
             String name,
