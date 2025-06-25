@@ -71,15 +71,36 @@ public class Order extends BaseEntity {
         if (member == null) {
             throw new IllegalArgumentException(OrderPolicy.MEMBER_REQUIRED);
         }
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.PHONE_REQUIRED);
+        }
+        if (phone.length() > OrderPolicy.PHONE_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.PHONE_TOO_LONG);
+        }
+        if (zonecode == null || zonecode.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.ZONECODE_REQUIRED);
+        }
+        if (zonecode.length() > OrderPolicy.ZONECODE_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.ZONECODE_TOO_LONG);
+        }
+        if (address1 == null || address1.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.ADDRESS1_REQUIRED);
+        }
+        if (address1.length() > OrderPolicy.ADDRESS_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.ADDRESS1_TOO_LONG);
+        }
+        if (address2 != null && address2.length() > OrderPolicy.ADDRESS_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.ADDRESS2_TOO_LONG);
+        }
 
         Order order = new Order();
         order.id = UUID.randomUUID().toString();
         order.groupBuy = groupBuy;
         order.member = member;
         order.status = OrderStatus.ORDERED;
-        order.phone = phone;
-        order.zonecode = zonecode;
-        order.address1 = address1;
+        order.phone = phone.trim();
+        order.zonecode = zonecode.trim();
+        order.address1 = address1.trim();
         order.address2 = address2;
 
         order.addOrderHistory(OrderStatus.ORDERED, OrderPolicy.ORDER_CREATION_MESSAGE);
@@ -106,5 +127,12 @@ public class Order extends BaseEntity {
         }
         this.status = status;
         addOrderHistory(status, reason);
+    }
+
+    public void updateTrackingNumber(String trackingNumber) {
+        if (trackingNumber != null && trackingNumber.length() > OrderPolicy.TRACKING_NUMBER_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.TRACKING_NUMBER_TOO_LONG);
+        }
+        this.trackingNumber = trackingNumber;
     }
 }
