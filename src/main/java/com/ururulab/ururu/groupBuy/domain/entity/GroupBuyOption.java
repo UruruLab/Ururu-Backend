@@ -3,6 +3,7 @@ package com.ururulab.ururu.groupBuy.domain.entity;
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,13 +27,16 @@ public class GroupBuyOption extends BaseEntity {
     private ProductOption productOption;
 
     @Column(nullable = false)
-    private Integer stock;
+    @Min(0)
+    private Integer stock; //재고
 
     @Column(nullable = false)
-    private Integer priceOverride;
+    @Min(0)
+    private Integer priceOverride; // 공구 시작가
 
     @Column(nullable = false)
-    private Integer salePrice;
+    @Min(0)
+    private Integer salePrice; // 실제 판매가
 
     public static GroupBuyOption of(
             GroupBuy groupBuy,

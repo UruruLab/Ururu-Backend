@@ -36,30 +36,30 @@ public class GroupBuy extends BaseEntity {
 //    private Seller seller;
 
     @Column(nullable = false, length = GROUP_BUY_TITLE_MAX)
-    private String title;
+    private String title; // 공동구매 타이틀
 
     @Column(columnDefinition = "TEXT")
-    private String description;
+    private String description; // 공동구매 상세설명
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String thumbnailUrl;
+    private String thumbnailUrl; // 대표 이미지
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON", nullable = false)
-    private String discountStages;
+    private String discountStages; // 달성 인원에 따른 할인율
 
     @Column(nullable = false)
-    private Integer limitQuantityPerMember;
+    private Integer limitQuantityPerMember; // 1인 최대 수량 제한
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private GroupBuyStatus status;
+    private GroupBuyStatus status; // 공동구매 상태
 
     @Column(nullable = false)
-    private LocalDateTime startAt;
+    private LocalDateTime startAt; // 공동구매 시작일
 
     @Column(nullable = false)
-    private LocalDateTime endsAt;
+    private LocalDateTime endsAt; // 공동구매 종료일
 
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupBuyImage> groupBuyImages = new ArrayList<>();

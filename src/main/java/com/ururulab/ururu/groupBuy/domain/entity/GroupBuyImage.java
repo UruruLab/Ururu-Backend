@@ -24,10 +24,10 @@ public class GroupBuyImage extends BaseEntity {
     private String imageUrl; // 상세 페이지 이미지
 
     @Column(nullable = false)
-    private Integer displayOrder;
+    private Integer displayOrder; // 이미지 순서
 
     @Column(nullable = false)
-    private Boolean isDelete;
+    private Boolean isDelete; // 삭제 여부
 
     public static GroupBuyImage of(
             GroupBuy groupBuy,

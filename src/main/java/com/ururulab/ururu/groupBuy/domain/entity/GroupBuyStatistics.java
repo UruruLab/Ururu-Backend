@@ -24,20 +24,20 @@ public class GroupBuyStatistics extends BaseEntity {
     private GroupBuy groupBuy;
 
     @Column(nullable = false)
-    private Integer totalParticipants;
+    private Integer totalParticipants; // 참여자 수
 
     @Column(nullable = false)
-    private Integer totalQuantity;
+    private Integer totalQuantity; // 총 판매 수량
 
     @Column(nullable = false)
-    private Integer finalDiscountRate;
+    private Integer finalDiscountRate; // 최종 할인율
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private FinalStatus finalStatus;
+    private FinalStatus finalStatus; // 최종 상태
 
     @Column(nullable = true)
-    private LocalDateTime confirmedAt;
+    private LocalDateTime confirmedAt; // 확정 시각
 
     public static GroupBuyStatistics of(
             GroupBuy groupBuy,
