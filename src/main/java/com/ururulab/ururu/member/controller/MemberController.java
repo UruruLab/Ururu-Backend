@@ -3,6 +3,7 @@ package com.ururulab.ururu.member.controller;
 import com.ururulab.ururu.global.common.dto.ApiResponse;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
+import com.ururulab.ururu.member.domain.dto.response.GetMyProfileResponse;
 import com.ururulab.ururu.member.domain.dto.response.UpdateMemberResponse;
 import com.ururulab.ururu.member.service.MemberService;
 import jakarta.validation.Valid;
@@ -35,6 +36,16 @@ public class MemberController {
         final UpdateMemberResponse response = memberService.updateMember(memberId, request);
         return ResponseEntity.ok(
                 ApiResponse.success("회원 정보를 수정했습니다.", response)
+        );
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<GetMyProfileResponse>> getMyProfile() {
+        // TODO: JWT 토큰에서 memberId 추출
+        final Long memberId = 1L;
+        final GetMyProfileResponse response = memberService.getMyProfile(memberId);
+        return ResponseEntity.ok(
+                ApiResponse.success("내 정보를 조회했습니다", response)
         );
     }
 }

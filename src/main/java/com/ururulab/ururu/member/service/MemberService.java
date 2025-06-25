@@ -4,6 +4,7 @@ import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
+import com.ururulab.ururu.member.domain.dto.response.GetMyProfileResponse;
 import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
 import com.ururulab.ururu.member.domain.dto.response.UpdateMemberResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
@@ -78,6 +79,11 @@ public class MemberService {
     public GetMemberResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
         return GetMemberResponse.from(member);
+    }
+
+    public GetMyProfileResponse getMyProfile(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+        return GetMyProfileResponse.from(member);
     }
 
     @Transactional
