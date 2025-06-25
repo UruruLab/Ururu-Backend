@@ -1,9 +1,9 @@
 package com.ururulab.ururu.global.exception;
 
-import com.ururulab.ururu.global.auth.exception.SocialLoginException;
-import com.ururulab.ururu.global.auth.exception.SocialTokenExchangeException;
-import com.ururulab.ururu.global.auth.exception.SocialMemberInfoException;
-import com.ururulab.ururu.global.auth.exception.UnsupportedSocialProviderException;
+import com.ururulab.ururu.auth.exception.SocialLoginException;
+import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
+import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
+import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
 import com.ururulab.ururu.global.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

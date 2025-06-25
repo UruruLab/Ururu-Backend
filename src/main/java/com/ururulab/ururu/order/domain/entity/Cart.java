@@ -2,6 +2,7 @@ package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.order.domain.policy.CartPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -29,7 +30,7 @@ public class Cart extends BaseEntity {
 
     public static Cart create(Member member) {
         if (member == null) {
-            throw new IllegalArgumentException("회원 정보는 필수입니다.");
+            throw new IllegalArgumentException(CartPolicy.MEMBER_REQUIRED);
         }
 
         Cart cart = new Cart();
@@ -39,7 +40,7 @@ public class Cart extends BaseEntity {
 
     public void addItem(CartItem cartItem) {
         if (cartItem == null) {
-            throw new IllegalArgumentException("장바구니 아이템은 필수입니다.");
+            throw new IllegalArgumentException(CartPolicy.CART_ITEM_REQUIRED);
         }
 
         cartItems.add(cartItem);
@@ -48,14 +49,14 @@ public class Cart extends BaseEntity {
 
     public void removeItem(CartItem cartItem) {
         if (cartItem == null) {
-            throw new IllegalArgumentException("장바구니 아이템은 필수입니다.");
+            throw new IllegalArgumentException(CartPolicy.CART_ITEM_REQUIRED);
         }
         cartItems.remove(cartItem);
     }
 
     public void removeItem(Long cartItemId) {
         if (cartItemId == null) {
-            throw new IllegalArgumentException("장바구니 아이템 ID는 필수입니다.");
+            throw new IllegalArgumentException(CartPolicy.CART_ITEM_ID_REQUIRED);
         }
         cartItems.removeIf(item -> item.getId() != null && item.getId().equals(cartItemId));
     }
