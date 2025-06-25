@@ -3,13 +3,12 @@ package com.ururulab.ururu.global.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * HTTP 클라이언트 설정.
- *
- * <p>WebClient와 RestTemplate Bean을 등록합니다.</p>
+ * RestClient Bean을 등록하여 동기적 HTTP 통신을 처리합니다.
  */
 @Configuration
 public class HttpClientConfig {
@@ -18,9 +17,14 @@ public class HttpClientConfig {
     private static final int READ_TIMEOUT = 10000; // 10초
 
     @Bean
-    public WebClient webClient() {
-        return WebClient.builder()
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(1024 * 1024)) // 1MB
+    public RestClient restClient() {
+        final SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(CONNECTION_TIMEOUT);
+        factory.setReadTimeout(READ_TIMEOUT);
+
+        return RestClient.builder()
+                .requestFactory(factory)
+                .defaultHeader("Accept", "application/json")
                 .build();
     }
 
