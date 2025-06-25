@@ -3,7 +3,6 @@ package com.ururulab.ururu.order.domain.entity;
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
-import com.ururulab.ururu.order.domain.entity.enumerated.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -38,10 +37,6 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus paymentStatus;
 
     @Column(length = 20, nullable = false)
     private String phone;
@@ -84,7 +79,6 @@ public class Order extends BaseEntity {
         order.groupBuyId = groupBuyId;
         order.member = member;
         order.status = OrderStatus.ORDERED;
-        order.paymentStatus = PaymentStatus.PENDING;
         order.phone = phone;
         order.zonecode = zonecode;
         order.address1 = address1;
@@ -114,12 +108,5 @@ public class Order extends BaseEntity {
         }
         this.status = status;
         addOrderHistory(status, reason);
-    }
-
-    public void changePaymentStatus(PaymentStatus paymentStatus) {
-        if (paymentStatus == null) {
-            throw new IllegalArgumentException("결제 상태는 필수입니다.");
-        }
-        this.paymentStatus = paymentStatus;
     }
 }
