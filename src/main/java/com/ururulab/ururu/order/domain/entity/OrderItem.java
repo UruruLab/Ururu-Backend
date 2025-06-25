@@ -2,6 +2,7 @@ package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
+import com.ururulab.ururu.order.domain.policy.OrderItemPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -30,10 +31,10 @@ public class OrderItem extends BaseEntity {
 
     public static OrderItem create(GroupBuyOption groupBuyOption, int quantity) {
         if (groupBuyOption == null) {
-            throw new IllegalArgumentException("공동구매 옵션 ID는 필수입니다.");
+            throw new IllegalArgumentException(OrderItemPolicy.GROUPBUY_OPTION_REQUIRED);
         }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("수량은 1 이상이어야 합니다.");
+        if (quantity < OrderItemPolicy.MIN_QUANTITY) {
+            throw new IllegalArgumentException(OrderItemPolicy.QUANTITY_MIN);
         }
 
         OrderItem orderItem = new OrderItem();
