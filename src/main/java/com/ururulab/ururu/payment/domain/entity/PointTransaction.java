@@ -93,11 +93,11 @@ public class PointTransaction extends BaseEntity {
 
     private static void validateTypeSpecific(PointType type, Integer amount) {
         if (type == PointType.EARNED) {
-            if (amount <= PointTransactionPolicy.MIN_EARNED_AMOUNT) {
+            if (amount < PointTransactionPolicy.MIN_EARNED_AMOUNT) {
                 throw new IllegalArgumentException(PointTransactionPolicy.EARNED_AMOUNT_MIN);
             }
         } else if (type == PointType.USED) {
-            if (amount <= PointTransactionPolicy.MIN_USED_AMOUNT) {
+            if (amount < PointTransactionPolicy.MIN_USED_AMOUNT) {
                 throw new IllegalArgumentException(PointTransactionPolicy.USED_AMOUNT_MIN);
             }
         }

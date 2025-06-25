@@ -50,7 +50,7 @@ public class Refund extends BaseEntity {
         if (amount == null) {
             throw new IllegalArgumentException(RefundPolicy.AMOUNT_REQUIRED);
         }
-        if (amount <= RefundPolicy.MIN_AMOUNT) {
+        if (amount < RefundPolicy.MIN_AMOUNT) {
             throw new IllegalArgumentException(RefundPolicy.AMOUNT_MIN);
         }
         if (amount > payment.getAmount()) {

@@ -6,8 +6,8 @@ import lombok.experimental.UtilityClass;
 public class PointTransactionPolicy {
 
     // 정책 상수
-    public static final Integer MIN_EARNED_AMOUNT = 0;
-    public static final Integer MIN_USED_AMOUNT = 0;
+    public static final Integer MIN_EARNED_AMOUNT = 1;
+    public static final Integer MIN_USED_AMOUNT = 1;
     public static final Integer REASON_MAX_LENGTH = 100;
 
     // 에러 메시지
