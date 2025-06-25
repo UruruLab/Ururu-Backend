@@ -44,6 +44,9 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     testImplementation 'io.projectreactor:reactor-test'
+
+    // S3 (AWS SDK for Java v2)
+    implementation 'software.amazon.awssdk:s3:2.20.74'
 }
 
 tasks.named('test') {
