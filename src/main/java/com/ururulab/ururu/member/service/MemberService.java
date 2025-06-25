@@ -3,10 +3,7 @@ package com.ururulab.ururu.member.service;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
-import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
-import com.ururulab.ururu.member.domain.dto.response.GetMyProfileResponse;
-import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
-import com.ururulab.ururu.member.domain.dto.response.UpdateMemberResponse;
+import com.ururulab.ururu.member.domain.dto.response.*;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
@@ -87,9 +84,15 @@ public class MemberService {
     }
 
     @Transactional
-    public UpdateMemberResponse updateMember(final Long memberId, final MemberRequest request) {
+    public UpdateMemberResponse updateMemberProfile(final Long memberId, final MemberRequest request) {
         final Member updatedMember = updateProfile(memberId, request);
         return UpdateMemberResponse.from(updatedMember);
+    }
+
+    @Transactional
+    public UpdateMyProfileResponse updateMyProfile(final Long memberId, final MemberRequest request) {
+        final Member updatedMember = updateProfile(memberId, request);
+        return UpdateMyProfileResponse.from(updatedMember);
     }
 
     private Member updateProfile(final Long memberId, final MemberRequest request) {

@@ -5,6 +5,7 @@ import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
 import com.ururulab.ururu.member.domain.dto.response.GetMyProfileResponse;
 import com.ururulab.ururu.member.domain.dto.response.UpdateMemberResponse;
+import com.ururulab.ururu.member.domain.dto.response.UpdateMyProfileResponse;
 import com.ururulab.ururu.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class MemberController {
             @PathVariable final Long memberId,
             @Valid @RequestBody final MemberRequest request
     ) {
-        final UpdateMemberResponse response = memberService.updateMember(memberId, request);
+        final UpdateMemberResponse response = memberService.updateMemberProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponse.success("회원 정보를 수정했습니다.", response)
         );
@@ -46,6 +47,18 @@ public class MemberController {
         final GetMyProfileResponse response = memberService.getMyProfile(memberId);
         return ResponseEntity.ok(
                 ApiResponse.success("내 정보를 조회했습니다", response)
+        );
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UpdateMyProfileResponse>> updateMyProfile(
+            @Valid @RequestBody final MemberRequest request
+    ) {
+        // TODO: JWT 토큰에서 memberId 추출
+        final Long memberId = 1L; // 임시
+        final UpdateMyProfileResponse response = memberService.updateMyProfile(memberId, request);
+        return ResponseEntity.ok(
+                ApiResponse.success("내 정보를 수정했습니다.", response)
         );
     }
 }
