@@ -24,8 +24,10 @@ public class MemberAgreement extends BaseEntity {
     private Member member;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private AgreementType type;
 
+    @Column(nullable = false)
     private boolean agreed;
 
     private LocalDateTime agreeAt;

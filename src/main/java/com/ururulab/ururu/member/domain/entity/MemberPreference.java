@@ -26,6 +26,7 @@ public class MemberPreference extends BaseEntity {
     // @ManyToOne(fetch = FetchType.LAZY)
     // @JoinColumn(name = "seller_id", nullable = false)
     // private Seller seller;
+    @Column(nullable = false)
     private Long sellerId; // 임시로 Long 타입으로 처리
 
     @Column(nullable = false)
@@ -33,12 +34,11 @@ public class MemberPreference extends BaseEntity {
     @Max(value = 5, message = "선호도 레벨은 5 이하여야 합니다")
     private int preferenceLevel; // 1~5
 
+    @Column(nullable = false)
     private int monthlyBudget;
 
-    @Column(length = 50)
-    private String preferredPriceRange;
-
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private PurchaseFrequency purchaseFrequency;
 
     public static MemberPreference of(
@@ -46,7 +46,6 @@ public class MemberPreference extends BaseEntity {
             Long sellerId,
             int preferenceLevel,
             int monthlyBudget,
-            String preferredPriceRange,
             PurchaseFrequency purchaseFrequency
     ) {
         MemberPreference memberPreference = new MemberPreference();
@@ -54,7 +53,6 @@ public class MemberPreference extends BaseEntity {
         memberPreference.sellerId = sellerId;
         memberPreference.preferenceLevel = preferenceLevel;
         memberPreference.monthlyBudget = monthlyBudget;
-        memberPreference.preferredPriceRange = preferredPriceRange;
         memberPreference.purchaseFrequency = purchaseFrequency;
         return memberPreference;
     }

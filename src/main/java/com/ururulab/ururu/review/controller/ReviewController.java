@@ -1,13 +1,12 @@
 package com.ururulab.ururu.review.controller;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +34,7 @@ public class ReviewController {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			LocalDateTime.now(),
+			LocalDate.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL
