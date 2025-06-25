@@ -11,7 +11,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Entity
 @Getter
@@ -52,13 +53,13 @@ public class Payment extends BaseEntity {
     private PaymentStatus status;
 
     @Column(name = "request_at")
-    private LocalDateTime requestAt;
+    private ZonedDateTime requestAt;
 
     @Column(name = "paid_at")
-    private LocalDateTime paidAt;
+    private ZonedDateTime paidAt;
 
     @Column(name = "cancelled_at")
-    private LocalDateTime cancelledAt;
+    private ZonedDateTime cancelledAt;
 
     public static Payment create(
             Member member,
@@ -102,7 +103,7 @@ public class Payment extends BaseEntity {
         payment.amount = amount;
         payment.point = point;
         payment.status = PaymentStatus.PENDING;
-        payment.requestAt = LocalDateTime.now();
+        payment.requestAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
 
         return payment;
     }
@@ -128,7 +129,7 @@ public class Payment extends BaseEntity {
         this.payMethod = payMethod;
     }
 
-    public void markAsPaid(LocalDateTime approvedAt) {
+    public void markAsPaid(ZonedDateTime approvedAt) {
         if (approvedAt == null) {
             throw new IllegalArgumentException(PaymentPolicy.APPROVED_AT_REQUIRED);
         }
@@ -143,7 +144,7 @@ public class Payment extends BaseEntity {
         this.paidAt = approvedAt;
     }
 
-    public void markAsRefunded(LocalDateTime cancelledAt) {
+    public void markAsRefunded(ZonedDateTime cancelledAt) {
         if (cancelledAt == null) {
             throw new IllegalArgumentException(PaymentPolicy.CANCELLED_AT_REQUIRED);
         }
