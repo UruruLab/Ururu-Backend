@@ -2,6 +2,7 @@ package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
+import com.ururulab.ururu.order.domain.policy.OrderHistoryPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,15 +26,15 @@ public class OrderHistory extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus status;
 
-    @Column(length = 255)
+    @Column(length = OrderHistoryPolicy.COMMENT_MAX_LENGTH)
     private String comment;
 
     public static OrderHistory create(Order order, OrderStatus status, String comment) {
         if (order == null) {
-            throw new IllegalArgumentException("주문 정보는 필수입니다.");
+            throw new IllegalArgumentException(OrderHistoryPolicy.ORDER_REQUIRED);
         }
         if (status == null) {
-            throw new IllegalArgumentException("주문 상태는 필수입니다.");
+            throw new IllegalArgumentException(OrderHistoryPolicy.STATUS_REQUIRED);
         }
 
         OrderHistory history = new OrderHistory();
