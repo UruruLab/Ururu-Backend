@@ -21,6 +21,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +76,11 @@ public class ImageService {
 				.contentType(fmt.getMimeType())
 				.build();
 
-		s3Client.putObject(putReq, RequestBody.fromBytes(data));
+		try {
+			s3Client.putObject(putReq, RequestBody.fromBytes(data));
+		} catch (S3Exception e) {
+			throw new InvalidImageFormatException("S3 업로드 실패: " + e.getMessage());
+		}
 
 		URL url = s3Client.utilities()
 				.getUrl(GetUrlRequest.builder().bucket(bucket).key(key).build());
