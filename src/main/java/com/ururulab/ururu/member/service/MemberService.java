@@ -5,6 +5,7 @@ import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
 import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
+import com.ururulab.ururu.member.domain.dto.response.UpdateMemberResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
@@ -80,7 +81,12 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse updateProfile(final Long memberId, final MemberRequest request) {
+    public UpdateMemberResponse updateMember(final Long memberId, final MemberRequest request) {
+        final Member updatedMember = updateProfile(memberId, request);
+        return UpdateMemberResponse.from(updatedMember);
+    }
+
+    private Member updateProfile(final Long memberId, final MemberRequest request) {
         final Member member = findActiveMemberById(memberId);
 
         if (request.nickname() != null && !request.nickname().equals(member.getNickname())) {
@@ -94,7 +100,7 @@ public class MemberService {
         final Member updatedMember = memberRepository.save(member);
         log.info("Member profile updated for ID: {}", memberId);
 
-        return MemberResponse.of(updatedMember);
+        return updatedMember;
     }
 
 
