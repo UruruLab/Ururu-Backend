@@ -32,10 +32,10 @@ public class Payment extends BaseEntity {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "payment_key", length = PaymentPolicy.PAYMENT_KEY_MAX_LENGTH)
+    @Column(length = PaymentPolicy.PAYMENT_KEY_MAX_LENGTH)
     private String paymentKey;
 
-    @Column(name = "total_amount", nullable = false)
+    @Column(nullable = false)
     private Integer totalAmount;
 
     @Column(nullable = false)
@@ -45,20 +45,20 @@ public class Payment extends BaseEntity {
     private Integer point;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "pay_method")
+    @Column
     private PayMethod payMethod;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
 
-    @Column(name = "request_at")
+    @Column
     private ZonedDateTime requestAt;
 
-    @Column(name = "paid_at")
+    @Column
     private ZonedDateTime paidAt;
 
-    @Column(name = "cancelled_at")
+    @Column
     private ZonedDateTime cancelledAt;
 
     public static Payment create(
