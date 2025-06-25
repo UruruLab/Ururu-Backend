@@ -6,9 +6,9 @@ import lombok.experimental.UtilityClass;
 public class PointTransactionPolicy {
 
     // 정책 상수
-    public static final Integer MIN_EARNED_AMOUNT = 1;
-    public static final Integer MIN_USED_AMOUNT = 1;
-    public static final Integer REASON_MAX_LENGTH = 100;
+    public static final int MIN_EARNED_AMOUNT = 1;
+    public static final int MIN_USED_AMOUNT = 1;
+    public static final int REASON_MAX_LENGTH = 100;
 
     // 에러 메시지
     public static final String MEMBER_REQUIRED = "회원 정보는 필수입니다.";
