@@ -14,15 +14,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ReviewImageListener {
 
-	private final ReviewImageService imageService;
+	private final ReviewImageService reviewImageService;
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	@Async("imageUploadExecutor")
 	public void handleReviewCreated(ReviewCreatedEvent event) {
-		// 실제 업로드 + DB 저장
-		// imageService.uploadAndAssociate(
-		// 		event.getReviewId(),
-		// 		event.getImages()
-		// );
+		reviewImageService.uploadImagesAsync(
+				event.getReviewId(),
+				event.getImages()
+		);
 	}
 }

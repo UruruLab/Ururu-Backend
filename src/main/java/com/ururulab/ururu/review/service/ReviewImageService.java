@@ -8,11 +8,14 @@ import java.util.Optional;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.review.domain.entity.Review;
+import com.ururulab.ururu.review.domain.repository.ReviewRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class ReviewImageService {
 
 	private final ImageService imageService;
+	private final ReviewRepository reviewRepository;
 
 	public void validateImages(List<MultipartFile> images) {
 		if (images == null || images.isEmpty()) {
@@ -44,22 +48,24 @@ public class ReviewImageService {
 	}
 
 	@Async("imageUploadExecutor")
+	@Transactional
 	public void uploadImagesAsync(Long reviewId, List<MultipartFile> images) {
 		if (images == null || images.isEmpty()) {
 			return;
 		}
-		images.forEach(file -> {
-			try {
-				String filename = Optional.ofNullable(file.getOriginalFilename())
-						.orElseThrow(() -> new InvalidImageFormatException("파일명이 없습니다."));
-				String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
-				String url = imageService.uploadImage(
-						REVIEWS.getPath(), ext, file
-				);
-				// TODO: 여기서 url과 reviewId를 이용해 DB에 ReviewImage 엔티티 저장
-			} catch (Exception ex) {
-				// TODO: 실패 시 로깅 or 재시도 큐에 넣기
-			}
-		});
+
+		Review review = reviewRepository.findById(reviewId)
+				.orElseThrow(() -> new IllegalArgumentException("review가 존재하지 않습니다."));
+
+		List<String> imageUrls = images.stream()
+				.map(file -> {
+					String filename = Optional.ofNullable(file.getOriginalFilename())
+							.orElseThrow(() -> new InvalidImageFormatException("파일명이 없습니다."));
+					String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+					return imageService.uploadImage(REVIEWS.getPath(), ext, file);
+				})
+				.toList();
+
+		review.addImages(imageUrls);
 	}
 }

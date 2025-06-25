@@ -57,7 +57,7 @@ public class Review extends BaseEntity {
 	@Min(RATING_MIN)
 	@Max(RATING_MAX)
 	@Column(nullable = false)
-	private int rating;
+	private Integer rating;
 
 	@Enumerated(EnumType.STRING)
 	private SkinType skinType;
@@ -75,10 +75,13 @@ public class Review extends BaseEntity {
 	private Boolean isDelete = false;
 
 	@Column(nullable = false)
-	private int likeCount = 0;
+	private Integer likeCount = 0;
 
 	@OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<ReviewTag> reviewTags = new ArrayList<>();
+
+	@OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ReviewImage> reviewImages = new ArrayList<>();
 
 	public static Review ofCreate(
 			Member member,
@@ -109,6 +112,14 @@ public class Review extends BaseEntity {
 	}
 
 	// TODO: CustomException
+	public void addImages(List<String> imageUrls) {
+		for (int i = 0; i < imageUrls.size(); i++) {
+			reviewImages.add(
+					ReviewImage.ofAdd(this, imageUrls.get(i), i)
+			);
+		}
+	}
+
 	private static Member validateMember(Member member) {
 		if (member == null) {
 			throw new IllegalArgumentException("Member는 필수입니다.");
