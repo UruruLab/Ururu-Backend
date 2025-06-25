@@ -1,6 +1,7 @@
 package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
 import jakarta.persistence.*;
@@ -22,13 +23,9 @@ public class Order extends BaseEntity {
     @Column(length = 36)
     private String id;
 
-    // TODO: GroupBuy 엔티티 완성 후 연관관계로 변경
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "groupbuy_id", nullable = false)
-    // private GroupBuy groupBuy;
-
-    @Column(name = "groupbuy_id", nullable = false)
-    private Long groupBuyId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "groupbuy_id", nullable = false)
+    private GroupBuy groupBuy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -60,14 +57,14 @@ public class Order extends BaseEntity {
     private List<OrderHistory> orderHistories = new ArrayList<>();
 
     public static Order create(
-            Long groupBuyId,
+            GroupBuy groupBuy,
             Member member,
             String phone,
             String zonecode,
             String address1,
             String address2
     ) {
-        if (groupBuyId == null) {
+        if (groupBuy == null) {
             throw new IllegalArgumentException("공동구매 ID는 필수입니다.");
         }
         if (member == null) {
@@ -76,7 +73,7 @@ public class Order extends BaseEntity {
 
         Order order = new Order();
         order.id = UUID.randomUUID().toString();
-        order.groupBuyId = groupBuyId;
+        order.groupBuy = groupBuy;
         order.member = member;
         order.status = OrderStatus.ORDERED;
         order.phone = phone;
