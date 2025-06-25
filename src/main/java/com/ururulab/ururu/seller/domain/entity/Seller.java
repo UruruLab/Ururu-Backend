@@ -2,6 +2,7 @@ package com.ururulab.ururu.seller.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationConstants;
+import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationMessages;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,10 +33,10 @@ public class Seller extends BaseEntity {
     @Column(length = SellerValidationConstants.EMAIL_MAX_LENGTH, nullable = false, unique = true)
     private String email;
 
-    @Column(length = 255, nullable = false)
+    @Column(length = 50, nullable = false)
     private String password; // 암호화된 비밀번호
 
-    @Column(length = SellerValidationConstants.PHONE_MAX_LENGTH)
+    @Column(length = SellerValidationConstants.PHONE_MAX_LENGTH, nullable = false)
     private String phone;
 
     @Column(length = SellerValidationConstants.IMAGE_MAX_LENGTH)
@@ -83,21 +84,21 @@ public class Seller extends BaseEntity {
 
     public void updateName(final String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("브랜드명은 필수입니다.");
+            throw new IllegalArgumentException(SellerValidationMessages.NAME_REQUIRED);
         }
         this.name = name.trim();
     }
 
     public void updateBusinessName(final String businessName) {
         if (businessName == null || businessName.trim().isEmpty()) {
-            throw new IllegalArgumentException("사업자명은 필수입니다.");
+            throw new IllegalArgumentException(SellerValidationMessages.BUSINESS_NAME_REQUIRED);
         }
         this.businessName = businessName.trim();
     }
 
     public void updateOwnerName(final String ownerName) {
         if (ownerName == null || ownerName.trim().isEmpty()) {
-            throw new IllegalArgumentException("대표 CEO명은 필수입니다.");
+            throw new IllegalArgumentException(SellerValidationMessages.OWNER_NAME_REQUIRED);
         }
         this.ownerName = ownerName.trim();
     }
@@ -112,7 +113,7 @@ public class Seller extends BaseEntity {
 
     public void updateAddress(final String address1, final String address2) {
         if (address1 == null || address1.trim().isEmpty()) {
-            throw new IllegalArgumentException("주소는 필수입니다.");
+            throw new IllegalArgumentException(SellerValidationMessages.ADDRESS1_REQUIRED);
         }
         this.address1 = address1.trim();
         this.address2 = address2 != null ? address2.trim() : "";
@@ -120,7 +121,7 @@ public class Seller extends BaseEntity {
 
     public void updateMailOrderNumber(final String mailOrderNumber) {
         if (mailOrderNumber == null || mailOrderNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException("통신판매업 신고번호는 필수입니다.");
+            throw new IllegalArgumentException(SellerValidationMessages.MAIL_ORDER_NUMBER_REQUIRED);
         }
         this.mailOrderNumber = mailOrderNumber.trim();
     }
