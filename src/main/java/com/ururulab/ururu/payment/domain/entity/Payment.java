@@ -80,11 +80,18 @@ public class Payment extends BaseEntity {
         if (totalAmount < PaymentPolicy.MIN_AMOUNT) {
             throw new IllegalArgumentException(PaymentPolicy.TOTAL_AMOUNT_MIN);
         }
+        if (totalAmount > PaymentPolicy.MAX_AMOUNT) {
+            throw new IllegalArgumentException(PaymentPolicy.TOTAL_AMOUNT_MAX);
+        }
+
         if (amount == null) {
             throw new IllegalArgumentException(PaymentPolicy.AMOUNT_REQUIRED);
         }
         if (amount < PaymentPolicy.MIN_AMOUNT) {
             throw new IllegalArgumentException(PaymentPolicy.AMOUNT_MIN);
+        }
+        if (amount > PaymentPolicy.MAX_AMOUNT) {
+            throw new IllegalArgumentException(PaymentPolicy.AMOUNT_MAX);
         }
         if (point == null) {
             throw new IllegalArgumentException(PaymentPolicy.POINT_REQUIRED);

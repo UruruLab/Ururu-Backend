@@ -7,6 +7,7 @@ public class PaymentPolicy {
 
     // 정책 상수
     public static final Integer MIN_AMOUNT = 0;
+    public static final Integer MAX_AMOUNT = 100_000_000;
     public static final Integer MIN_POINT = 0;
     public static final Integer PAYMENT_KEY_MAX_LENGTH = 200;
 
@@ -15,8 +16,10 @@ public class PaymentPolicy {
     public static final String ORDER_REQUIRED = "주문 정보는 필수입니다.";
     public static final String TOTAL_AMOUNT_REQUIRED = "총 금액은 필수입니다.";
     public static final String TOTAL_AMOUNT_MIN = "총 금액은 0원 이상이어야 합니다.";
+    public static final String TOTAL_AMOUNT_MAX = "총 금액은 1억 이하만 가능합니다.";
     public static final String AMOUNT_REQUIRED = "결제 금액은 필수입니다.";
     public static final String AMOUNT_MIN = "결제 금액은 0원 이상이어야 합니다.";
+    public static final String AMOUNT_MAX = "결제 금액은 1억 이하만 가능합니다.";
     public static final String POINT_REQUIRED = "포인트는 필수입니다.";
     public static final String POINT_MIN = "포인트는 0 이상이어야 합니다.";
     public static final String AMOUNT_MISMATCH = "총 금액은 결제금액 + 포인트와 일치해야 합니다.";
