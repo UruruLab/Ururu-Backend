@@ -9,6 +9,7 @@ import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
 import com.ururulab.ururu.product.domain.entity.*;
 import com.ururulab.ururu.product.domain.repository.*;
 import com.ururulab.ururu.product.service.validation.ProductValidator;
+import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ public class ProductService {
      * 상품을 등록합니다
      */
     @Transactional
+    //public ProductResponse createProduct(ProductRequest productRequest, Seller seller) {
     public ProductResponse createProduct(ProductRequest productRequest) {
         StopWatch stopWatch = new StopWatch("ProductCreation");
         stopWatch.start("validation");
@@ -53,6 +55,7 @@ public class ProductService {
 
         // 3. 상품 저장
         stopWatch.start("productSave");
+        //Product savedProduct = productRepository.save(productRequest.toEntity(seller));
         Product savedProduct = productRepository.save(productRequest.toEntity());
         stopWatch.stop();
 

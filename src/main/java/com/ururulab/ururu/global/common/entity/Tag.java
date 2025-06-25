@@ -30,7 +30,7 @@ public class Tag extends BaseEntity {
 	@Column(length = 100, nullable = false)
 	private String label;
 
-	@Column(length = 100, nullable = false)
+	@Column(name = "tag_value", length = 100, nullable = false)
 	private String value;
 
 	@Column(nullable = false)
