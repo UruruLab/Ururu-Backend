@@ -3,6 +3,7 @@ package com.ururulab.ururu.member.service;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
+import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
 import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
@@ -73,9 +74,9 @@ public class MemberService {
         return MemberResponse.ofAvailabilityCheck(isAvailable);
     }
 
-    public MemberResponse getMemberProfile(final Long memberId) {
+    public GetMemberResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        return MemberResponse.of(member);
+        return GetMemberResponse.from(member);
     }
 
     @Transactional
