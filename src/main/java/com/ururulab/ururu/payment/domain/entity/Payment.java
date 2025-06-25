@@ -108,6 +108,12 @@ public class Payment extends BaseEntity {
     }
 
     public void updatePaymentInfo(String paymentKey, PayMethod payMethod, Integer paidAmount) {
+        if (this.status == PaymentStatus.PAID) {
+            throw new IllegalStateException(PaymentPolicy.CANNOT_UPDATE_PAID);
+        }
+        if (this.status == PaymentStatus.REFUNDED) {
+            throw new IllegalStateException(PaymentPolicy.CANNOT_UPDATE_REFUNDED);
+        }
         if (paymentKey == null || paymentKey.trim().isEmpty()) {
             throw new IllegalArgumentException(PaymentPolicy.PAYMENT_KEY_REQUIRED);
         }

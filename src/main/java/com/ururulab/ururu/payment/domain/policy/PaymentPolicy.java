@@ -29,4 +29,6 @@ public class PaymentPolicy {
     public static final String CANNOT_FAIL_PAID = "결제 완료된 상태에서는 실패 처리할 수 없습니다.";
     public static final String APPROVED_AT_REQUIRED = "결제 승인 시간은 필수입니다.";
     public static final String CANCELLED_AT_REQUIRED = "취소 시간은 필수입니다.";
+    public static final String CANNOT_UPDATE_PAID = "이미 결제 완료된 상태에서는 정보를 변경할 수 없습니다.";
+    public static final String CANNOT_UPDATE_REFUNDED = "환불된 결제는 정보를 변경할 수 없습니다.";
 }
