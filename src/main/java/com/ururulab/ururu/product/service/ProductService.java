@@ -8,6 +8,7 @@ import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
 import com.ururulab.ururu.product.domain.entity.*;
 import com.ururulab.ururu.product.domain.repository.*;
+import com.ururulab.ururu.product.service.validation.ProductValidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,12 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationMessages.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +28,7 @@ public class ProductService {
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductNoticeRepository productNoticeRepository;
     private final ProductOptionRepository productOptionRepository;
+    private final ProductValidator productValidator;
     //private final ProductOptionImageService productOptionImageService;
 
 
@@ -46,12 +43,12 @@ public class ProductService {
         log.info("Creating product: {}", productRequest.name());
 
         // 1. 요청 데이터 검증
-        validateProductRequest(productRequest);
+        productValidator.validateProductRequest(productRequest);
         stopWatch.stop();
 
         // 2. 카테고리 유효성 검증 (Set 활용 최적화)
         stopWatch.start("categoryValidation");
-        List<Category> categories = validateAndGetCategoriesOptimized(productRequest.categoryIds());
+        List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
         stopWatch.stop();
 
         // 3. 상품 저장
@@ -75,34 +72,6 @@ public class ProductService {
                 savedProduct.getId(), stopWatch.prettyPrint());
 
         return response;
-    }
-
-    /**
-     * 카테고리 유효성 검증
-     */
-    private List<Category> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) {
-            throw new IllegalArgumentException(CATEGORIES_REQUIRED);
-        }
-
-        // Set으로 중복 제거 후 조회
-        Set<Long> uniqueCategoryIds = new LinkedHashSet<>(categoryIds);
-        List<Category> categories = categoryRepository.findAllById(uniqueCategoryIds);
-
-        // 존재 여부 확인
-        Set<Long> foundCategoryIds = categories.stream()
-                .map(Category::getId)
-                .collect(Collectors.toSet());
-
-        Set<Long> missingIds = uniqueCategoryIds.stream()
-                .filter(id -> !foundCategoryIds.contains(id))
-                .collect(Collectors.toSet());
-
-        if (!missingIds.isEmpty()) {
-            throw new IllegalArgumentException("존재하지 않는 카테고리: " + missingIds);
-        }
-
-        return categories;
     }
 
     /**
@@ -155,22 +124,5 @@ public class ProductService {
         ProductNoticeResponse noticeResponse = ProductNoticeResponse.from(savedNotice);
 
         return ProductResponse.from(savedProduct, categoryResponses, optionResponses, noticeResponse);
-    }
-
-    /**
-     * 상품 등록 요청 데이터를 검증합니다
-     */
-    private void validateProductRequest(ProductRequest productRequest) {
-        if (productRequest.categoryIds() == null || productRequest.categoryIds().isEmpty()) {
-            throw new IllegalArgumentException(CATEGORIES_REQUIRED);
-        }
-
-        if (productRequest.productOptions() == null || productRequest.productOptions().isEmpty()) {
-            throw new IllegalArgumentException(PRODUCT_OPTIONS_REQUIRED);
-        }
-
-        if (productRequest.productNotice() == null) {
-            throw new IllegalArgumentException(PRODUCT_NOTICE_REQUIRED);
-        }
     }
 }
