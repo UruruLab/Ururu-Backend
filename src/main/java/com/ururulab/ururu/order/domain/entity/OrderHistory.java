@@ -36,6 +36,9 @@ public class OrderHistory extends BaseEntity {
         if (status == null) {
             throw new IllegalArgumentException(OrderHistoryPolicy.STATUS_REQUIRED);
         }
+        if (comment != null && comment.length() > OrderHistoryPolicy.COMMENT_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderHistoryPolicy.COMMENT_TOO_LONG);
+        }
 
         OrderHistory history = new OrderHistory();
         history.order = order;

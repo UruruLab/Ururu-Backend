@@ -11,4 +11,5 @@ public class OrderHistoryPolicy {
     // 에러 메시지
     public static final String ORDER_REQUIRED = "주문 정보는 필수입니다.";
     public static final String STATUS_REQUIRED = "주문 상태는 필수입니다.";
+    public static final String COMMENT_TOO_LONG = "코멘트는 " + COMMENT_MAX_LENGTH + "자를 초과할 수 없습니다.";
 }
