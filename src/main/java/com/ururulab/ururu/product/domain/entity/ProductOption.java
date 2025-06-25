@@ -23,13 +23,13 @@ public class ProductOption extends BaseEntity {
     private String name;
 
     @Column(nullable = false)
-    private int price;
+    private Integer price;
 
     @Column(nullable = true)
     private String imageUrl;
 
     @Column(nullable = false)
-    private boolean isDeleted = false;
+    private Boolean isDeleted = false;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String fullIngredients; // 전성분
@@ -37,7 +37,7 @@ public class ProductOption extends BaseEntity {
     public static ProductOption of(
             Product product,
             String name,
-            int price,
+            Integer price,
             String imageUrl,
             String fullIngredients
     ){

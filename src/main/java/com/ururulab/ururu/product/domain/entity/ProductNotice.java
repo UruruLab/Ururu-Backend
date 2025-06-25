@@ -44,7 +44,7 @@ public class ProductNotice extends BaseEntity {
     private String countryOfOrigin; //제조국
 
     @Column(nullable = false)
-    private boolean functionalCosmetics; // 기능성 여부
+    private Boolean functionalCosmetics; // 기능성 여부
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String caution; // 사용 시 주의사항
@@ -64,7 +64,7 @@ public class ProductNotice extends BaseEntity {
             String manufacturer,
             String responsibleSeller,
             String countryOfOrigin,
-            boolean functionalCosmetics,
+            Boolean functionalCosmetics,
             String caution,
             String warranty,
             String customerServiceNumber

@@ -2,6 +2,7 @@ package com.ururulab.ururu.product.domain.entity;
 
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,10 +23,9 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //TODO 판매자 JOIN
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "seller_id", nullable = false)
-//    private Seller seller;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private Seller seller;
 
     @Column(nullable = false , length = PRODUCT_NAME_MAX)
     private String name;
@@ -49,13 +49,13 @@ public class Product extends BaseEntity {
     private List<ProductTag> productTags = new ArrayList<>();
 
     public static Product of(
-            //Seller seller,
+            Seller seller,
             String name,
             String description,
             Status status
     ) {
         Product product = new Product();
-        //product.seller = seller;
+        product.seller = seller;
         product.name = name;
         product.description = description;
         product.status = status;

@@ -23,7 +23,7 @@ public record ProductResponse(
                 .toList();
 
         List<ProductOptionResponse> productOptionResponses = product.getProductOptions().stream()
-                .filter(po -> !po.isDeleted())
+                .filter(po -> !po.getIsDeleted())
                 .map(ProductOptionResponse::from)
                 .toList();
 

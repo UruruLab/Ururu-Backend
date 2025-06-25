@@ -7,7 +7,7 @@ import java.time.ZonedDateTime;
 public record ProductOptionResponse(
         Long id,
         String name,
-        int price,
+        Integer price,
         String imageUrl,
         String fullIngredients,
         ZonedDateTime createdAt,

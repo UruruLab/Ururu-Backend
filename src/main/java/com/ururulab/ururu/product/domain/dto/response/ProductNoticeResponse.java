@@ -11,7 +11,7 @@ public record ProductNoticeResponse(
         String manufacturer,
         String responsibleSeller,
         String countryOfOrigin,
-        boolean functionalCosmetics,
+        Boolean functionalCosmetics,
         String caution,
         String warranty,
         String customerServiceNumber
@@ -26,7 +26,7 @@ public record ProductNoticeResponse(
                 productNotice.getManufacturer(),
                 productNotice.getResponsibleSeller(),
                 productNotice.getCountryOfOrigin(),
-                productNotice.isFunctionalCosmetics(),
+                productNotice.getFunctionalCosmetics(),
                 productNotice.getCaution(),
                 productNotice.getWarranty(),
                 productNotice.getCustomerServiceNumber()

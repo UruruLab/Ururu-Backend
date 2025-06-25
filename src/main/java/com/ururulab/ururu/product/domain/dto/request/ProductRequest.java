@@ -2,6 +2,7 @@ package com.ururulab.ururu.product.domain.dto.request;
 
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
+import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -32,8 +33,11 @@ public record ProductRequest(
         @NotNull(message = PRODUCT_NOTICE_REQUIRED)
         ProductNoticeRequest productNotice
 ) {
-    public Product toEntity() {
+    public Product toEntity(
+            Seller seller
+    ) {
         return Product.of(
+                seller,
                 name,
                 description,
                 Status.ACTIVE
