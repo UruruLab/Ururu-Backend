@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "ProductOption")
+@Table(name = "ProductOptions")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProductOption extends BaseEntity {
     @Id

@@ -18,7 +18,7 @@ import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidati
 
 @Entity
 @Getter
-@Table(name = "GroupBuy")
+@Table(name = "GroupBuys")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupBuy extends BaseEntity {
 
