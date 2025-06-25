@@ -42,7 +42,11 @@ public class ReviewImageService {
 					.orElseThrow(() ->
 							new InvalidImageFormatException("파일명이 없거나 확장자를 찾을 수 없습니다.")
 					);
-			String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+			int lastDotIndex = filename.lastIndexOf('.');
+			if (lastDotIndex == filename.length() - 1) {
+				throw new InvalidImageFormatException("파일명이 마침표로 끝납니다: " + filename);
+			}
+			String ext = filename.substring(lastDotIndex + 1).toLowerCase();
 			ImageFormat.fromExtension(ext)
 					.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 확장자: " + ext));
 		});
