@@ -6,8 +6,8 @@ import lombok.experimental.UtilityClass;
 public class RefundPolicy {
 
     // 정책 상수
-    public static final Integer MIN_AMOUNT = 0;
-    public static final Integer REASON_MAX_LENGTH = 255;
+    public static final int MIN_AMOUNT = 0;
+    public static final int REASON_MAX_LENGTH = 255;
 
     // 에러 메시지
     public static final String PAYMENT_REQUIRED = "결제 정보는 필수입니다.";

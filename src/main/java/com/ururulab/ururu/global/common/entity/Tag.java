@@ -31,7 +31,7 @@ public class Tag extends BaseEntity {
 	private String label;
 
 	@Column(length = 100, nullable = false)
-	private String value;
+	private String tagValue;
 
 	@Column(nullable = false)
 	private Integer displayOrder;

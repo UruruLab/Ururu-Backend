@@ -43,12 +43,15 @@ public class Review extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+
+	// TODO: nullable = false 추가
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "member_id", nullable = false)
+	@JoinColumn(name = "member_id")
 	private Member member;
 
+	// TODO: nullable = false 추가
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "product_id", nullable = false)
+	@JoinColumn(name = "product_id")
 	private Product product;
 
 	@Column(nullable = false)
@@ -57,7 +60,7 @@ public class Review extends BaseEntity {
 	@Min(RATING_MIN)
 	@Max(RATING_MAX)
 	@Column(nullable = false)
-	private int rating;
+	private Integer rating;
 
 	@Enumerated(EnumType.STRING)
 	private SkinType skinType;
@@ -75,28 +78,31 @@ public class Review extends BaseEntity {
 	private Boolean isDelete = false;
 
 	@Column(nullable = false)
-	private int likeCount = 0;
+	private Integer likeCount = 0;
 
 	@OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<ReviewTag> reviewTags = new ArrayList<>();
 
+	@OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ReviewImage> reviewImages = new ArrayList<>();
+
 	public static Review ofCreate(
-			Member member,
-			Product product,
+			// Member member,
+			// Product product,
 			Long productOptionId,
 			Integer rating,
 			SkinType skinType,
 			AgeGroup ageGroup,
 			Gender gender,
-			String content,
-			List<Tag> tags
+			String content
+			// List<Tag> tags
 	) {
 		validateRating(rating);
 		validateContent(content);
 
 		Review review = new Review();
-		review.member = validateMember(member);
-		review.product = validateProduct(product);
+		// review.member = validateMember(member);
+		// review.product = validateProduct(product);
 		review.productOptionId = validateProductOptionId(productOptionId);
 		review.rating = rating;
 		review.skinType = skinType;
@@ -104,11 +110,19 @@ public class Review extends BaseEntity {
 		review.gender = gender;
 		review.content = content;
 
-		addReviewTag(review, tags);
+		// addReviewTag(review, tags);
 		return review;
 	}
 
 	// TODO: CustomException
+	public void addImages(List<String> imageUrls) {
+		for (int i = 0; i < imageUrls.size(); i++) {
+			reviewImages.add(
+					ReviewImage.ofAdd(this, imageUrls.get(i), i)
+			);
+		}
+	}
+
 	private static Member validateMember(Member member) {
 		if (member == null) {
 			throw new IllegalArgumentException("Member는 필수입니다.");

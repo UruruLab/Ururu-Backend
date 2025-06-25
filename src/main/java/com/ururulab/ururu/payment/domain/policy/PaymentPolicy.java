@@ -6,10 +6,10 @@ import lombok.experimental.UtilityClass;
 public class PaymentPolicy {
 
     // 정책 상수
-    public static final Integer MIN_AMOUNT = 0;
-    public static final Integer MAX_AMOUNT = 100_000_000;
-    public static final Integer MIN_POINT = 0;
-    public static final Integer PAYMENT_KEY_MAX_LENGTH = 200;
+    public static final int MIN_AMOUNT = 0;
+    public static final int MAX_AMOUNT = 100_000_000;
+    public static final int MIN_POINT = 0;
+    public static final int PAYMENT_KEY_MAX_LENGTH = 200;
 
     // 에러 메시지
     public static final String MEMBER_REQUIRED = "회원 정보는 필수입니다.";

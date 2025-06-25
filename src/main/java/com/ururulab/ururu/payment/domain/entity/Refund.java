@@ -30,7 +30,7 @@ public class Refund extends BaseEntity {
     @Column(nullable = false)
     private Integer amount;
 
-    @Column(name = "refunded_at")
+    @Column
     private LocalDateTime refundedAt;
 
     @Enumerated(EnumType.STRING)
