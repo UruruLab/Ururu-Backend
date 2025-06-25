@@ -62,7 +62,6 @@ public class ReviewImageService {
 				.map(req -> {
 					String filename = Optional.ofNullable(req.originalFilename())
 							.orElseThrow(() -> new IllegalArgumentException("파일명이 없습니다."));
-					String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
 					return imageService.uploadImage(REVIEWS.getPath(), filename, req.data());
 				})
 				.toList();
