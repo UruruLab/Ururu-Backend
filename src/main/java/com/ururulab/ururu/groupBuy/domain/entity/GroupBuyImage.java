@@ -27,19 +27,19 @@ public class GroupBuyImage extends BaseEntity {
     private Integer displayOrder; // 이미지 순서
 
     @Column(nullable = false)
-    private Boolean isDelete; // 삭제 여부
+    private Boolean isDeleted; // 삭제 여부
 
     public static GroupBuyImage of(
             GroupBuy groupBuy,
             String imageUrl,
             Integer displayOrder,
-            Boolean isDelete
+            Boolean isDeleted
     ) {
         GroupBuyImage groupBuyImage = new GroupBuyImage();
         groupBuyImage.groupBuy = groupBuy;
         groupBuyImage.imageUrl = imageUrl;
         groupBuyImage.displayOrder = displayOrder;
-        groupBuyImage.isDelete = isDelete;
+        groupBuyImage.isDeleted = isDeleted;
         return groupBuyImage;
     }
 }
