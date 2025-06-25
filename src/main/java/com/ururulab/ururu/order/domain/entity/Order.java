@@ -2,8 +2,9 @@ package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
-import com.ururulab.ururu.order.domain.entity.enumerated.PaymentStatus;
+import com.ururulab.ururu.order.domain.policy.OrderPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -20,16 +21,12 @@ import java.util.UUID;
 public class Order extends BaseEntity {
 
     @Id
-    @Column(length = 36)
+    @Column(length = OrderPolicy.ID_LENGTH)
     private String id;
 
-    // TODO: GroupBuy 엔티티 완성 후 연관관계로 변경
-    // @ManyToOne(fetch = FetchType.LAZY)
-    // @JoinColumn(name = "groupbuy_id", nullable = false)
-    // private GroupBuy groupBuy;
-
-    @Column(name = "groupbuy_id", nullable = false)
-    private Long groupBuyId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "groupbuy_id", nullable = false)
+    private GroupBuy groupBuy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
@@ -39,23 +36,19 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus status;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus paymentStatus;
-
-    @Column(length = 20, nullable = false)
+    @Column(length = OrderPolicy.PHONE_MAX_LENGTH, nullable = false)
     private String phone;
 
-    @Column(length = 5, nullable = false)
+    @Column(length = OrderPolicy.ZONECODE_MAX_LENGTH, nullable = false)
     private String zonecode;
 
-    @Column(length = 255, nullable = false)
+    @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH, nullable = false)
     private String address1;
 
-    @Column(length = 255)
+    @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH)
     private String address2;
 
-    @Column(length = 50)
+    @Column(length = OrderPolicy.TRACKING_NUMBER_MAX_LENGTH)
     private String trackingNumber;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -65,39 +58,59 @@ public class Order extends BaseEntity {
     private List<OrderHistory> orderHistories = new ArrayList<>();
 
     public static Order create(
-            Long groupBuyId,
+            GroupBuy groupBuy,
             Member member,
             String phone,
             String zonecode,
             String address1,
             String address2
     ) {
-        if (groupBuyId == null) {
-            throw new IllegalArgumentException("공동구매 ID는 필수입니다.");
+        if (groupBuy == null) {
+            throw new IllegalArgumentException(OrderPolicy.GROUPBUY_REQUIRED);
         }
         if (member == null) {
-            throw new IllegalArgumentException("회원 정보는 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.MEMBER_REQUIRED);
+        }
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.PHONE_REQUIRED);
+        }
+        if (phone.length() > OrderPolicy.PHONE_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.PHONE_TOO_LONG);
+        }
+        if (zonecode == null || zonecode.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.ZONECODE_REQUIRED);
+        }
+        if (zonecode.length() > OrderPolicy.ZONECODE_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.ZONECODE_TOO_LONG);
+        }
+        if (address1 == null || address1.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.ADDRESS1_REQUIRED);
+        }
+        if (address1.length() > OrderPolicy.ADDRESS_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.ADDRESS1_TOO_LONG);
+        }
+        if (address2 != null && address2.length() > OrderPolicy.ADDRESS_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.ADDRESS2_TOO_LONG);
         }
 
         Order order = new Order();
         order.id = UUID.randomUUID().toString();
-        order.groupBuyId = groupBuyId;
+        order.groupBuy = groupBuy;
         order.member = member;
         order.status = OrderStatus.ORDERED;
-        order.paymentStatus = PaymentStatus.PENDING;
-        order.phone = phone;
-        order.zonecode = zonecode;
-        order.address1 = address1;
+        order.phone = phone.trim();
+        order.zonecode = zonecode.trim();
+        order.address1 = address1.trim();
         order.address2 = address2;
 
-        order.addOrderHistory(OrderStatus.ORDERED, "주문이 생성되었습니다.");
+        order.addOrderHistory(OrderStatus.ORDERED, OrderPolicy.ORDER_CREATION_MESSAGE);
 
         return order;
     }
 
     public void addOrderItem(OrderItem orderItem) {
         if (orderItem == null) {
-            throw new IllegalArgumentException("주문 아이템은 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.ORDER_ITEM_REQUIRED);
         }
         orderItems.add(orderItem);
         orderItem.assignOrder(this);
@@ -110,16 +123,16 @@ public class Order extends BaseEntity {
 
     public void changeStatus(OrderStatus status, String reason) {
         if (status == null) {
-            throw new IllegalArgumentException("주문 상태는 필수입니다.");
+            throw new IllegalArgumentException(OrderPolicy.STATUS_REQUIRED);
         }
         this.status = status;
         addOrderHistory(status, reason);
     }
 
-    public void changePaymentStatus(PaymentStatus paymentStatus) {
-        if (paymentStatus == null) {
-            throw new IllegalArgumentException("결제 상태는 필수입니다.");
+    public void updateTrackingNumber(String trackingNumber) {
+        if (trackingNumber != null && trackingNumber.length() > OrderPolicy.TRACKING_NUMBER_MAX_LENGTH) {
+            throw new IllegalArgumentException(OrderPolicy.TRACKING_NUMBER_TOO_LONG);
         }
-        this.paymentStatus = paymentStatus;
+        this.trackingNumber = trackingNumber;
     }
 }

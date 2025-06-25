@@ -50,4 +50,24 @@ public class ProductOption extends BaseEntity {
 
         return productOption;
     }
+
+    // 이미지 URL 업데이트 메서드 추가
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    // 이미지 URL 제거 메서드 추가
+    public void removeImageUrl() {
+        this.imageUrl = null;
+    }
+
+    // 소프트 삭제 메서드 (필요시)
+    public void markAsDeleted() {
+        this.isDeleted = true;
+    }
+
+    // 소프트 삭제 복구 메서드 (필요시)
+    public void restore() {
+        this.isDeleted = false;
+    }
 }
