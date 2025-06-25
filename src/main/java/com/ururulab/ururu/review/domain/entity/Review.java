@@ -43,12 +43,15 @@ public class Review extends BaseEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+
+	// TODO: nullable = false 추가
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "member_id", nullable = false)
+	@JoinColumn(name = "member_id")
 	private Member member;
 
+	// TODO: nullable = false 추가
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "product_id", nullable = false)
+	@JoinColumn(name = "product_id")
 	private Product product;
 
 	@Column(nullable = false)
@@ -84,22 +87,22 @@ public class Review extends BaseEntity {
 	private List<ReviewImage> reviewImages = new ArrayList<>();
 
 	public static Review ofCreate(
-			Member member,
-			Product product,
+			// Member member,
+			// Product product,
 			Long productOptionId,
 			Integer rating,
 			SkinType skinType,
 			AgeGroup ageGroup,
 			Gender gender,
-			String content,
-			List<Tag> tags
+			String content
+			// List<Tag> tags
 	) {
 		validateRating(rating);
 		validateContent(content);
 
 		Review review = new Review();
-		review.member = validateMember(member);
-		review.product = validateProduct(product);
+		// review.member = validateMember(member);
+		// review.product = validateProduct(product);
 		review.productOptionId = validateProductOptionId(productOptionId);
 		review.rating = rating;
 		review.skinType = skinType;
@@ -107,7 +110,7 @@ public class Review extends BaseEntity {
 		review.gender = gender;
 		review.content = content;
 
-		addReviewTag(review, tags);
+		// addReviewTag(review, tags);
 		return review;
 	}
 

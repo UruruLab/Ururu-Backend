@@ -1,19 +1,25 @@
 package com.ururulab.ururu.review.service;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ururulab.ururu.global.common.entity.Tag;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.common.repository.TagRepository;
 import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.member.domain.entity.enumerated.Role;
+import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
+import com.ururulab.ururu.review.domain.dto.request.ImageUploadRequest;
 import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
 import com.ururulab.ururu.review.domain.entity.Review;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
@@ -43,29 +49,45 @@ public class ReviewService {
 			Status.ACTIVE
 	);
 
+	private static final Member member = Member.of(
+			"nickname",
+			"email",
+			SocialProvider.KAKAO,
+			"socialId",
+			Gender.MALE,
+			LocalDateTime.now(),
+			"phone",
+			"profileImage",
+			Role.NORMAL
+	);
+
 	@Transactional
-	public void createReview(Long memberId, ReviewRequest request) {
+	public void createReview(Long memberId, ReviewRequest request, List<MultipartFile> imageFiles) {
 
-		Member member = memberRepository.findById(memberId)
-				.orElseThrow(() -> new EntityNotFoundException("Member not found: " + memberId));
+		// Member member = memberRepository.findById(memberId)
+		// 		.orElseThrow(() -> new EntityNotFoundException("Member not found: " + memberId));
 
-		reviewImageService.validateImages(request.imageFiles());
+		reviewImageService.validateImages(imageFiles);
 
 		Review review = reviewRepository.save(
 				Review.ofCreate(
-						member,
-						product,
+						// member,
+						// product,
 						request.productOptionId(),
 						request.rating(),
 						SkinType.from(request.skinType()),
 						AgeGroup.from(request.ageGroup()),
 						Gender.from(request.gender()),
-						request.content(),
-						getTags(request.tags())
+						request.content()
+						// getTags(request.tags())
 				)
 		);
 
-		publisher.publishEvent(new ReviewCreatedEvent(review.getId(), request.imageFiles()));
+		List<ImageUploadRequest> uploads = toImageUploadRequests(review.getId(), imageFiles);
+
+		publisher.publishEvent(
+				new ReviewCreatedEvent(review.getId(), uploads)
+		);
 	}
 
 	private List<Tag> getTags(List<Long> tagIds) {
@@ -75,4 +97,21 @@ public class ReviewService {
 		}
 		return tags;
 	}
+
+	private List<ImageUploadRequest> toImageUploadRequests(Long reviewId, List<MultipartFile> files) {
+		return files.stream()
+				.map(file -> {
+					try {
+						return new ImageUploadRequest(
+								reviewId,
+								file.getOriginalFilename(),
+								file.getBytes()
+						);
+					} catch (IOException e) {
+						throw new RuntimeException("이미지 변환 실패", e);
+					}
+				})
+				.toList();
+	}
+
 }

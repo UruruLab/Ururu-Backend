@@ -2,13 +2,13 @@ package com.ururulab.ururu.review.event;
 
 import java.util.List;
 
-import org.springframework.web.multipart.MultipartFile;
+import com.ururulab.ururu.review.domain.dto.request.ImageUploadRequest;
 
 public class ReviewCreatedEvent {
 	private final Long reviewId;
-	private final List<MultipartFile> images;
+	private final List<ImageUploadRequest> images;
 
-	public ReviewCreatedEvent(Long reviewId, List<MultipartFile> images) {
+	public ReviewCreatedEvent(Long reviewId, List<ImageUploadRequest> images) {
 		this.reviewId = reviewId;
 		this.images = images;
 	}
@@ -17,7 +17,7 @@ public class ReviewCreatedEvent {
 		return reviewId;
 	}
 
-	public List<MultipartFile> getImages() {
+	public List<ImageUploadRequest> getImages() {
 		return images;
 	}
 }

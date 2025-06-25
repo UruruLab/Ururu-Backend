@@ -24,15 +24,27 @@ public enum ImageFormat {
 	}
 
 	private static final Map<String, ImageFormat> EXT_MAP = Stream.of(values())
-			.collect(Collectors.toMap(ImageFormat::getExtension, fmt -> fmt));
+			.collect(Collectors.toMap(
+					ImageFormat::getExtension,
+					fmt -> fmt
+			));
+
 	private static final Map<String, ImageFormat> MIME_MAP = Stream.of(values())
-			.collect(Collectors.toMap(ImageFormat::getMimeType, fmt -> fmt));
+			.collect(Collectors.toMap(
+					ImageFormat::getMimeType,
+					fmt -> fmt,
+					(existing, replacement) -> existing
+			));
 
 	public static Optional<ImageFormat> fromExtension(String ext) {
-		return Optional.ofNullable(ext).map(String::toLowerCase).map(EXT_MAP::get);
+		return Optional.ofNullable(ext)
+				.map(String::toLowerCase)
+				.flatMap(e -> Optional.ofNullable(EXT_MAP.get(e)));
 	}
 
 	public static Optional<ImageFormat> fromMimeType(String mime) {
-		return Optional.ofNullable(mime).map(String::toLowerCase).map(MIME_MAP::get);
+		return Optional.ofNullable(mime)
+				.map(String::toLowerCase)
+				.flatMap(m -> Optional.ofNullable(MIME_MAP.get(m)));
 	}
 }

@@ -1,6 +1,7 @@
 package com.ururulab.ururu.image.service;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -11,7 +12,6 @@ import javax.imageio.ImageIO;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
@@ -31,44 +31,37 @@ public class ImageService {
 	@Value("${cloud.aws.s3.bucket}")
 	private String bucket;
 
-	public String uploadImage(String category, String extension, MultipartFile file) {
+	public String uploadImage(String category, String filename, byte[] data) {
+		String ext = Optional.ofNullable(filename)
+				.filter(name -> name.contains("."))
+				.map(name -> name.substring(name.lastIndexOf('.') + 1).toLowerCase())
+				.orElseThrow(() -> new InvalidImageFormatException(
+						"파일명 또는 확장자가 유효하지 않습니다: " + filename));
+
+		ImageFormat fmt = ImageFormat.fromExtension(ext)
+				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 이미지 확장자: " + ext));
+
+		byte[] safeData = reencodeImage(data, fmt);
+
+		return uploadToS3(category, fmt, safeData);
+	}
+
+	private byte[] reencodeImage(byte[] inputData, ImageFormat fmt) {
 		try {
-			ImageFormat fmt = validateFormat(extension, file);
-			byte[] safeData = decodeAndReEncode(file, fmt);
-			return uploadToS3(category, fmt, safeData);
+			BufferedImage img = ImageIO.read(new ByteArrayInputStream(inputData));
+			if (img == null) {
+				throw new InvalidImageFormatException("이미지 파싱 실패");
+			}
+			BufferedImage clean = new BufferedImage(img.getWidth(), img.getHeight(),
+					BufferedImage.TYPE_INT_RGB);
+			clean.getGraphics().drawImage(img, 0, 0, null);
+
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+				ImageIO.write(clean, fmt.getExtension(), baos);
+				return baos.toByteArray();
+			}
 		} catch (IOException e) {
-			throw new RuntimeException("이미지 업로드 실패", e);
-		}
-	}
-
-	private ImageFormat validateFormat(String extension, MultipartFile file) {
-		ImageFormat extFmt = ImageFormat.fromExtension(extension)
-				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 확장자: " + extension));
-
-		String mime = Optional.ofNullable(file.getContentType())
-				.orElseThrow(() -> new InvalidImageFormatException("MIME 타입 확인 불가"));
-		ImageFormat mimeFmt = ImageFormat.fromMimeType(mime)
-				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 MIME 타입: " + mime));
-
-		if (extFmt != mimeFmt) {
-			throw new InvalidImageFormatException(
-					String.format("확장자(%s)와 MIME(%s) 불일치", extension, mime));
-		}
-		return extFmt;
-	}
-
-	private byte[] decodeAndReEncode(MultipartFile file, ImageFormat fmt) throws IOException {
-		BufferedImage img = ImageIO.read(file.getInputStream());
-		if (img == null) {
-			throw new InvalidImageFormatException("이미지 파싱 실패");
-		}
-		BufferedImage clean = new BufferedImage(img.getWidth(), img.getHeight(),
-				BufferedImage.TYPE_INT_RGB);
-		clean.getGraphics().drawImage(img, 0, 0, null);
-
-		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-			ImageIO.write(clean, fmt.getExtension(), baos);
-			return baos.toByteArray();
+			throw new RuntimeException("이미지 재인코딩 실패", e);
 		}
 	}
 

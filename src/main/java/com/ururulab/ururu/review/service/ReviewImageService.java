@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.review.domain.dto.request.ImageUploadRequest;
 import com.ururulab.ururu.review.domain.entity.Review;
 import com.ururulab.ururu.review.domain.repository.ReviewRepository;
 
@@ -49,7 +50,7 @@ public class ReviewImageService {
 
 	@Async("imageUploadExecutor")
 	@Transactional
-	public void uploadImagesAsync(Long reviewId, List<MultipartFile> images) {
+	public void uploadImagesAsync(Long reviewId, List<ImageUploadRequest> images) {
 		if (images == null || images.isEmpty()) {
 			return;
 		}
@@ -58,11 +59,11 @@ public class ReviewImageService {
 				.orElseThrow(() -> new IllegalArgumentException("review가 존재하지 않습니다."));
 
 		List<String> imageUrls = images.stream()
-				.map(file -> {
-					String filename = Optional.ofNullable(file.getOriginalFilename())
-							.orElseThrow(() -> new InvalidImageFormatException("파일명이 없습니다."));
+				.map(req -> {
+					String filename = Optional.ofNullable(req.originalFilename())
+							.orElseThrow(() -> new IllegalArgumentException("파일명이 없습니다."));
 					String ext = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
-					return imageService.uploadImage(REVIEWS.getPath(), ext, file);
+					return imageService.uploadImage(REVIEWS.getPath(), filename, req.data());
 				})
 				.toList();
 
