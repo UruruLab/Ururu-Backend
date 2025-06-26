@@ -233,9 +233,10 @@ public class MemberController {
 
 
 
-    // JWT에서 memberId 추출하는 헬퍼 메서드
     private Long getCurrentMemberId() {
-        // TODO: JWT 토큰에서 memberId 추출
+        // TODO: 추후 아래와 같은 방식으로 구현 예정
+        // @AuthenticationPrincipal MemberPrincipal principal 파라미터로 받아서 사용
+        // return principal.getMemberId();
         return 1L;
     }
 
