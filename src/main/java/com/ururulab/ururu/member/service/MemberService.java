@@ -3,15 +3,19 @@ package com.ururulab.ururu.member.service;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
-import com.ururulab.ururu.member.domain.dto.response.MemberResponse;
+import com.ururulab.ururu.member.domain.dto.response.*;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
+import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
+import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -20,6 +24,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final BeautyProfileRepository beautyProfileRepository;
+    private final ShippingAddressRepository shippingAddressRepository;
+    private final MemberAgreementRepository memberAgreementRepository;
+
 
     /**
      * 소셜 회원 정보로 새 회원을 생성하거나 기존 회원을 조회합니다.
@@ -63,23 +71,99 @@ public class MemberService {
         return savedMember;
     }
 
-    public MemberResponse checkEmail(final String email) {
-        final boolean isAvailable = memberRepository.isEmailAvailable(email);
-        return MemberResponse.ofAvailabilityCheck(isAvailable);
-    }
-
-    public MemberResponse checkNickname(final String nickname) {
-        final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
-        return MemberResponse.ofAvailabilityCheck(isAvailable);
-    }
-
-    public MemberResponse getMemberProfile(final Long memberId) {
+    public GetMemberResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        return MemberResponse.of(member);
+        return GetMemberResponse.from(member);
+    }
+
+    public GetMyProfileResponse getMyProfile(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+        return GetMyProfileResponse.from(member);
     }
 
     @Transactional
-    public MemberResponse updateProfile(final Long memberId, final MemberRequest request) {
+    public UpdateMemberResponse updateMemberProfile(final Long memberId, final MemberRequest request) {
+        final Member updatedMember = updateProfile(memberId, request);
+        return UpdateMemberResponse.from(updatedMember);
+    }
+
+    @Transactional
+    public UpdateMyProfileResponse updateMyProfile(final Long memberId, final MemberRequest request) {
+        final Member updatedMember = updateProfile(memberId, request);
+        return UpdateMyProfileResponse.from(updatedMember);
+    }
+
+    @Transactional
+    public void uploadProfileImage(final Long memberId, final MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일은 필수입니다.");
+        }
+
+        final Member member = findActiveMemberById(memberId);
+
+        // TODO: 이미지 업로드 서비스 구현 후 실제 업로드 처리
+        final String imageUrl = "https://example.com/profile/" + memberId + ".jpg"; // 임시
+
+        member.updateProfileImage(imageUrl);
+        memberRepository.save(member);
+
+        log.info("Profile image uploaded for member ID: {}", memberId);
+    }
+
+    @Transactional
+    public void deleteProfileImage(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+
+        member.updateProfileImage(null);
+        memberRepository.save(member);
+    }
+
+    public boolean checkNicknameExists(final String nickname) {
+        return memberRepository.existsByNickname(nickname);
+    }
+
+    public GetNicknameAvailabilityResponse getNicknameAvailability(final String nickname) {
+        final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
+        return GetNicknameAvailabilityResponse.of(isAvailable);
+    }
+
+    public boolean checkEmailExists(final String email) {
+        return memberRepository.existsByEmail(email);
+    }
+
+    public GetEmailAvailabilityResponse getEmailAvailability(final String email) {
+        final boolean isAvailable = memberRepository.isEmailAvailable(email);
+        return GetEmailAvailabilityResponse.of(isAvailable);
+    }
+
+    @Transactional
+    public void deleteMember(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+        validateMemberDeletion(memberId);
+        cleanupMemberRelatedData(memberId);
+
+        member.delete();
+        memberRepository.save(member);
+    }
+
+    public GetWithdrawalPreviewResponse getWithdrawalPreview(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+
+        final GetWithdrawalPreviewResponse.MemberInfo memberInfo =
+                GetWithdrawalPreviewResponse.MemberInfo.of(
+                        member.getNickname(),
+                        member.getEmail(),
+                        member.getCreatedAt().toLocalDate().toString(),
+                        member.getProfileImage()
+                );
+
+        final GetWithdrawalPreviewResponse.LossInfo lossInfo = calculateLossInfo(memberId, member);
+        return GetWithdrawalPreviewResponse.of(memberInfo, lossInfo);
+    }
+
+
+
+    private Member updateProfile(final Long memberId, final MemberRequest request) {
         final Member member = findActiveMemberById(memberId);
 
         if (request.nickname() != null && !request.nickname().equals(member.getNickname())) {
@@ -93,7 +177,7 @@ public class MemberService {
         final Member updatedMember = memberRepository.save(member);
         log.info("Member profile updated for ID: {}", memberId);
 
-        return MemberResponse.of(updatedMember);
+        return updatedMember;
     }
 
 
@@ -158,5 +242,98 @@ public class MemberService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("올바른 성별 값이 아닙니다: " + genderString, e);
         }
+    }
+
+    private void validateMemberDeletion(final Long memberId) {
+        // TODO: 실제 Repository 구현 후 주석 해제
+
+        // 1. 활성 주문 확인
+        // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+        // if (activeOrders > 0) {
+        //     throw new IllegalStateException(
+        //         String.format("진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다.", activeOrders)
+        //     );
+        // }
+
+        // 2. 진행 중인 결제 확인
+        // boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
+        // if (hasPendingPayments) {
+        //     throw new IllegalStateException("진행 중인 결제가 있어 탈퇴할 수 없습니다.");
+        // }
+
+        // 3. 환불 진행 중인 건 확인
+        // boolean hasProcessingRefunds = refundRepository.existsProcessingRefundsByMemberId(memberId);
+        // if (hasProcessingRefunds) {
+        //     throw new IllegalStateException("환불 처리 중인 건이 있어 탈퇴할 수 없습니다.");
+        // }
+
+        log.debug("Member deletion validation passed for ID: {}", memberId);
+    }
+
+    private void cleanupMemberRelatedData(final Long memberId) {
+        // TODO: 실제 Repository들이 구현되면 아래 로직 구현
+
+        try {
+            cleanupCart(memberId);
+            shippingAddressRepository.deleteByMemberId(memberId);
+            beautyProfileRepository.deleteByMemberId(memberId);
+            memberAgreementRepository.deleteByMemberId(memberId);
+            handleReviews(memberId);
+
+            log.info("Member related data cleanup completed for ID: {}", memberId);
+
+        } catch (Exception e) {
+            log.error("Error during member data cleanup for ID: {}", memberId, e);
+            throw new RuntimeException("회원 데이터 정리 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    private void cleanupCart(final Long memberId) {
+        // TODO: 구현
+        // Cart cart = cartRepository.findByMemberId(memberId);
+        // if (cart != null) {
+        //     cartItemRepository.deleteByCartId(cart.getId());
+        //     cartRepository.delete(cart);
+        // }
+        log.debug("Cart cleanup completed for member ID: {}", memberId);
+    }
+
+    private void handleReviews(final Long memberId) {
+        // TODO: 구현
+        // reviewRepository.deleteByMemberId(memberId);
+
+        log.debug("Reviews handling completed for member ID: {}", memberId);
+    }
+
+
+    private GetWithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
+        // TODO: 실제 Repository들이 구현되면 아래 주석을 해제하고 실제 데이터 조회
+
+        // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+        int activeOrders = 0; // 임시
+
+        // int reviewCount = reviewRepository.countByMemberIdAndIsDeleteFalse(memberId);
+        int reviewCount = 0; // 임시
+
+        boolean beautyProfileExists = beautyProfileRepository.existsByMemberId(memberId);
+        int shippingAddressesCount = shippingAddressRepository.countByMemberId(memberId);
+        int memberAgreementsCount = memberAgreementRepository.countByMemberId(memberId);
+
+        // int cartItemsCount = cartItemRepository.countByCart_MemberId(memberId);
+        int cartItemsCount = 0; // 임시
+
+        // int pointTransactionsCount = pointTransactionRepository.countByMemberId(memberId);
+        int pointTransactionsCount = 0; // 임시
+
+        return GetWithdrawalPreviewResponse.LossInfo.of(
+                member.getPoint(),
+                activeOrders,
+                reviewCount,
+                beautyProfileExists,
+                shippingAddressesCount,
+                memberAgreementsCount,
+                cartItemsCount,
+                pointTransactionsCount
+        );
     }
 }

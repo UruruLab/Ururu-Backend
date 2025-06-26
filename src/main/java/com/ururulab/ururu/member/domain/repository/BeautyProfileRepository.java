@@ -16,5 +16,6 @@ public interface BeautyProfileRepository extends JpaRepository<BeautyProfile, Lo
 
     @Query("SELECT bp FROM BeautyProfile bp JOIN FETCH bp.member WHERE bp.member.id = :memberId")
     Optional<BeautyProfile> findByMemberIdWithMember(@Param("memberId") Long memberId);
-
+    boolean existsByMemberId(Long memberId);
+    void deleteByMemberId(Long memberId);
 }

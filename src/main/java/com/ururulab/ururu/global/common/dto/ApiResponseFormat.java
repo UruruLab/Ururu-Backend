@@ -11,14 +11,14 @@ import lombok.Getter;
  * @param <T> 응답 데이터 타입
  */
 @Getter
-public final class ApiResponse<T> {
+public final class ApiResponseFormat<T> {
 
     private final boolean success;   // 요청 성공 여부
     private final String message;    // 응답 메시지
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final T data;            // 실제 응답 데이터 (null 가능)
 
-    private ApiResponse(final boolean success, final String message, final T data) {
+    private ApiResponseFormat(final boolean success, final String message, final T data) {
         this.success = success;
         this.message = message;
         this.data = data;
@@ -32,8 +32,8 @@ public final class ApiResponse<T> {
      * @param data 응답 데이터
      * @return 성공 응답
      */
-    public static <T> ApiResponse<T> success(final String message, final T data) {
-        return new ApiResponse<>(true, message, data);
+    public static <T> ApiResponseFormat<T> success(final String message, final T data) {
+        return new ApiResponseFormat<>(true, message, data);
     }
 
     /**
@@ -43,8 +43,8 @@ public final class ApiResponse<T> {
      * @param message 성공 메시지
      * @return 데이터가 없는 성공 응답
      */
-    public static <T> ApiResponse<T> success(final String message) {
-        return new ApiResponse<>(true, message, null);
+    public static <T> ApiResponseFormat<T> success(final String message) {
+        return new ApiResponseFormat<>(true, message, null);
     }
 
     /**
@@ -54,7 +54,7 @@ public final class ApiResponse<T> {
      * @param message 실패 메시지
      * @return 실패 응답
      */
-    public static <T> ApiResponse<T> fail(final String message) {
-        return new ApiResponse<>(false, message, null);
+    public static <T> ApiResponseFormat<T> fail(final String message) {
+        return new ApiResponseFormat<>(false, message, null);
     }
 }
