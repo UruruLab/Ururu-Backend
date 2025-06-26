@@ -1,19 +1,26 @@
 package com.ururulab.ururu.product.controller;
 
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
+import com.ururulab.ururu.product.domain.dto.response.ProductListResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
-import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "상품", description = "상품 관련 API")
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -25,12 +32,32 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest productRequest) {
 
-        //Long sellerId = 1L; // TODO: 실제 인증 시스템과 연동
+        //Long sellerId = 1L; // TODO: 실제 판매자 인증 시스템과 연동
         //ProductResponse productResponse = productService.createProduct(productRequest, sellerId);
 
         ProductResponse productResponse = productService.createProduct(productRequest);
         log.info("Product created successfully with ID: {}", productResponse.id());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(productResponse);
+    }
+
+    @Operation(
+            summary = "상품 목록 조회",
+            description = "활성 상태의 상품 목록을 페이징하여 조회합니다. 카테고리 정보는 포함되지만 옵션과 정보고시는 제외됩니다. " +
+                    "기본값: page=0, size=8, 정렬=생성일시+ID 내림차순"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 목록 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 파라미터"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @GetMapping
+    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<Page<ProductListResponse>>> getProducts(
+            @Parameter(description = "페이지 정보 (page, size, sort 파라미터)", example = "page=0&size=8&sort=createdAt,desc")
+            @PageableDefault(page = 0, size = 10, sort = {"createdAt", "id"}, direction = Sort.Direction.DESC)
+            Pageable pageable
+    ) {
+        Page<ProductListResponse> products = productService.getProducts(pageable);
+        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품 목록 조회가 성공했습니다.", products));
     }
 }

@@ -2,22 +2,23 @@ package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
-import com.ururulab.ururu.product.domain.dto.response.CategoryResponse;
-import com.ururulab.ururu.product.domain.dto.response.ProductNoticeResponse;
-import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
-import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
+import com.ururulab.ururu.product.domain.dto.response.*;
 import com.ururulab.ururu.product.domain.entity.*;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.*;
 import com.ururulab.ururu.product.service.validation.ProductValidator;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import com.ururulab.ururu.seller.domain.entity.Seller;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -127,5 +128,65 @@ public class ProductService {
         ProductNoticeResponse noticeResponse = ProductNoticeResponse.from(savedNotice);
 
         return ProductResponse.from(savedProduct, categoryResponses, optionResponses, noticeResponse);
+    }
+
+    /**
+     * 상품 목록 조회 - GET /products
+     */
+    @Transactional(readOnly = true)
+    public Page<ProductListResponse> getProducts(Pageable pageable) {
+        StopWatch stopWatch = new StopWatch("ProductListRetrieval");
+        stopWatch.start("productQuery");
+
+        log.info("Getting product list - page: {}, size: {}, sort: {}",
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+
+        Page<Product> productPage = productRepository.findByStatusIn(
+                Arrays.asList(Status.ACTIVE, Status.INACTIVE),
+                pageable
+        );
+        List<Product> products = productPage.getContent();
+
+        stopWatch.stop();
+
+        if (products.isEmpty()) {
+            log.info("No products found");
+            return Page.empty(pageable);
+        }
+
+        // 2. 카테고리 정보 배치 조회
+        stopWatch.start("categoryBatchQuery");
+        List<Long> productIds = products.stream()
+                .map(Product::getId)
+                .toList();
+
+        List<ProductCategory> allProductCategories = productCategoryRepository.findByProductIdsWithCategory(productIds);
+
+        Map<Long, List<ProductCategory>> categoriesMap = allProductCategories.stream()
+                .collect(Collectors.groupingBy(pc -> pc.getProduct().getId()));
+
+        stopWatch.stop();
+
+        // 3. 응답 생성 및 Page 변환
+        stopWatch.start("responseCreation");
+        List<ProductListResponse> content = products.stream()
+                .map(product -> {
+                    List<CategoryResponse> categoryResponses = categoriesMap
+                            .getOrDefault(product.getId(), Collections.emptyList())
+                            .stream()
+                            .map(pc -> CategoryResponse.from(pc.getCategory()))
+                            .toList();
+
+                    return ProductListResponse.from(product, categoryResponses);
+                })
+                .toList();
+
+        Page<ProductListResponse> result = new PageImpl<>(content, pageable, productPage.getTotalElements());
+        stopWatch.stop();
+
+        log.info("Product list retrieved successfully - {} products | Performance: {}",
+                content.size(), stopWatch.prettyPrint());
+
+        return result;
     }
 }

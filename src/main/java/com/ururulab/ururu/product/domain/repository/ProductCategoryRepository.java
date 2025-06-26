@@ -1,6 +1,10 @@
 package com.ururulab.ururu.product.domain.repository;
 
+import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductCategory;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +26,10 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
     // 특정 상품의 카테고리 정보와 함께 조회
     @Query("SELECT pc FROM ProductCategory pc JOIN FETCH pc.category WHERE pc.product.id = :productId")
     List<ProductCategory> findByProductIdWithCategory(@Param("productId") Long productId);
+
+    /**
+     * 여러 상품 ID에 대한 카테고리 정보 배치 조회
+     */
+    @Query("SELECT pc FROM ProductCategory pc JOIN FETCH pc.category WHERE pc.product.id IN :productIds")
+    List<ProductCategory> findByProductIdsWithCategory(@Param("productIds") List<Long> productIds);
 }
