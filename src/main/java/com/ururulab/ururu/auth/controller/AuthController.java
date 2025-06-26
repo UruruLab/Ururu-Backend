@@ -114,14 +114,6 @@ public final class AuthController {
         return redirectView;
     }
 
-//    @PostMapping("/logout")
-//    public ResponseEntity<ApiResponse<Void>> logout() {
-//        log.info("Member logout requested");
-//        return ResponseEntity.ok(
-//                ApiResponse.success("로그아웃되었습니다.")
-//        );
-//    }
-
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<AuthStatusResponse>> getAuthStatus(
             @RequestHeader(value = "Authorization", required = false) final String authorization) {
