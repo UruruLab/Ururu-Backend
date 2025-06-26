@@ -49,8 +49,7 @@ public class ReviewImageService {
 	private ImageFormat parseExtension(MultipartFile file) {
 		String filename = Optional.ofNullable(file.getOriginalFilename())
 				.filter(n -> n.contains("."))
-				.orElseThrow(() ->
-						new BusinessException(INVALID_IMAGE_FILENAME));
+				.orElseThrow(() -> new BusinessException(INVALID_IMAGE_FILENAME));
 		int idx = filename.lastIndexOf('.');
 		if (idx == filename.length() - 1) {
 			throw new BusinessException(INVALID_IMAGE_MIME);
@@ -58,10 +57,7 @@ public class ReviewImageService {
 		String ext = filename.substring(idx + 1).toLowerCase();
 		return ImageFormat.fromExtension(ext)
 				.orElseThrow(() ->
-						new BusinessException(
-								IMAGE_FORMAT_MISMATCH,
-								file.getOriginalFilename())
-				);
+						new BusinessException(IMAGE_FORMAT_MISMATCH, file.getOriginalFilename()));
 	}
 
 	private ImageFormat parseMimeType(MultipartFile file) {
@@ -76,10 +72,7 @@ public class ReviewImageService {
 			MultipartFile file
 	) {
 		if (extFmt != mimeFmt) {
-			throw new BusinessException(
-					IMAGE_FORMAT_MISMATCH,
-					file.getOriginalFilename()
-			);
+			throw new BusinessException(IMAGE_FORMAT_MISMATCH, file.getOriginalFilename());
 		}
 	}
 
