@@ -2,15 +2,12 @@ package com.ururulab.ururu.review.domain.dto.request;
 
 import java.util.List;
 
-import org.springframework.web.multipart.MultipartFile;
-
 import com.ururulab.ururu.global.common.entity.enumerated.Gender;
 import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.review.domain.dto.validation.ValidationConstants;
 import com.ururulab.ururu.review.domain.dto.validation.ValidationMessages;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
-import com.ururulab.ururu.review.domain.policy.ReviewImagePolicy;
 import com.ururulab.ururu.review.domain.policy.ReviewPolicy;
 
 import jakarta.validation.constraints.Max;
@@ -43,9 +40,6 @@ public record ReviewRequest(
 		@NotBlank(message = ValidationMessages.CONTENT_REQUIRED)
 		@Size(max = ReviewPolicy.CONTENT_MAX_LENGTH, message = ValidationMessages.CONTENT_SIZE)
 		String content,
-
-		@Size(max = ReviewImagePolicy.MAX_IMAGE_COUNT, message = ValidationMessages.IMAGE_SIZE)
-		List<MultipartFile> imageFiles,
 
 		@Size(min = ValidationConstants.TAGS_MIN_COUNT, message = ValidationMessages.TAGS_MIN)
 		List<@NotNull(message = ValidationMessages.TAG_ID_NOT_NULL) Long> tags

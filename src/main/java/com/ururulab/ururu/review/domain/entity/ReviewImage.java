@@ -37,4 +37,12 @@ public class ReviewImage extends BaseEntity {
 
 	@Column(nullable = false)
 	private Boolean isDelete = false;
+
+	static ReviewImage ofAdd(Review review, String imageUrl, Integer displayOrder) {
+		ReviewImage reviewImage = new ReviewImage();
+		reviewImage.review = review;
+		reviewImage.imageUrl = imageUrl;
+		reviewImage.displayOrder = displayOrder;
+		return reviewImage;
+	}
 }

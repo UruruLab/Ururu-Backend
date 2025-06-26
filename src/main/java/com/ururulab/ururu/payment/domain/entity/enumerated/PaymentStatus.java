@@ -1,4 +1,4 @@
-package com.ururulab.ururu.order.domain.entity.enumerated;
+package com.ururulab.ururu.payment.domain.entity.enumerated;
 
 import com.ururulab.ururu.global.common.entity.enumerated.EnumParser;
 

@@ -1,14 +1,13 @@
 package com.ururulab.ururu.global.common.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.ururulab.ururu.product.domain.entity.ProductTag;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -28,4 +27,8 @@ public class TagCategory extends BaseEntity{
 
 	@Column(nullable = false)
 	private Boolean isActive = true;
+
+	// TagCategory - ProductTag 연관관계 설정 TagCategory 삭제 . ProductTag도 삭제
+	@OneToMany(mappedBy = "tagCategory", cascade = CascadeType.ALL, orphanRemoval = true)
+	private List<ProductTag> productTags = new ArrayList<>();
 }
