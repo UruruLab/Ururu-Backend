@@ -46,10 +46,4 @@ public record SellerResponse(
                 null
         );
     }
-
-    public static SellerResponse ofAvailabilityCheck(boolean isAvailable) {
-        return new SellerResponse(
-                null, null, null, null, null, null, null, null, null, null, null, null, null, isAvailable
-        );
-    }
 }
