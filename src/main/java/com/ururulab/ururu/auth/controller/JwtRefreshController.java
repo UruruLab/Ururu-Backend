@@ -6,10 +6,15 @@ import com.ururulab.ururu.auth.exception.InvalidRefreshTokenException;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.global.common.dto.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -19,7 +24,7 @@ public final class JwtRefreshController {
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<SocialLoginResponse>> refreshToken(
-            @RequestBody RefreshTokenRequest request
+            @Valid @RequestBody RefreshTokenRequest request
     ) {
         String newAccessToken;
         try {
@@ -56,9 +61,14 @@ public final class JwtRefreshController {
             Long memberId = jwtTokenProvider.getMemberId(accessToken);
             jwtRefreshService.logout(memberId, accessToken);
             return ResponseEntity.ok(ApiResponse.success("로그아웃되었습니다."));
-        } catch (Exception e) {
+        } catch (JwtException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
             return ResponseEntity.status(401)
-                    .body(ApiResponse.fail("로그아웃 실패: " + e.getMessage()));
+                    .body(ApiResponse.fail("유효하지 않은 토큰입니다."));
+        } catch (RedisConnectionFailureException e) {
+            log.error("Redis connection failed: {}", e.getMessage());
+            return ResponseEntity.status(500)
+                    .body(ApiResponse.fail("일시적인 서버 오류입니다."));
         }
     }
 }
