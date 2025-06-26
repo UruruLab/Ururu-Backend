@@ -14,7 +14,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.domain.ImageFormat;
-import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.review.domain.dto.request.ImageUploadRequest;
 import com.ururulab.ururu.review.domain.entity.Review;
@@ -34,10 +33,7 @@ public class ReviewImageService {
 			return;
 		}
 		if (images.size() > MAX_IMAGE_COUNT) {
-			throw new BusinessException(
-					ErrorCode.REVIEW_IMAGE_COUNT_EXCEEDED.formatMessage(MAX_IMAGE_COUNT),
-					ErrorCode.REVIEW_IMAGE_COUNT_EXCEEDED
-			);
+			throw new BusinessException(ErrorCode.REVIEW_IMAGE_COUNT_EXCEEDED, MAX_IMAGE_COUNT);
 		}
 		images.forEach(this::validateSingleImage);
 	}
@@ -54,24 +50,26 @@ public class ReviewImageService {
 		String filename = Optional.ofNullable(file.getOriginalFilename())
 				.filter(n -> n.contains("."))
 				.orElseThrow(() ->
-						new InvalidImageFormatException("파일명이 없거나 확장자를 찾을 수 없습니다.")
-				);
+						new BusinessException(ErrorCode.INVALID_IMAGE_FILENAME));
 		int idx = filename.lastIndexOf('.');
 		if (idx == filename.length() - 1) {
-			throw new InvalidImageFormatException("파일명이 마침표로 끝납니다: " + filename);
+			throw new BusinessException(ErrorCode.INVALID_IMAGE_MIME);
 		}
 		String ext = filename.substring(idx + 1).toLowerCase();
 		return ImageFormat.fromExtension(ext)
-				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 확장자: " + ext));
+				.orElseThrow(() ->
+						new BusinessException(
+								ErrorCode.IMAGE_FORMAT_MISMATCH,
+								file.getOriginalFilename()
+						));
 	}
 
 	private ImageFormat parseMimeType(MultipartFile file) {
-		String mime = Optional.ofNullable(file.getContentType())
-				.orElseThrow(() ->
-						new InvalidImageFormatException("MIME 타입을 확인할 수 없습니다.")
-				);
-		return ImageFormat.fromMimeType(mime)
-				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 MIME 타입: " + mime));
+		return Optional.ofNullable(file.getContentType())
+				.flatMap(ImageFormat::fromMimeType)
+				.orElseThrow(() -> new BusinessException(
+						ErrorCode.INVALID_IMAGE_MIME
+				));
 	}
 
 	private void ensureMatchingFormats(
@@ -80,13 +78,9 @@ public class ReviewImageService {
 			MultipartFile file
 	) {
 		if (extFmt != mimeFmt) {
-			throw new InvalidImageFormatException(
-					String.format(
-							"확장자(%s)와 MIME(%s)이 일치하지 않습니다: file=%s",
-							extFmt.getExtension(),
-							mimeFmt.getMimeType(),
-							file.getOriginalFilename()
-					)
+			throw new BusinessException(
+					ErrorCode.IMAGE_FORMAT_MISMATCH,
+					file.getOriginalFilename()
 			);
 		}
 	}
@@ -99,12 +93,13 @@ public class ReviewImageService {
 		}
 
 		Review review = reviewRepository.findById(reviewId)
-				.orElseThrow(() -> new IllegalArgumentException("review가 존재하지 않습니다."));
+				.orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_FILENAME_MISSING));
 
 		List<String> imageUrls = images.stream()
 				.map(req -> {
 					String filename = Optional.ofNullable(req.originalFilename())
-							.orElseThrow(() -> new IllegalArgumentException("파일명이 없습니다."));
+							.orElseThrow(
+									() -> new BusinessException(ErrorCode.IMAGE_FILENAME_MISSING));
 					return imageService.uploadImage(REVIEWS.getPath(), filename, req.data());
 				})
 				.toList();
