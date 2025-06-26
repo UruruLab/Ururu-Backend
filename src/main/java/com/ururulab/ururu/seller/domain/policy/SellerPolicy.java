@@ -33,7 +33,7 @@ public class SellerPolicy {
         if (businessNumber == null || businessNumber.trim().isEmpty()) {
             throw new IllegalArgumentException(SellerValidationMessages.BUSINESS_NUMBER_REQUIRED);
         }
-        if (!businessNumber.matches(SellerValidationPatterns.BUSINESS_NUMBER_PATTERN)) {
+        if (!businessNumber.trim().matches(SellerValidationPatterns.BUSINESS_NUMBER_PATTERN)) {
             throw new IllegalArgumentException(SellerValidationMessages.BUSINESS_NUMBER_PATTERN);
         }
     }
@@ -43,7 +43,7 @@ public class SellerPolicy {
         if (email == null || email.trim().isEmpty()) {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_REQUIRED);
         }
-        if (!email.matches(SellerValidationPatterns.EMAIL_PATTERN)) {
+        if (!email.trim().matches(SellerValidationPatterns.EMAIL_PATTERN)) {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_FORMAT);
         }
     }
@@ -60,7 +60,10 @@ public class SellerPolicy {
 
     // phone 유효성 검증
     public static void validatePhone(String phone) {
-        if (phone == null || !phone.matches(SellerValidationPatterns.PHONE_PATTERN)) {
+        if (phone == null || phone.trim().isEmpty()) {
+            throw new IllegalArgumentException(SellerValidationMessages.PHONE_REQUIRED);
+        }
+        if (!phone.trim().matches(SellerValidationPatterns.PHONE_PATTERN)) {
             throw new IllegalArgumentException(SellerValidationMessages.PHONE_FORMAT);
         }
     }
