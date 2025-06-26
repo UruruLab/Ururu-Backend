@@ -11,4 +11,6 @@ import java.util.List;
 public interface MemberAgreementRepository extends JpaRepository<MemberAgreement, Long> {
     List<MemberAgreement> findByMember(Member member);
     List<MemberAgreement> findByMemberId(Long memberId);
+    int countByMemberId(Long memberId);
+    void deleteByMemberId(Long memberId);
 }
