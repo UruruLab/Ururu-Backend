@@ -2,7 +2,7 @@ package com.ururulab.ururu.seller.domain.entity;
 
 import com.ururulab.ururu.global.common.entity.BaseEntity;
 import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationConstants;
-import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationMessages;
+import com.ururulab.ururu.seller.domain.policy.SellerPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,7 +10,11 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "Seller")
+@Table(name = "sellers", indexes = {
+    @Index(name = "idx_seller_business_number", columnList = "businessNumber", unique = true),
+    @Index(name = "idx_seller_name", columnList = "name", unique = true),
+    @Index(name = "idx_seller_deleted_updated_at", columnList = "isDeleted, updatedAt")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Seller extends BaseEntity {
 
@@ -33,7 +37,7 @@ public class Seller extends BaseEntity {
     @Column(length = SellerValidationConstants.EMAIL_MAX_LENGTH, nullable = false, unique = true)
     private String email;
 
-    @Column(length = 50, nullable = false)
+    @Column(length = SellerValidationConstants.PASSWORD_MAX_LENGTH, nullable = false)
     private String password; // 암호화된 비밀번호
 
     @Column(length = SellerValidationConstants.PHONE_MAX_LENGTH, nullable = false)
@@ -67,43 +71,50 @@ public class Seller extends BaseEntity {
             String address2,
             String mailOrderNumber
     ) {
+        // 도메인 무결성 검증
+        SellerPolicy.validateName(name);
+        SellerPolicy.validateBusinessName(businessName);
+        SellerPolicy.validateOwnerName(ownerName);
+        SellerPolicy.validateBusinessNumber(businessNumber);
+        SellerPolicy.validateEmail(email);
+        SellerPolicy.validatePassword(password);
+        SellerPolicy.validatePhone(phone);
+        SellerPolicy.validateAddress1(address1);
+        SellerPolicy.validateAddress2(address2);
+        SellerPolicy.validateMailOrderNumber(mailOrderNumber);
+
         Seller seller = new Seller();
-        seller.name = name;
-        seller.businessName = businessName;
-        seller.ownerName = ownerName;
-        seller.businessNumber = businessNumber;
-        seller.email = email;
-        seller.password = password;
+        seller.name = name.trim();
+        seller.businessName = businessName.trim();
+        seller.ownerName = ownerName.trim();
+        seller.businessNumber = businessNumber.trim();
+        seller.email = email.trim();
+        seller.password = password; // 암호화는 Service 레이어에서 처리
         seller.phone = phone;
         seller.image = image;
-        seller.address1 = address1;
-        seller.address2 = address2;
-        seller.mailOrderNumber = mailOrderNumber;
+        seller.address1 = address1.trim();
+        seller.address2 = address2 != null ? address2.trim() : "";
+        seller.mailOrderNumber = mailOrderNumber.trim();
         return seller;
     }
 
     public void updateName(final String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException(SellerValidationMessages.NAME_REQUIRED);
-        }
+        SellerPolicy.validateName(name);
         this.name = name.trim();
     }
 
     public void updateBusinessName(final String businessName) {
-        if (businessName == null || businessName.trim().isEmpty()) {
-            throw new IllegalArgumentException(SellerValidationMessages.BUSINESS_NAME_REQUIRED);
-        }
+        SellerPolicy.validateBusinessName(businessName);
         this.businessName = businessName.trim();
     }
 
     public void updateOwnerName(final String ownerName) {
-        if (ownerName == null || ownerName.trim().isEmpty()) {
-            throw new IllegalArgumentException(SellerValidationMessages.OWNER_NAME_REQUIRED);
-        }
+        SellerPolicy.validateOwnerName(ownerName);
         this.ownerName = ownerName.trim();
     }
 
     public void updatePhone(final String phone) {
+        SellerPolicy.validatePhone(phone);
         this.phone = phone;
     }
 
@@ -112,17 +123,14 @@ public class Seller extends BaseEntity {
     }
 
     public void updateAddress(final String address1, final String address2) {
-        if (address1 == null || address1.trim().isEmpty()) {
-            throw new IllegalArgumentException(SellerValidationMessages.ADDRESS1_REQUIRED);
-        }
+        SellerPolicy.validateAddress1(address1);
+        SellerPolicy.validateAddress2(address2);
         this.address1 = address1.trim();
         this.address2 = address2 != null ? address2.trim() : "";
     }
 
     public void updateMailOrderNumber(final String mailOrderNumber) {
-        if (mailOrderNumber == null || mailOrderNumber.trim().isEmpty()) {
-            throw new IllegalArgumentException(SellerValidationMessages.MAIL_ORDER_NUMBER_REQUIRED);
-        }
+        SellerPolicy.validateMailOrderNumber(mailOrderNumber);
         this.mailOrderNumber = mailOrderNumber.trim();
     }
 
