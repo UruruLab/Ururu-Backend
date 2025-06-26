@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.service.ImageService;
@@ -32,8 +34,9 @@ public class ReviewImageService {
 			return;
 		}
 		if (images.size() > MAX_IMAGE_COUNT) {
-			throw new IllegalArgumentException(
-					"이미지는 최대 " + MAX_IMAGE_COUNT + "개까지 첨부할 수 있습니다."
+			throw new BusinessException(
+					ErrorCode.REVIEW_IMAGE_COUNT_EXCEEDED.formatMessage(MAX_IMAGE_COUNT),
+					ErrorCode.REVIEW_IMAGE_COUNT_EXCEEDED
 			);
 		}
 		images.forEach(this::validateSingleImage);

@@ -1,5 +1,7 @@
 package com.ururulab.ururu.review.service;
 
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
@@ -13,6 +15,7 @@ import com.ururulab.ururu.global.domain.entity.Tag;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.domain.repository.TagRepository;
+import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
@@ -92,7 +95,7 @@ public class ReviewService {
 	private List<Tag> getTags(List<Long> tagIds) {
 		List<Tag> tags = tagRepository.findAllById(tagIds);
 		if (tags.size() != tagIds.size()) {
-			throw new IllegalArgumentException("Some tags not found");
+			throw new BusinessException(TAG_NOT_FOUND);
 		}
 		return tags;
 	}
@@ -107,7 +110,7 @@ public class ReviewService {
 								file.getBytes()
 						);
 					} catch (IOException e) {
-						throw new RuntimeException("이미지 변환 실패", e);
+						throw new BusinessException(IMAGE_CONVERSION_FAILED);
 					}
 				})
 				.toList();
