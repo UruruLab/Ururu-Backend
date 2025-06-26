@@ -1,10 +1,17 @@
 package com.ururulab.ururu.global.exception;
 
+import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
+import com.ururulab.ururu.auth.exception.InvalidRefreshTokenException;
+import com.ururulab.ururu.auth.exception.MissingAuthorizationHeaderException;
+import com.ururulab.ururu.auth.exception.RedisConnectionException;
 import com.ururulab.ururu.auth.exception.SocialLoginException;
 import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
 import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
 import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
 import com.ururulab.ururu.global.common.dto.ApiResponse;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SecurityException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -105,6 +112,89 @@ public final class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.fail(exception.getMessage()));
+    }
+
+    /**
+     * JJWT 라이브러리 JWT 토큰 처리 예외 처리.
+     */
+    @ExceptionHandler({
+            io.jsonwebtoken.JwtException.class,
+            ExpiredJwtException.class,
+            MalformedJwtException.class,
+            SecurityException.class
+    })
+    public ResponseEntity<ApiResponse<Void>> handleJjwtException(
+            final RuntimeException exception
+    ) {
+        log.warn("JJWT processing failed: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail("유효하지 않은 토큰입니다."));
+    }
+
+    /**
+     * JWT 토큰 처리 중 발생하는 OAuth2 JWT 예외 처리.
+     */
+    @ExceptionHandler(org.springframework.security.oauth2.jwt.JwtException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOAuth2JwtException(
+            final org.springframework.security.oauth2.jwt.JwtException exception
+    ) {
+        log.warn("OAuth2 JWT processing failed: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail("유효하지 않은 토큰입니다."));
+    }
+
+    /**
+     * JWT 토큰 유효성 검사 실패 예외 처리.
+     */
+    @ExceptionHandler(InvalidJwtTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidJwtToken(
+            final InvalidJwtTokenException exception
+    ) {
+        log.warn("Invalid JWT token: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail("유효하지 않은 토큰입니다."));
+    }
+
+    /**
+     * Refresh 토큰 유효성 검사 실패 예외 처리.
+     */
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRefreshToken(
+            final InvalidRefreshTokenException exception
+    ) {
+        log.warn("Invalid refresh token: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.fail("토큰 갱신 실패: " + exception.getMessage()));
+    }
+
+    /**
+     * Authorization 헤더 누락 예외 처리.
+     */
+    @ExceptionHandler(MissingAuthorizationHeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMissingAuthorizationHeader(
+            final MissingAuthorizationHeaderException exception
+    ) {
+        log.warn("Missing authorization header: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail(exception.getMessage()));
+    }
+
+    /**
+     * Redis 연결 실패 예외 처리.
+     */
+    @ExceptionHandler(RedisConnectionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRedisConnection(
+            final RedisConnectionException exception
+    ) {
+        log.error("Redis connection failed: {}", exception.getMessage(), exception);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.fail("일시적인 서버 오류입니다."));
     }
 
     /**
