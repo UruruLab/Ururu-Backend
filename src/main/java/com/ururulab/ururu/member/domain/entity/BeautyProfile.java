@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "BeautyProfile")
+@Table(name = "beauty_profile")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BeautyProfile extends BaseEntity {
     @Id

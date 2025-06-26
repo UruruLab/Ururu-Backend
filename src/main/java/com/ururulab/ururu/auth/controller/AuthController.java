@@ -6,7 +6,7 @@ import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
-import com.ururulab.ururu.global.common.dto.ApiResponse;
+import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public final class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/social/sessions")
-    public ResponseEntity<ApiResponse<SocialLoginResponse>> socialLogin(
+    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> socialLogin(
             @Valid @RequestBody final SocialLoginRequest request
     ) {
         final SocialLoginService loginService = socialLoginServiceFactory.getService(request.provider());
@@ -52,13 +52,13 @@ public final class AuthController {
                 request.provider(), loginResponse.memberInfo().memberId());
 
         return ResponseEntity.ok(
-                ApiResponse.success("소셜 로그인에 성공했습니다.", loginResponse)
+                ApiResponseFormat.success("소셜 로그인에 성공했습니다.", loginResponse)
         );
     }
 
 
     @GetMapping("/social/providers")
-    public ResponseEntity<ApiResponse<GetSocialProvidersResponse>> getSocialProviders() {
+    public ResponseEntity<ApiResponseFormat<GetSocialProvidersResponse>> getSocialProviders() {
         final List<SocialProviderInfo> providers = Arrays.stream(SocialProvider.values())
                 .map(provider -> SocialProviderInfo.of(
                         provider.name().toLowerCase(),
@@ -71,7 +71,7 @@ public final class AuthController {
         final GetSocialProvidersResponse response = GetSocialProvidersResponse.of(providers);
 
         return ResponseEntity.ok(
-                ApiResponse.success("지원 소셜 로그인 목록을 조회했습니다.", response)
+                ApiResponseFormat.success("지원 소셜 로그인 목록을 조회했습니다.", response)
         );
     }
 
@@ -108,12 +108,12 @@ public final class AuthController {
     }
 
     @GetMapping("/status")
-    public ResponseEntity<ApiResponse<AuthStatusResponse>> getAuthStatus(
+    public ResponseEntity<ApiResponseFormat<AuthStatusResponse>> getAuthStatus(
             @RequestHeader(value = "Authorization", required = false) final String authorization) {
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.ok(
-                    ApiResponse.success("인증되지 않은 상태입니다.",
+                    ApiResponseFormat.success("인증되지 않은 상태입니다.",
                             AuthStatusResponse.unauthenticated())
             );
         }
@@ -128,7 +128,7 @@ public final class AuthController {
         }
 
         return ResponseEntity.ok(
-                ApiResponse.success("인증된 상태입니다.",
+                ApiResponseFormat.success("인증된 상태입니다.",
                         AuthStatusResponse.authenticated(memberId, email, role))
         );
     }

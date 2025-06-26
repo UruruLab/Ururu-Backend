@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "MemberPreference")
+@Table(name = "members_preference")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MemberPreference extends BaseEntity {
     @Id
