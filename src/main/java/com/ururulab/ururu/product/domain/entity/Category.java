@@ -25,10 +25,10 @@ public class Category extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Integer depth;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Integer orderIndex;
 
     @Column(nullable = false, length = 500)
