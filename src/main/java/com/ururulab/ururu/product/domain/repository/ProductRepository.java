@@ -40,4 +40,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.status IN :statuses ORDER BY p.createdAt DESC, p.id DESC")
     Page<Product> findByStatusIn(@Param("statuses") List<Status> statuses, Pageable pageable);
 
+    @Query("""
+    SELECT DISTINCT p FROM Product p 
+    LEFT JOIN FETCH p.productCategories pc 
+    LEFT JOIN FETCH pc.category 
+    LEFT JOIN FETCH p.productOptions po 
+    LEFT JOIN FETCH p.productNotice 
+    WHERE p.id = :productId 
+    AND (po.isDeleted = false OR po.isDeleted IS NULL)
+    ORDER BY po.id
+    """)
+    Optional<Product> findByIdWithAllData(@Param("productId") Long productId);
+
 }

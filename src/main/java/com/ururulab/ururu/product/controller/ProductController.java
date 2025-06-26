@@ -61,4 +61,22 @@ public class ProductController {
         Page<ProductListResponse> products = productService.getProducts(pageable);
         return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품 목록 조회가 성공했습니다.", products));
     }
+
+    @Operation(
+            summary = "상품 상세 조회",
+            description = "특정 상품의 상세 정보를 조회합니다. 카테고리, 옵션, 정보고시를 포함한 모든 데이터를 반환합니다. " +
+                    "삭제된 옵션은 제외하여 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 상세 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 상품 ID"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 상품"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @GetMapping("/{productId}")
+    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> getProduct(@PathVariable Long productId) {
+        ProductResponse product = productService.getProduct(productId);
+        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품 정보를 조회했습니다.", product));
+    }
+
 }

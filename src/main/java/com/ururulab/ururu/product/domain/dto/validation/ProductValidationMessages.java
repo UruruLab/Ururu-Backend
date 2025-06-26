@@ -47,4 +47,7 @@ public class ProductValidationMessages {
     public static final String WARRANTY_SIZE = "품질보증기준은 " + WARRANTY_MAX + "자를 초과할 수 없습니다";
     public static final String CUSTOMER_SERVICE_NUMBER_REQUIRED = "고객센터 번호는 필수입니다";
     public static final String CUSTOMER_SERVICE_NUMBER_SIZE = "고객센터 번호는 " + ProductValidationConstants.CUSTOMER_SERVICE_NUMBER_MAX + "자를 초과할 수 없습니다";
+
+    //TagCategory 관련 메시지
+    public static final String TAG_CATEGORIES_REQUIRED = "태그 카테고리는 최소 1개 이상 선택해야 합니다";
 }

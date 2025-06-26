@@ -26,6 +26,9 @@ public record ProductRequest(
         @NotEmpty(message = CATEGORIES_REQUIRED)
         List<Long> categoryIds,
 
+        @NotEmpty(message = TAG_CATEGORIES_REQUIRED)
+        List<Long> tagCategoryIds,
+
         @NotEmpty(message = PRODUCT_OPTIONS_REQUIRED)
         List<@Valid ProductOptionRequest> productOptions,
 

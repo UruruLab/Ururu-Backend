@@ -11,7 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
-import com.ururulab.ururu.seller.domain.entity.Seller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -226,7 +225,7 @@ public class ProductService {
     }
 
     /**
-     * 상품 목록 조회 - GET /products
+     * 상품 목록 조회
      */
     @Transactional(readOnly = true)
     public Page<ProductListResponse> getProducts(Pageable pageable) {
@@ -236,43 +235,43 @@ public class ProductService {
         log.info("Getting product list - page: {}, size: {}, sort: {}",
                 pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
 
+        // 1. 상품 목록 조회
         Page<Product> productPage = productRepository.findByStatusIn(
                 Arrays.asList(Status.ACTIVE, Status.INACTIVE),
                 pageable
         );
-        List<Product> products = productPage.getContent();
-
         stopWatch.stop();
 
-        if (products.isEmpty()) {
+        if (productPage.isEmpty()) {
             log.info("No products found");
             return Page.empty(pageable);
         }
 
-        // 2. 카테고리 정보 배치 조회
+        // 2. 카테고리 배치 조회 (N+1 해결)
         stopWatch.start("categoryBatchQuery");
+        List<Product> products = productPage.getContent();
         List<Long> productIds = products.stream()
                 .map(Product::getId)
                 .toList();
 
-        List<ProductCategory> allProductCategories = productCategoryRepository.findByProductIdsWithCategory(productIds);
-
-        Map<Long, List<ProductCategory>> categoriesMap = allProductCategories.stream()
-                .collect(Collectors.groupingBy(pc -> pc.getProduct().getId()));
-
+        Map<Long, List<CategoryResponse>> categoriesMap = productCategoryRepository
+                .findByProductIdsWithCategory(productIds).stream()
+                .collect(Collectors.groupingBy(
+                        pc -> pc.getProduct().getId(),               // 상품 ID로 그룹핑
+                        Collectors.mapping(
+                                pc -> CategoryResponse.from(pc.getCategory()), // DTO 변환
+                                Collectors.toList()
+                        )
+                ));
         stopWatch.stop();
 
-        // 3. 응답 생성 및 Page 변환
+        // 3. 응답 생성
         stopWatch.start("responseCreation");
         List<ProductListResponse> content = products.stream()
                 .map(product -> {
-                    List<CategoryResponse> categoryResponses = categoriesMap
-                            .getOrDefault(product.getId(), Collections.emptyList())
-                            .stream()
-                            .map(pc -> CategoryResponse.from(pc.getCategory()))
-                            .toList();
-
-                    return ProductListResponse.from(product, categoryResponses);
+                    List<CategoryResponse> categories = categoriesMap
+                            .getOrDefault(product.getId(), Collections.emptyList());
+                    return ProductListResponse.from(product, categories);
                 })
                 .toList();
 
@@ -284,4 +283,35 @@ public class ProductService {
 
         return result;
     }
+
+    /**
+     * 상품 상세 조회
+     */
+    @Transactional(readOnly = true)
+    public ProductResponse getProduct(Long productId) {
+        log.info("Getting product detail for product ID: {}", productId);
+
+        // 모든 연관 데이터 조회
+        Product product = productRepository.findByIdWithAllData(productId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 상품입니다: " + productId));
+
+        // 이미 FETCH JOIN으로 로딩된 데이터를 바로 사용
+        List<CategoryResponse> categoryResponses = product.getProductCategories().stream()
+                .map(ProductCategory::getCategory)     // Category 추출
+                .map(CategoryResponse::from)           // DTO 변환
+                .toList();
+
+        List<ProductOptionResponse> optionResponses = product.getProductOptions().stream()
+                .filter(option -> !option.getIsDeleted()) // 삭제되지 않은 옵션만
+                .map(ProductOptionResponse::from)      // DTO 변환
+                .toList();
+
+        ProductNoticeResponse noticeResponse = ProductNoticeResponse.from(product.getProductNotice());
+
+        ProductResponse response = ProductResponse.from(product, categoryResponses, optionResponses, noticeResponse);
+
+        log.info("Product detail retrieved successfully for ID: {} (1 query)", productId);
+        return response;
+    }
+
 }
