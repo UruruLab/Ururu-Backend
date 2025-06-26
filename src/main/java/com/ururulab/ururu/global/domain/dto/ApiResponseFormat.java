@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.common.dto;
+package com.ururulab.ururu.global.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;

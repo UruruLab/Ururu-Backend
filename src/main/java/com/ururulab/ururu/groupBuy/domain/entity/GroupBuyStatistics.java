@@ -1,6 +1,6 @@
 package com.ururulab.ururu.groupBuy.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.FinalStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

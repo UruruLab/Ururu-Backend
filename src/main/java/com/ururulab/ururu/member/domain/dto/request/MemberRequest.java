@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.domain.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.ururulab.ururu.global.common.entity.enumerated.Gender;
+import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.member.domain.dto.validation.MemberValidationConstants;
 import com.ururulab.ururu.member.domain.dto.validation.MemberValidationMessages;

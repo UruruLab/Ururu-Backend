@@ -1,6 +1,6 @@
 package com.ururulab.ururu.seller.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationConstants;
 import com.ururulab.ururu.seller.domain.policy.SellerPolicy;
 import jakarta.persistence.*;

@@ -1,6 +1,6 @@
 package com.ururulab.ururu.review.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.product.domain.entity.Product;
 
 import jakarta.persistence.Column;
