@@ -5,7 +5,7 @@ import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.exception.InvalidRefreshTokenException;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
-import com.ururulab.ururu.global.common.dto.ApiResponse;
+import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public final class JwtRefreshController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<SocialLoginResponse>> refreshToken(
+    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request
     ) {
         String newAccessToken;
@@ -31,7 +31,7 @@ public final class JwtRefreshController {
             newAccessToken = jwtRefreshService.refreshAccessToken(request.refreshToken());
         } catch (InvalidRefreshTokenException e) {
             return ResponseEntity.status(401)
-                    .body(ApiResponse.fail("토큰 갱신 실패: " + e.getMessage()));
+                    .body(ApiResponseFormat.fail("토큰 갱신 실패: " + e.getMessage()));
         }
         String refreshToken = request.refreshToken();
         Long expiresIn = jwtTokenProvider.getAccessTokenExpiry();
@@ -45,30 +45,30 @@ public final class JwtRefreshController {
                 expiresIn,
                 SocialLoginResponse.MemberInfo.of(memberId, email, null, null)
         );
-        return ResponseEntity.ok(ApiResponse.success("토큰이 갱신되었습니다.", responseBody));
+        return ResponseEntity.ok(ApiResponseFormat.success("토큰이 갱신되었습니다.", responseBody));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(
+    public ResponseEntity<ApiResponseFormat<Void>> logout(
             @RequestHeader("Authorization") String authorization
     ) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.fail("Authorization 헤더가 필요합니다."));
+                    .body(ApiResponseFormat.fail("Authorization 헤더가 필요합니다."));
         }
         String accessToken = authorization.substring(7);
         try {
             Long memberId = jwtTokenProvider.getMemberId(accessToken);
             jwtRefreshService.logout(memberId, accessToken);
-            return ResponseEntity.ok(ApiResponse.success("로그아웃되었습니다."));
+            return ResponseEntity.ok(ApiResponseFormat.success("로그아웃되었습니다."));
         } catch (JwtException e) {
             log.warn("Invalid JWT token: {}", e.getMessage());
             return ResponseEntity.status(401)
-                    .body(ApiResponse.fail("유효하지 않은 토큰입니다."));
+                    .body(ApiResponseFormat.fail("유효하지 않은 토큰입니다."));
         } catch (RedisConnectionFailureException e) {
             log.error("Redis connection failed: {}", e.getMessage());
             return ResponseEntity.status(500)
-                    .body(ApiResponse.fail("일시적인 서버 오류입니다."));
+                    .body(ApiResponseFormat.fail("일시적인 서버 오류입니다."));
         }
     }
 }
