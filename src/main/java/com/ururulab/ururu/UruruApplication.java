@@ -8,7 +8,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @EnableAsync
 @SpringBootApplication
-@EnableConfigurationProperties(JwtProperties.class)
 public class UruruApplication {
 
 	public static void main(String[] args) {
