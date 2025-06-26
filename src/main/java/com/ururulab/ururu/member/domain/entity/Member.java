@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "Member")
+@Table(name = "members")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends BaseEntity {
 
