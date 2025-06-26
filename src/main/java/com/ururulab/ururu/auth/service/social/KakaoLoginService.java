@@ -14,16 +14,17 @@ import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
 
 /**
  * 카카오 소셜 로그인 서비스.
- *
- * <p>카카오 OAuth 2.0 플로우를 처리하며, 트랜잭션 최적화를 적용했습니다.
- * 외부 API 호출과 데이터베이스 작업을 분리하여 성능을 개선했습니다.</p>
+ * RestClient를 사용한 동기적 HTTP 통신으로 리팩토링됨.
  */
 @Slf4j
 @Service
@@ -31,17 +32,14 @@ import java.util.Map;
 public class KakaoLoginService implements SocialLoginService {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
     private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 10;
     private static final String MASKED_DATA_PLACEHOLDER = "***";
 
     private final KakaoOAuthProperties kakaoOAuthProperties;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
-    private final WebClient webClient;
+    private final RestClient restClient; // WebClient → RestClient 변경
     private final ObjectMapper objectMapper;
-
-    // 트랜잭션 처리를 위한 별도 서비스 의존성 주입
     private final MemberTransactionService memberTransactionService;
 
     @Override
@@ -64,17 +62,17 @@ public class KakaoLoginService implements SocialLoginService {
             log.debug("Requesting access token from Kakao with code: {}",
                     maskSensitiveData(code));
 
-            final String response = webClient.post()
+            // RestClient 동기 호출 (.block() 제거)
+            final String response = restClient.post()
                     .uri(kakaoOAuthProperties.getTokenUri())
-                    .header("Content-Type", CONTENT_TYPE_FORM)
-                    .bodyValue(requestBody)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(requestBody)
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+                    .body(String.class);
 
             return extractAccessTokenFromResponse(response);
 
-        } catch (final Exception e) {
+        } catch (final RestClientException e) { // WebClientException → RestClientException
             log.error("Failed to exchange code for access token", e);
             throw new SocialTokenExchangeException("카카오 액세스 토큰 교환에 실패했습니다.", e);
         }
@@ -89,16 +87,16 @@ public class KakaoLoginService implements SocialLoginService {
         try {
             log.debug("Requesting member info from Kakao");
 
-            final String response = webClient.get()
+            // RestClient 동기 호출 (.block() 제거)
+            final String response = restClient.get()
                     .uri(kakaoOAuthProperties.getUserInfoUri())
-                    .header("Authorization", BEARER_PREFIX + accessToken)
+                    .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
                     .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+                    .body(String.class);
 
             return parseMemberInfoFromResponse(response);
 
-        } catch (final Exception e) {
+        } catch (final RestClientException e) { // WebClientException → RestClientException
             log.error("Failed to retrieve member info from Kakao", e);
             throw new SocialMemberInfoException("카카오 회원 정보 조회에 실패했습니다.", e);
         }
@@ -159,10 +157,8 @@ public class KakaoLoginService implements SocialLoginService {
     private SocialMemberInfo parseMemberInfoFromResponse(final String responseBody) {
         try {
             final JsonNode jsonNode = objectMapper.readTree(responseBody);
-
             @SuppressWarnings("unchecked")
             final Map<String, Object> attributes = objectMapper.convertValue(jsonNode, Map.class);
-
             return SocialMemberInfo.fromKakaoAttributes(attributes);
         } catch (final Exception e) {
             log.error("Failed to parse member info from response");
