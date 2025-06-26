@@ -43,7 +43,8 @@ public class SellerPolicy {
         if (email == null || email.trim().isEmpty()) {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_REQUIRED);
         }
-        if (!email.trim().matches(SellerValidationPatterns.EMAIL_PATTERN)) {
+
+        if (!email.trim().contains("@")) {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_FORMAT);
         }
     }
@@ -72,6 +73,13 @@ public class SellerPolicy {
     public static void validateAddress1(String address1) {
         if (address1 == null || address1.trim().isEmpty()) {
             throw new IllegalArgumentException(SellerValidationMessages.ADDRESS1_REQUIRED);
+        }
+    }
+
+    // address2 유효성 검증
+    public static void validateAddress2(String address2) {
+        if (address2 == null || address2.trim().isEmpty()) {
+            throw new IllegalArgumentException(SellerValidationMessages.ADDRESS2_REQUIRED);
         }
     }
 

@@ -38,6 +38,7 @@ public class SellerValidationMessages {
     public static final String ADDRESS1_SIZE = "주소는 " +
             SellerValidationConstants.ADDRESS_MAX_LENGTH + "자 이하여야 합니다.";
 
+    public static final String ADDRESS2_REQUIRED = "상세 주소는 필수입니다.";
     public static final String ADDRESS2_SIZE = "상세 주소는 " +
             SellerValidationConstants.ADDRESS_MAX_LENGTH + "자 이하여야 합니다.";
 

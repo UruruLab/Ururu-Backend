@@ -44,6 +44,7 @@ public record SellerRequest(
                 message = SellerValidationMessages.PHONE_SIZE)
         @Pattern(regexp = SellerValidationPatterns.PHONE_PATTERN,
                 message = SellerValidationMessages.PHONE_FORMAT)
+        @NotBlank(message = SellerValidationMessages.PHONE_REQUIRED)
         String phone,
 
         String image,
@@ -53,7 +54,7 @@ public record SellerRequest(
                 message = SellerValidationMessages.ADDRESS1_SIZE)
         String address1,
 
-        @NotBlank
+        @NotBlank(message = SellerValidationMessages.ADDRESS2_REQUIRED)
         @Size(max = SellerValidationConstants.ADDRESS_MAX_LENGTH,
                 message = SellerValidationMessages.ADDRESS2_SIZE)
         String address2,

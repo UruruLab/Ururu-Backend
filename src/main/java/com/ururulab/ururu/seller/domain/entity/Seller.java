@@ -10,7 +10,11 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "sellers")
+@Table(name = "sellers", indexes = {
+    @Index(name = "idx_seller_business_number", columnList = "businessNumber", unique = true),
+    @Index(name = "idx_seller_name", columnList = "name", unique = true),
+    @Index(name = "idx_seller_deleted_updated_at", columnList = "isDeleted, updatedAt")
+})
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Seller extends BaseEntity {
 
@@ -76,6 +80,7 @@ public class Seller extends BaseEntity {
         SellerPolicy.validatePassword(password);
         SellerPolicy.validatePhone(phone);
         SellerPolicy.validateAddress1(address1);
+        SellerPolicy.validateAddress2(address2);
         SellerPolicy.validateMailOrderNumber(mailOrderNumber);
 
         Seller seller = new Seller();
@@ -119,6 +124,7 @@ public class Seller extends BaseEntity {
 
     public void updateAddress(final String address1, final String address2) {
         SellerPolicy.validateAddress1(address1);
+        SellerPolicy.validateAddress2(address2);
         this.address1 = address1.trim();
         this.address2 = address2 != null ? address2.trim() : "";
     }
