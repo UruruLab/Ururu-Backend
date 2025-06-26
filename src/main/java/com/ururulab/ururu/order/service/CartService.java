@@ -14,6 +14,7 @@ import com.ururulab.ururu.order.domain.entity.Cart;
 import com.ururulab.ururu.order.domain.entity.CartItem;
 import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.CartItemRepository;
+import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final MemberRepository memberRepository;
+    private final OrderItemRepository orderItemRepository;
 
     /**
      * 장바구니에 아이템을 추가
@@ -52,6 +54,9 @@ public class CartService {
         if (endsAt.isBefore(ZonedDateTime.now(ZoneId.of("Asia/Seoul")))) {
             throw new IllegalStateException("종료된 공구입니다.");
         }
+
+        validatePurchaseLimit(memberId, groupBuyOption, request.quantity());
+
         Cart cart = getOrCreateCart(memberId);
 
         Optional<CartItem> existingItem = cartItemRepository
@@ -117,6 +122,7 @@ public class CartService {
                 .orElseThrow(() -> new IllegalArgumentException("장바구니 아이템을 찾을 수 없습니다."));
 
         if (request.quantityChange() > 0) {
+            validatePurchaseLimit(memberId, cartItem.getGroupBuyOption(), request.quantityChange());
             cartItem.increaseQuantity(request.quantityChange());
         } else {
             cartItem.decreaseQuantity(Math.abs(request.quantityChange()));
@@ -196,6 +202,41 @@ public class CartService {
         } else {
             throw new IllegalArgumentException("지원하지 않는 시간 타입입니다: " +
                     (time != null ? time.getClass().getName() : "null"));
+        }
+    }
+
+    /**
+     * 개인별 구매 수량 제한 검증 (장바구니 추가/수정 시 사용)
+     * 기존 주문 수량 + 장바구니 수량 + 요청 수량이 개인 제한을 초과하는지 확인
+     * 취소/환불된 주문은 제외하고 정상 주문만 집계
+     */
+    private void validatePurchaseLimit(Long memberId, GroupBuyOption groupBuyOption, int requestQuantity) {
+        Integer limitQuantityPerMember = groupBuyOption.getGroupBuy().getLimitQuantityPerMember();
+        if (limitQuantityPerMember == null || limitQuantityPerMember <= 0) {
+            log.debug("개인 구매 제한이 설정되지 않음 - 공구ID: {}", groupBuyOption.getGroupBuy().getId());
+            return; // 제한이 없으면 통과
+        }
+
+        Integer orderedQuantity = orderItemRepository
+                .getTotalOrderedQuantityByMemberAndOption(memberId, groupBuyOption.getId());
+
+        Cart cart = getOrCreateCart(memberId);
+        Integer cartQuantity = cartItemRepository
+                .findByCartAndGroupBuyOption(cart, groupBuyOption)
+                .map(CartItem::getQuantity)
+                .orElse(0);
+
+        int totalQuantity = orderedQuantity + cartQuantity + requestQuantity;
+
+        log.debug("구매 수량 제한 검증 - 회원ID: {}, 옵션ID: {}, 제한: {}, 기존주문: {}, 장바구니: {}, 요청: {}, 총합: {}",
+                memberId, groupBuyOption.getId(), limitQuantityPerMember,
+                orderedQuantity, cartQuantity, requestQuantity, totalQuantity);
+
+        if (totalQuantity > limitQuantityPerMember) {
+            throw new IllegalStateException(
+                    "개인 구매 제한을 초과했습니다. 최대 %d개까지 구매 가능합니다. (기존 주문: %d개, 장바구니: %d개, 추가 요청: %d개)"
+                            .formatted(limitQuantityPerMember, orderedQuantity, cartQuantity, requestQuantity)
+            );
         }
     }
 }
