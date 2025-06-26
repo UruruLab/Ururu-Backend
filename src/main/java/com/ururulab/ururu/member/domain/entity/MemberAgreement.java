@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(name = "MemberAgreement")
+@Table(name = "members_agreement")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MemberAgreement extends BaseEntity {
 
