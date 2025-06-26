@@ -121,6 +121,7 @@ public class Member extends BaseEntity {
 
     public void delete() {
         this.isDeleted = true;
+        this.point = 0;
     }
 
 }

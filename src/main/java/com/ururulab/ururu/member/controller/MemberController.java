@@ -6,11 +6,14 @@ import com.ururulab.ururu.member.domain.dto.response.*;
 import com.ururulab.ururu.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
@@ -40,9 +43,9 @@ public class MemberController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<GetMyProfileResponse>> getMyProfile() {
-        // TODO: JWT 토큰에서 memberId 추출
-        final Long memberId = 1L;
+    public ResponseEntity<ApiResponse<GetMyProfileResponse>> getMyProfile(
+    ) {
+        final Long memberId = getCurrentMemberId();
         final GetMyProfileResponse response = memberService.getMyProfile(memberId);
         return ResponseEntity.ok(
                 ApiResponse.success("내 정보를 조회했습니다", response)
@@ -53,8 +56,7 @@ public class MemberController {
     public ResponseEntity<ApiResponse<UpdateMyProfileResponse>> updateMyProfile(
             @Valid @RequestBody final MemberRequest request
     ) {
-        // TODO: JWT 토큰에서 memberId 추출
-        final Long memberId = 1L; // 임시
+        final Long memberId = getCurrentMemberId(); // 임시
         final UpdateMyProfileResponse response = memberService.updateMyProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponse.success("내 정보를 수정했습니다.", response)
@@ -100,18 +102,82 @@ public class MemberController {
     }
 
     @RequestMapping(value = "/emails/{email}", method = RequestMethod.HEAD)
-    public ResponseEntity<Void> checkEmailExists(@PathVariable final String email) {
+    public ResponseEntity<Void> checkEmailExists(
+            @PathVariable final String email
+    ) {
         final boolean exists = memberService.checkEmailExists(email);
         return exists ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
     }
 
     @GetMapping("/emails/{email}/availability")
     public ResponseEntity<ApiResponse<GetEmailAvailabilityResponse>> getEmailAvailability(
-            @PathVariable final String email) {
+            @PathVariable final String email
+    ) {
         final GetEmailAvailabilityResponse response = memberService.getEmailAvailability(email);
         return ResponseEntity.ok(
                 ApiResponse.success("이메일 사용 가능 여부를 조회했습니다.", response)
         );
+    }
+
+    @DeleteMapping("/{memberId}")
+    @PreAuthorize("hasRole('ADMIN')") // 관리자만 접근 가능 (추후 구현)
+    public ResponseEntity<ApiResponse<Void>> deleteMember(
+            @PathVariable final Long memberId) {
+
+        try {
+            memberService.deleteMember(memberId);
+            return ResponseEntity.ok(
+                    ApiResponse.success("회원 탈퇴가 완료되었습니다.")
+            );
+        } catch (IllegalStateException e) {
+            // 탈퇴 불가능한 상태 (활성 주문 등)
+            log.warn("Member deletion failed due to business rule: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.fail(e.getMessage()));
+        } catch (Exception e) {
+            // 기타 시스템 오류
+            log.error("Unexpected error during member deletion for ID: {}", memberId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.fail("탈퇴 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<ApiResponse<Void>> deleteMyAccount() {
+        final Long memberId = getCurrentMemberId();
+
+        try {
+            memberService.deleteMember(memberId);
+            return ResponseEntity.ok(
+                    ApiResponse.success("탈퇴가 완료되었습니다.")
+            );
+        } catch (IllegalStateException e) {
+            log.warn("Member self-deletion failed for ID {}: {}", memberId, e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.fail(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Unexpected error during self-deletion for member ID: {}", memberId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.fail("탈퇴 처리 중 오류가 발생했습니다."));
+        }
+    }
+
+    @GetMapping("/me/withdrawal/priview")
+    public ResponseEntity<ApiResponse<GetWithdrawalPreviewResponse>> getWithdrawalPreview() {
+        final Long memberId = getCurrentMemberId();
+        final GetWithdrawalPreviewResponse response = memberService.getWithdrawalPreview(memberId);
+        return ResponseEntity.ok(
+                ApiResponse.success("탈퇴 시 손실 정보를 조회했습니다.", response)
+        );
+    }
+
+
+
+
+    // JWT에서 memberId 추출하는 헬퍼 메서드
+    private Long getCurrentMemberId() {
+        // TODO: JWT 토큰에서 memberId 추출
+        return 1L;
     }
 
 }
