@@ -16,7 +16,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "Member")
+@Table(name = "members")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends BaseEntity {
 
@@ -114,4 +114,14 @@ public class Member extends BaseEntity {
     public void updatePhone(final String phone) {
         this.phone = phone;
     }
+
+    public void updateProfileImage(final String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
+        this.point = 0;
+    }
+
 }
