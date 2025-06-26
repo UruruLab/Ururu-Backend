@@ -29,6 +29,7 @@ public class SellerValidationMessages {
     public static final String PASSWORD_REQUIRED = "비밀번호는 필수입니다.";
     public static final String PASSWORD_PATTERN = "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.";
 
+    public static final String PHONE_REQUIRED = "전화번호는 필수입니다.";
     public static final String PHONE_FORMAT = "올바른 전화번호 형식이 아닙니다. (10-11자리 숫자)";
     public static final String PHONE_SIZE = "전화번호는 " +
             SellerValidationConstants.PHONE_MAX_LENGTH + "자 이하여야 합니다.";
@@ -37,6 +38,7 @@ public class SellerValidationMessages {
     public static final String ADDRESS1_SIZE = "주소는 " +
             SellerValidationConstants.ADDRESS_MAX_LENGTH + "자 이하여야 합니다.";
 
+    public static final String ADDRESS2_REQUIRED = "상세 주소는 필수입니다.";
     public static final String ADDRESS2_SIZE = "상세 주소는 " +
             SellerValidationConstants.ADDRESS_MAX_LENGTH + "자 이하여야 합니다.";
 
