@@ -13,7 +13,7 @@ public record UpdateMemberResponse(
         String gender,
         LocalDate birth,
         String phone,
-        @JsonProperty("profile_image") String profileImag,
+        @JsonProperty("profile_image") String profileImage,
         @JsonProperty("updated_at") ZonedDateTime updatedAt
 ) {
     public static UpdateMemberResponse from (final Member member){
