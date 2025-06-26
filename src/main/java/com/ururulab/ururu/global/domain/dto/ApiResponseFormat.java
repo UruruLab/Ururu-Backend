@@ -1,6 +1,8 @@
 package com.ururulab.ururu.global.domain.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
+
 import lombok.Getter;
 
 /**
@@ -45,6 +47,18 @@ public final class ApiResponseFormat<T> {
      */
     public static <T> ApiResponseFormat<T> success(final String message) {
         return new ApiResponseFormat<>(true, message, null);
+    }
+
+    /**
+     * 실패 응답 생성 (코드 및 메시지 지정).
+     * @param code 상태/에러 코드
+     * @param message 실패 메시지
+     */
+    public static <T> ApiResponseFormat<ErrorCode> fail(
+            ErrorCode code,
+            String message
+    ) {
+        return new ApiResponseFormat<>(false, message, code);
     }
 
     /**

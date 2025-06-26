@@ -1,17 +1,20 @@
 package com.ururulab.ururu.global.exception;
 
-import com.ururulab.ururu.auth.exception.SocialLoginException;
-import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
-import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
-import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
-import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.ururulab.ururu.auth.exception.SocialLoginException;
+import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
+import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
+import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 전역 예외 처리기.
@@ -21,6 +24,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public final class GlobalExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponseFormat<ErrorCode>> handleBusiness(final BusinessException ex) {
+        log.warn("Business exception: {}", ex.getMessage(), ex);
+        return ResponseEntity
+                .status(ex.getErrorCode().getStatus())
+                .body(ApiResponseFormat.fail(ex.getErrorCode(), ex.getMessage()));
+    }
 
     /**
      * 지원하지 않는 소셜 제공자 예외 처리.
