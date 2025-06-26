@@ -9,6 +9,7 @@ import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.oauth.KakaoOAuthProperties;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
@@ -38,6 +39,7 @@ public class KakaoLoginService implements SocialLoginService {
     private final KakaoOAuthProperties kakaoOAuthProperties;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
+    private final JwtRefreshService jwtRefreshService;
     private final RestClient restClient; // WebClient → RestClient 변경
     private final ObjectMapper objectMapper;
     private final MemberTransactionService memberTransactionService;
@@ -104,21 +106,15 @@ public class KakaoLoginService implements SocialLoginService {
 
     @Override
     public SocialLoginResponse processLogin(final String code) {
-        if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("인증 코드는 필수입니다.");
-        }
+        String kakaoAccessToken = getAccessToken(code);
+        SocialMemberInfo socialMemberInfo = getMemberInfo(kakaoAccessToken);
+        Member member = memberTransactionService.findOrCreateMember(socialMemberInfo);
 
-        final String accessToken = getAccessToken(code);
-        final SocialMemberInfo socialMemberInfo = getMemberInfo(accessToken);
+        String jwtAccessToken = jwtTokenProvider.generateAccessToken(
+                member.getId(), member.getEmail(), member.getRole().name());
+        String jwtRefreshToken = jwtTokenProvider.generateRefreshToken(member.getId());
 
-        final Member member = memberTransactionService.findOrCreateMember(socialMemberInfo);
-
-        final String jwtAccessToken = jwtTokenProvider.generateAccessToken(
-                member.getId(),
-                member.getEmail(),
-                member.getRole().name()
-        );
-        final String jwtRefreshToken = jwtTokenProvider.generateRefreshToken(member.getId());
+        jwtRefreshService.storeRefreshToken(member.getId(), jwtRefreshToken);
 
         return SocialLoginResponse.of(
                 jwtAccessToken,
