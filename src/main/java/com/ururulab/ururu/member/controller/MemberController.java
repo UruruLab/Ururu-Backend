@@ -2,10 +2,7 @@ package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.common.dto.ApiResponse;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
-import com.ururulab.ururu.member.domain.dto.response.GetMemberResponse;
-import com.ururulab.ururu.member.domain.dto.response.GetMyProfileResponse;
-import com.ururulab.ururu.member.domain.dto.response.UpdateMemberResponse;
-import com.ururulab.ururu.member.domain.dto.response.UpdateMyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.*;
 import com.ururulab.ururu.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +78,24 @@ public class MemberController {
         memberService.deleteProfileImage(memberId);
         return ResponseEntity.ok(
                 ApiResponse.success("프로필 이미지를 삭제했습니다.")
+        );
+    }
+
+    @RequestMapping(value = "/nicknames/{nickname}", method = RequestMethod.HEAD)
+    public ResponseEntity<Void> checkNicknameExists(
+            @PathVariable final String nickname
+    ) {
+        final boolean exists = memberService.checkNicknameExists(nickname);
+        return exists ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/nicknames/{nickname}/availability")
+    public ResponseEntity<ApiResponse<GetNicknameAvailabilityResponse>> getNicknameAvailability(
+            @PathVariable final String nickname
+    ) {
+        final GetNicknameAvailabilityResponse response = memberService.getNicknameAvailability(nickname);
+        return ResponseEntity.ok(
+                ApiResponse.success("닉네임 사용 가능 여부를 조회했습니다.", response)
         );
     }
 }

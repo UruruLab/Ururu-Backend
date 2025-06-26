@@ -64,16 +64,6 @@ public class MemberService {
         return savedMember;
     }
 
-    public MemberResponse checkEmail(final String email) {
-        final boolean isAvailable = memberRepository.isEmailAvailable(email);
-        return MemberResponse.ofAvailabilityCheck(isAvailable);
-    }
-
-    public MemberResponse checkNickname(final String nickname) {
-        final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
-        return MemberResponse.ofAvailabilityCheck(isAvailable);
-    }
-
     public GetMemberResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
         return GetMemberResponse.from(member);
@@ -120,6 +110,25 @@ public class MemberService {
         member.updateProfileImage(null);
         memberRepository.save(member);
     }
+
+    public boolean checkNicknameExists(final String nickname) {
+        return memberRepository.existsByNickname(nickname);
+    }
+
+    public GetNicknameAvailabilityResponse getNicknameAvailability(final String nickname) {
+        final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
+        return GetNicknameAvailabilityResponse.of(isAvailable);
+    }
+
+
+    public MemberResponse checkEmail(final String email) {
+        final boolean isAvailable = memberRepository.isEmailAvailable(email);
+        return MemberResponse.ofAvailabilityCheck(isAvailable);
+    }
+
+
+
+
 
     private Member updateProfile(final Long memberId, final MemberRequest request) {
         final Member member = findActiveMemberById(memberId);
