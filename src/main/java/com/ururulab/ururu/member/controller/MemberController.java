@@ -189,24 +189,13 @@ public class MemberController {
     @DeleteMapping("/{memberId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponseFormat<Void>> deleteMember(
-            @PathVariable final Long memberId) {
+            @PathVariable final Long memberId
+    ) {
+        memberService.deleteMember(memberId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("회원 탈퇴가 완료되었습니다.")
+        );
 
-        try {
-            memberService.deleteMember(memberId);
-            return ResponseEntity.ok(
-                    ApiResponseFormat.success("회원 탈퇴가 완료되었습니다.")
-            );
-        } catch (IllegalStateException e) {
-            // 탈퇴 불가능한 상태 (활성 주문 등)
-            log.warn("Member deletion failed due to business rule: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponseFormat.fail(e.getMessage()));
-        } catch (Exception e) {
-            // 기타 시스템 오류
-            log.error("Unexpected error during member deletion for ID: {}", memberId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponseFormat.fail("탈퇴 처리 중 오류가 발생했습니다."));
-        }
     }
 
     @Operation(summary = "회원 탈퇴", description = "현재 로그인한 회원이 스스로 탈퇴합니다.")
@@ -220,20 +209,10 @@ public class MemberController {
     public ResponseEntity<ApiResponseFormat<Void>> deleteMyAccount() {
         final Long memberId = getCurrentMemberId();
 
-        try {
-            memberService.deleteMember(memberId);
-            return ResponseEntity.ok(
-                    ApiResponseFormat.success("탈퇴가 완료되었습니다.")
-            );
-        } catch (IllegalStateException e) {
-            log.warn("Member self-deletion failed for ID {}: {}", memberId, e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(ApiResponseFormat.fail(e.getMessage()));
-        } catch (Exception e) {
-            log.error("Unexpected error during self-deletion for member ID: {}", memberId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponseFormat.fail("탈퇴 처리 중 오류가 발생했습니다."));
-        }
+        memberService.deleteMember(memberId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("탈퇴가 완료되었습니다.")
+        );
     }
 
     @Operation(summary = "탈퇴 미리보기", description = "회원 탈퇴 시 손실될 정보를 미리 확인합니다.")
