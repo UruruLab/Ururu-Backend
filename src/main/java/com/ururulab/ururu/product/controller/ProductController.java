@@ -17,8 +17,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Tag(name = "상품", description = "상품 관련 API")
 @RestController
@@ -29,16 +33,13 @@ public class ProductController {
 
     private final ProductService productService;
 
-    @PostMapping
-    public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest productRequest) {
-
-        //Long sellerId = 1L; // TODO: 실제 판매자 인증 시스템과 연동
-        //ProductResponse productResponse = productService.createProduct(productRequest, sellerId);
-
-        ProductResponse productResponse = productService.createProduct(productRequest);
-        log.info("Product created successfully with ID: {}", productResponse.id());
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(productResponse);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> createProduct(
+            @RequestPart("product") ProductRequest productRequest,
+            @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
+    ) {
+        ProductResponse response = productService.createProductWithImages(productRequest, optionImages);
+        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품이 등록되었습니다.", response));
     }
 
     @Operation(

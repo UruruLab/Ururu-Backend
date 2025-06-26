@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,43 +32,57 @@ public class ProductService {
     private final ProductNoticeRepository productNoticeRepository;
     private final ProductOptionRepository productOptionRepository;
     private final ProductValidator productValidator;
-    //private final ProductOptionImageService productOptionImageService;
-
+    private final ProductOptionImageService productOptionImageService;
 
     /**
-     * 상품을 등록합니다
+     * 상품 등록 (이미지 없음)
      */
     @Transactional
-    //public ProductResponse createProduct(ProductRequest productRequest, Seller seller) {
     public ProductResponse createProduct(ProductRequest productRequest) {
+        return createProductWithImages(productRequest, null);
+    }
+
+    /**
+     * 상품 등록 (이미지 포함)
+     */
+    @Transactional
+    public ProductResponse createProductWithImages(ProductRequest productRequest, List<MultipartFile> optionImages) {
         StopWatch stopWatch = new StopWatch("ProductCreation");
         stopWatch.start("validation");
 
-        log.info("Creating product: {}", productRequest.name());
+        log.info("Creating product with images: {}", productRequest.name());
 
         // 1. 요청 데이터 검증
         productValidator.validateProductRequest(productRequest);
+        validateImageCount(productRequest.productOptions(), optionImages);
+
+        // 2. 이미지 사전 검증 (업로드 전에 모든 이미지 검증)
+        validateAllImages(optionImages);
         stopWatch.stop();
 
-        // 2. 카테고리 유효성 검증 (Set 활용 최적화)
+        // 3. 카테고리 유효성 검증
         stopWatch.start("categoryValidation");
         List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
         stopWatch.stop();
 
-        // 3. 상품 저장
+        // 4. 상품 저장
         stopWatch.start("productSave");
-        //Product savedProduct = productRepository.save(productRequest.toEntity(seller));
         Product savedProduct = productRepository.save(productRequest.toEntity());
         stopWatch.stop();
 
-        // 4. 배치로 연관 데이터 저장 (재조회 제거)
+        // 5. 배치로 연관 데이터 저장
         stopWatch.start("relatedDataSave");
         saveProductCategoriesBatch(savedProduct, categories);
         List<ProductOption> savedOptions = saveProductOptionsBatch(savedProduct, productRequest.productOptions());
         ProductNotice savedNotice = productNoticeRepository.save(productRequest.productNotice().toEntity(savedProduct));
         stopWatch.stop();
 
-        // 5. 응답 생성 (insert 후 Entity 활용, 추가 쿼리 제거)
+        // 6. 이미지 업로드 및 URL 업데이트 (동기 처리)
+        stopWatch.start("imageUpload");
+        uploadAndUpdateProductOptionImages(savedOptions, optionImages);
+        stopWatch.stop();
+
+        // 7. 응답 생성
         stopWatch.start("responseCreation");
         ProductResponse response = createProductResponseOptimized(savedProduct, categories, savedOptions, savedNotice);
         stopWatch.stop();
@@ -76,6 +91,86 @@ public class ProductService {
                 savedProduct.getId(), stopWatch.prettyPrint());
 
         return response;
+    }
+
+    /**
+     * 이미지 개수 검증
+     */
+    private void validateImageCount(List<ProductOptionRequest> options, List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
+            return; // 이미지가 없어도 OK
+        }
+
+        if (images.size() != options.size()) {
+            throw new IllegalArgumentException(
+                    String.format("옵션 개수(%d)와 이미지 개수(%d)가 일치하지 않습니다.", options.size(), images.size())
+            );
+        }
+    }
+
+    /**
+     * 모든 이미지 사전 검증
+     */
+    private void validateAllImages(List<MultipartFile> optionImages) {
+        if (optionImages == null || optionImages.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < optionImages.size(); i++) {
+            MultipartFile imageFile = optionImages.get(i);
+
+            // 빈 파일은 스킵
+            if (imageFile == null || imageFile.isEmpty()) {
+                continue;
+            }
+
+            try {
+                // 이미지 검증만 수행 (업로드는 하지 않음)
+                productOptionImageService.validateImage(imageFile);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        String.format("옵션 %d번째 이미지가 유효하지 않습니다: %s", i + 1, e.getMessage()), e
+                );
+            }
+        }
+    }
+
+    /**
+     * 상품 옵션 이미지 업로드 및 DB 업데이트
+     */
+    private void uploadAndUpdateProductOptionImages(List<ProductOption> savedOptions, List<MultipartFile> optionImages) {
+        if (optionImages == null || optionImages.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < savedOptions.size() && i < optionImages.size(); i++) {
+            MultipartFile imageFile = optionImages.get(i);
+
+            // 빈 파일은 스킵
+            if (imageFile == null || imageFile.isEmpty()) {
+                continue;
+            }
+
+            ProductOption option = savedOptions.get(i);
+
+            try {
+                // 이미지 업로드 (이미 검증된 이미지)
+                String imageUrl = productOptionImageService.uploadProductOptionImage(imageFile);
+
+                // DB 업데이트
+                option.updateImageUrl(imageUrl);
+                productOptionRepository.save(option);
+
+                log.info("Image uploaded for option ID: {} -> {}", option.getId(), imageUrl);
+
+            } catch (Exception e) {
+                log.error("Failed to upload image for option index {}: {}", i, e.getMessage());
+                // 상품 옵션 이미지 업로드 실패시 전체 트랜잭션 롤백
+                throw new RuntimeException(
+                        String.format("옵션 %d번째 이미지 업로드에 실패했습니다: %s", i + 1, e.getMessage()), e
+                );
+            }
+        }
     }
 
     /**
