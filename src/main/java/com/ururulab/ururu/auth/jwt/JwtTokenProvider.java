@@ -1,5 +1,6 @@
 package com.ururulab.ururu.auth.jwt;
 
+import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID; // jti 생성을 위해 import
+import java.util.UUID;
 
 /**
  * JWT 토큰 생성, 검증, 파싱을 담당하는 컴포넌트.
@@ -48,7 +49,7 @@ public final class JwtTokenProvider {
         try {
             return Long.valueOf(claims.getSubject());
         } catch (NumberFormatException e) {
-            throw new JwtException("Invalid member ID format in token", e);
+            throw new InvalidJwtTokenException("Invalid member ID format in token", e);
         }
     }
 
@@ -80,7 +81,7 @@ public final class JwtTokenProvider {
             return true;
         } catch (final JwtException e) {
             log.debug("JWT parsing failed: {}", e.getMessage());
-            throw e;
+            throw new InvalidJwtTokenException("Failed to parse JWT token", e);
         }
     }
 
