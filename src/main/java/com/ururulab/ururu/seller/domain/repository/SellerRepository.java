@@ -42,7 +42,10 @@ public interface SellerRepository extends JpaRepository<Seller, Long> {
     // === 목록 조회 ===
     List<Seller> findByIsDeletedFalseOrderByUpdatedAtDesc(Pageable pageable);
 
+    // ID로 활성 판매자 조회
+    Optional<Seller> findByIdAndIsDeletedFalse(Long id);
+    
     default Optional<Seller> findActiveSeller(Long sellerId) {
-        return findById(sellerId).filter(seller -> !seller.getIsDeleted());
+        return findByIdAndIsDeletedFalse(sellerId);
     }
 }
