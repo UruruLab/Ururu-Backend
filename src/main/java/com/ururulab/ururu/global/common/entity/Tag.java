@@ -30,8 +30,8 @@ public class Tag extends BaseEntity {
 	@Column(length = 100, nullable = false)
 	private String label;
 
-	@Column(name = "tag_value", length = 100, nullable = false)
-	private String value;
+	@Column(length = 100, nullable = false)
+	private String tagValue;
 
 	@Column(nullable = false)
 	private Integer displayOrder;
