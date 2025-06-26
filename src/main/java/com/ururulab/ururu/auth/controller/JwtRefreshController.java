@@ -1,4 +1,64 @@
 package com.ururulab.ururu.auth.controller;
 
-public class JwtRefreshController {
+import com.ururulab.ururu.auth.dto.request.RefreshTokenRequest;
+import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
+import com.ururulab.ururu.auth.exception.InvalidRefreshTokenException;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
+import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.global.common.dto.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+public final class JwtRefreshController {
+    private final JwtRefreshService jwtRefreshService;
+    private final JwtTokenProvider jwtTokenProvider;
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<SocialLoginResponse>> refreshToken(
+            @RequestBody RefreshTokenRequest request
+    ) {
+        String newAccessToken;
+        try {
+            newAccessToken = jwtRefreshService.refreshAccessToken(request.refreshToken());
+        } catch (InvalidRefreshTokenException e) {
+            return ResponseEntity.status(401)
+                    .body(ApiResponse.fail("토큰 갱신 실패: " + e.getMessage()));
+        }
+        String refreshToken = request.refreshToken();
+        Long expiresIn = jwtTokenProvider.getAccessTokenExpiry();
+        Long memberId = jwtTokenProvider.getMemberId(newAccessToken);
+        String email = jwtTokenProvider.getEmail(newAccessToken);
+        String role = jwtTokenProvider.getRole(newAccessToken);
+
+        SocialLoginResponse responseBody = SocialLoginResponse.of(
+                newAccessToken,
+                refreshToken,
+                expiresIn,
+                SocialLoginResponse.MemberInfo.of(memberId, email, null, null)
+        );
+        return ResponseEntity.ok(ApiResponse.success("토큰이 갱신되었습니다.", responseBody));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader("Authorization") String authorization
+    ) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.fail("Authorization 헤더가 필요합니다."));
+        }
+        String accessToken = authorization.substring(7);
+        try {
+            Long memberId = jwtTokenProvider.getMemberId(accessToken);
+            jwtRefreshService.logout(memberId, accessToken);
+            return ResponseEntity.ok(ApiResponse.success("로그아웃되었습니다."));
+        } catch (Exception e) {
+            return ResponseEntity.status(401)
+                    .body(ApiResponse.fail("로그아웃 실패: " + e.getMessage()));
+        }
+    }
 }
