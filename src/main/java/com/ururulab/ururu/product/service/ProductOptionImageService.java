@@ -106,24 +106,6 @@ public class ProductOptionImageService {
     }
 
     /**
-     * 상품 옵션 이미지 업로드
-     */
-    public String uploadImageFromBytes(String originalFilename, byte[] imageData) {
-        try {
-            String imageUrl = imageService.uploadImage(
-                    PRODUCTS.getPath(),
-                    originalFilename,
-                    imageData
-            );
-            log.info("Product option image uploaded from bytes: {}", imageUrl);
-            return imageUrl;
-        } catch (Exception e) {
-            log.error("Error while uploading product option image from bytes: {}", e.getMessage());
-            throw new RuntimeException("상품 옵션 이미지 업로드 중 오류가 발생했습니다.", e);
-        }
-    }
-
-    /**
      * 비동기 이미지 업로드 및 DB 업데이트
      */
     @Async("imageUploadExecutor")
