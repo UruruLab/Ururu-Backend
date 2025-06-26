@@ -221,7 +221,7 @@ public class MemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
-    @GetMapping("/me/withdrawal/priview")
+    @GetMapping("/me/withdrawal/preview")
     public ResponseEntity<ApiResponseFormat<GetWithdrawalPreviewResponse>> getWithdrawalPreview() {
         final Long memberId = getCurrentMemberId();
         final GetWithdrawalPreviewResponse response = memberService.getWithdrawalPreview(memberId);
