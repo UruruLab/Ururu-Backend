@@ -114,4 +114,13 @@ public class Member extends BaseEntity {
     public void updatePhone(final String phone) {
         this.phone = phone;
     }
+
+    public void updateProfileImage(final String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
+    }
+
 }

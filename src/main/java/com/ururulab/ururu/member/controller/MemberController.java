@@ -9,8 +9,10 @@ import com.ururulab.ururu.member.domain.dto.response.UpdateMyProfileResponse;
 import com.ururulab.ururu.member.service.MemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/members")
@@ -59,6 +61,26 @@ public class MemberController {
         final UpdateMyProfileResponse response = memberService.updateMyProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponse.success("내 정보를 수정했습니다.", response)
+        );
+    }
+
+    @PostMapping("/{memberId}/profile-images")
+    public ResponseEntity<ApiResponse<Void>> uploadProfileImage(
+            @PathVariable final Long memberId,
+            @RequestParam("imageFile") final MultipartFile imageFile
+    ) {
+        memberService.uploadProfileImage(memberId, imageFile);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("프로필 이미지를 업로드했습니다."));
+    }
+
+    @DeleteMapping("/{memberId}/profile-images")
+    public ResponseEntity<ApiResponse<Void>> deleteProfileImage(
+            @PathVariable final Long memberId
+    ) {
+        memberService.deleteProfileImage(memberId);
+        return ResponseEntity.ok(
+                ApiResponse.success("프로필 이미지를 삭제했습니다.")
         );
     }
 }

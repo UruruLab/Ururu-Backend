@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -93,6 +94,31 @@ public class MemberService {
     public UpdateMyProfileResponse updateMyProfile(final Long memberId, final MemberRequest request) {
         final Member updatedMember = updateProfile(memberId, request);
         return UpdateMyProfileResponse.from(updatedMember);
+    }
+
+    @Transactional
+    public void uploadProfileImage(final Long memberId, final MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty()) {
+            throw new IllegalArgumentException("이미지 파일은 필수입니다.");
+        }
+
+        final Member member = findActiveMemberById(memberId);
+
+        // TODO: 이미지 업로드 서비스 구현 후 실제 업로드 처리
+        final String imageUrl = "https://example.com/profile/" + memberId + ".jpg"; // 임시
+
+        member.updateProfileImage(imageUrl);
+        memberRepository.save(member);
+
+        log.info("Profile image uploaded for member ID: {}", memberId);
+    }
+
+    @Transactional
+    public void deleteProfileImage(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+
+        member.updateProfileImage(null);
+        memberRepository.save(member);
     }
 
     private Member updateProfile(final Long memberId, final MemberRequest request) {
