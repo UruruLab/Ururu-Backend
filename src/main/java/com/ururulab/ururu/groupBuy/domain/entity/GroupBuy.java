@@ -55,9 +55,11 @@ public class GroupBuy extends BaseEntity {
     @Column(nullable = false)
     private GroupBuyStatus status; // 공동구매 상태
 
+    //TODO zonedDateTime으로 수정
     @Column(nullable = false)
     private LocalDateTime startAt; // 공동구매 시작일
 
+    //TODO zonedDateTime으로 수정
     @Column(nullable = false)
     private LocalDateTime endsAt; // 공동구매 종료일
 
