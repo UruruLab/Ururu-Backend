@@ -123,7 +123,7 @@ public class ProductService {
                 ));
             } catch (IOException e) {
                 log.error("Failed to read image file for option: {}", option.getId(), e);
-                throw new RuntimeException("이미지 파일 읽기 실패", e);
+                throw new RuntimeException("이미지 파일 읽기 실패" + e.getMessage(), e);
             }
         }
 

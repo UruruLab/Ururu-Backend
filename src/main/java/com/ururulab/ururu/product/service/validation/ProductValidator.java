@@ -77,13 +77,13 @@ public class ProductValidator {
      */
     public List<TagCategory> validateAndGetTagCategories(List<Long> tagCategoryIds) {
         if (tagCategoryIds == null || tagCategoryIds.isEmpty()) {
-            throw new IllegalArgumentException("태그 카테고리는 최소 1개 이상 선택해야 합니다");
+            throw new IllegalArgumentException(TAG_CATEGORIES_REQUIRED);
         }
 
         // 1. 중복 제거
         List<Long> uniqueIds = tagCategoryIds.stream().distinct().toList();
         if (uniqueIds.size() != tagCategoryIds.size()) {
-            throw new IllegalArgumentException("중복된 태그 카테고리가 있습니다");
+            throw new IllegalArgumentException(TAG_CATEGORIES_DUPLICATE);
         }
 
         // 2. 배치 조회
@@ -91,7 +91,7 @@ public class ProductValidator {
 
         // 3. 존재 여부 확인
         if (tagCategories.size() != uniqueIds.size()) {
-            throw new IllegalArgumentException("존재하지 않는 태그 카테고리가 있습니다");
+            throw new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST);
         }
 
         // 4. 활성화 상태 확인 - 스트림 최적화

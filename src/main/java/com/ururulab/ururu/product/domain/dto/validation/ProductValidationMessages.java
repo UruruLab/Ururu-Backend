@@ -50,4 +50,6 @@ public class ProductValidationMessages {
 
     //TagCategory 관련 메시지
     public static final String TAG_CATEGORIES_REQUIRED = "태그 카테고리는 최소 1개 이상 선택해야 합니다";
+    public static final String TAG_CATEGORIES_NOT_EXIST = "존재하지 않는 태그 카테고리가 있습니다";
+    public static final String TAG_CATEGORIES_DUPLICATE = "중복된 태그 카테고리가 있습니다";
 }
