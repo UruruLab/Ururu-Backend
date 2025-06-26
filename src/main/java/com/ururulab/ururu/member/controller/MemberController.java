@@ -98,4 +98,20 @@ public class MemberController {
                 ApiResponse.success("닉네임 사용 가능 여부를 조회했습니다.", response)
         );
     }
+
+    @RequestMapping(value = "/emails/{email}", method = RequestMethod.HEAD)
+    public ResponseEntity<Void> checkEmailExists(@PathVariable final String email) {
+        final boolean exists = memberService.checkEmailExists(email);
+        return exists ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/emails/{email}/availability")
+    public ResponseEntity<ApiResponse<GetEmailAvailabilityResponse>> getEmailAvailability(
+            @PathVariable final String email) {
+        final GetEmailAvailabilityResponse response = memberService.getEmailAvailability(email);
+        return ResponseEntity.ok(
+                ApiResponse.success("이메일 사용 가능 여부를 조회했습니다.", response)
+        );
+    }
+
 }

@@ -120,10 +120,13 @@ public class MemberService {
         return GetNicknameAvailabilityResponse.of(isAvailable);
     }
 
+    public boolean checkEmailExists(final String email) {
+        return memberRepository.existsByEmail(email);
+    }
 
-    public MemberResponse checkEmail(final String email) {
+    public GetEmailAvailabilityResponse getEmailAvailability(final String email) {
         final boolean isAvailable = memberRepository.isEmailAvailable(email);
-        return MemberResponse.ofAvailabilityCheck(isAvailable);
+        return GetEmailAvailabilityResponse.of(isAvailable);
     }
 
 
