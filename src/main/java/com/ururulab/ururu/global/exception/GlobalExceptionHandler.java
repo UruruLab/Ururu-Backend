@@ -138,7 +138,7 @@ public final class GlobalExceptionHandler {
         log.warn("Invalid refresh token: {}", exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponseFormat.fail("토큰 갱신 실패: " + exception.getMessage()));
+                .body(ApiResponseFormat.fail("유효하지 않은 리프레시 토큰입니다."));
     }
 
     @ExceptionHandler(MissingAuthorizationHeaderException.class)
@@ -147,7 +147,7 @@ public final class GlobalExceptionHandler {
         log.warn("Missing authorization header: {}", exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponseFormat.fail(exception.getMessage()));
+                .body(ApiResponseFormat.fail("인증 헤더가 누락되었습니다."));
     }
 
     @ExceptionHandler(RedisConnectionException.class)
