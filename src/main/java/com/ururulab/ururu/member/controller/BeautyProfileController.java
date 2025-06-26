@@ -3,6 +3,7 @@ package com.ururulab.ururu.member.controller;
 import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.domain.dto.response.CreateBeautyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.GetBeautyProfileResponse;
 import com.ururulab.ururu.member.service.BeautyProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -39,4 +40,18 @@ public class BeautyProfileController {
               .body(ApiResponseFormat.success("뷰티 프로필이 생성되었습니다.", response));
     }
 
+    @Operation(summary = "뷰티 프로필 조회", description = "특정 회원의 뷰티 프로필을 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "뷰티 프로필 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "회원 또는 뷰티 프로필을 찾을 수 없음")
+    })
+    @GetMapping("/{memberId}/beauty-profile")
+    public ResponseEntity<ApiResponseFormat<GetBeautyProfileResponse>> getBeautyProfile(
+            @PathVariable final Long memberId
+    ) {
+        final GetBeautyProfileResponse response = beautyProfileService.getBeautyProfile(memberId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("뷰티 프로필을 조회했습니다.", response)
+        );
+    }
 }

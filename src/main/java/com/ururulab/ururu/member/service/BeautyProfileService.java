@@ -3,6 +3,7 @@ package com.ururulab.ururu.member.service;
 import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.domain.dto.response.CreateBeautyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.GetBeautyProfileResponse;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
@@ -52,10 +53,12 @@ public class BeautyProfileService {
         return CreateBeautyProfileResponse.from(savedProfile);
     }
 
-    public BeautyProfile getBeautyProfile(Long memberId) {
-        return beautyProfileRepository.findByMemberId(memberId)
+    public GetBeautyProfileResponse getBeautyProfile(Long memberId) {
+        BeautyProfile beautyProfile =  beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "뷰티 프로필을 찾을 수 없습니다. Member ID: "+ memberId));
+
+        return GetBeautyProfileResponse.from(beautyProfile);
     }
 
     @Transactional
