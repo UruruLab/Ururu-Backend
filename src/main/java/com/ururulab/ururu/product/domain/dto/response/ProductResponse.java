@@ -24,7 +24,7 @@ public record ProductResponse(
             List<CategoryResponse> categoryResponses,
             List<ProductOptionResponse> productOptionResponses,
             ProductNoticeResponse productNoticeResponse,
-            List<ProductTagResponse> tagCategoryResponses
+            List<ProductTagResponse> productTagsResponses
     ) {
         return new ProductResponse(
                 product.getId(),
@@ -36,7 +36,7 @@ public record ProductResponse(
                 categoryResponses,
                 productOptionResponses,
                 productNoticeResponse,
-                tagCategoryResponses
+                productTagsResponses
         );
     }
 }

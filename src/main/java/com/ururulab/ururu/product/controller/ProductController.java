@@ -6,6 +6,8 @@ import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
 import com.ururulab.ururu.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,12 +35,51 @@ public class ProductController {
 
     private final ProductService productService;
 
+//    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> createProduct(
+//            @RequestPart("product") ProductRequest productRequest,
+//            @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
+//    ) {
+//        ProductResponse response = productService.createProduct(productRequest, optionImages);
+//        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품이 등록되었습니다.", response));
+//    }
+
+    @Operation(
+            summary = "상품 등록",
+            description = "새로운 상품을 등록합니다. 상품 정보와 옵션 이미지를 함께 업로드할 수 있습니다. " +
+                    "이미지는 비동기로 처리되어 즉시 응답을 받을 수 있습니다. " +
+                    "상품 정보는 JSON 형태로, 이미지는 MultipartFile 배열로 전송합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 등록 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터 (필수 필드 누락, 유효하지 않은 카테고리 등)"),
+            @ApiResponse(responseCode = "413", description = "업로드 파일 크기 초과"),
+            @ApiResponse(responseCode = "415", description = "지원하지 않는 파일 형식"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> createProduct(
+            @Parameter(
+                    description = "상품 등록 정보 (JSON 형태)",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProductRequest.class)
+                    )
+            )
             @RequestPart("product") ProductRequest productRequest,
+
+            @Parameter(
+                    description = "상품 옵션별 이미지 파일들 (선택사항). 옵션 순서와 이미지 순서가 일치해야 합니다.",
+                    required = false,
+                    content = @Content(
+                            mediaType = "multipart/form-data",
+                            schema = @Schema(type = "array", format = "binary")
+                    )
+            )
             @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
     ) {
-        ProductResponse response = productService.createProductWithImages(productRequest, optionImages);
+        ProductResponse response = productService.createProduct(productRequest, optionImages);
         return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품이 등록되었습니다.", response));
     }
 
@@ -60,23 +101,6 @@ public class ProductController {
     ) {
         Page<ProductListResponse> products = productService.getProducts(pageable);
         return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품 목록 조회가 성공했습니다.", products));
-    }
-
-    @Operation(
-            summary = "상품 상세 조회",
-            description = "특정 상품의 상세 정보를 조회합니다. 카테고리, 옵션, 정보고시를 포함한 모든 데이터를 반환합니다. " +
-                    "삭제된 옵션은 제외하여 조회합니다."
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "상품 상세 조회 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 상품 ID"),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 상품"),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
-    })
-    @GetMapping("/{productId}")
-    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> getProduct(@PathVariable Long productId) {
-        ProductResponse product = productService.getProduct(productId);
-        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품 정보를 조회했습니다.", product));
     }
 
 }

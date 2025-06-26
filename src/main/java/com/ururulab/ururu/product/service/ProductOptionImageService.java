@@ -3,15 +3,18 @@ package com.ururulab.ururu.product.service;
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 import static com.ururulab.ururu.image.domain.ImageCategory.PRODUCTS;
@@ -81,7 +84,7 @@ public class ProductOptionImageService {
     }
 
     /**
-     * 상품 옵션 이미지 단일 업로드 (MultipartFile 버전)
+     * 상품 옵션 이미지 단일 업로드
      */
     public String uploadProductOptionImage(MultipartFile file) {
         try {
@@ -103,7 +106,7 @@ public class ProductOptionImageService {
     }
 
     /**
-     * 상품 옵션 이미지 업로드 (byte[] 버전 - 이벤트 처리용)
+     * 상품 옵션 이미지 업로드
      */
     public String uploadImageFromBytes(String originalFilename, byte[] imageData) {
         try {
@@ -117,6 +120,45 @@ public class ProductOptionImageService {
         } catch (Exception e) {
             log.error("Error while uploading product option image from bytes: {}", e.getMessage());
             throw new RuntimeException("상품 옵션 이미지 업로드 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    /**
+     * 비동기 이미지 업로드 및 DB 업데이트
+     */
+    @Async("imageUploadExecutor")
+    @Transactional
+    public void uploadImagesAsync(Long productId, List<ProductImageUploadRequest> images) {
+        if (images == null || images.isEmpty()) {
+            return;
+        }
+
+        log.info("Processing {} images for product: {}", images.size(), productId);
+
+        for (ProductImageUploadRequest imageRequest : images) {
+            try {
+                // S3에 이미지 업로드
+                String imageUrl = imageService.uploadImage(
+                        PRODUCTS.getPath(),
+                        imageRequest.originalFilename(),
+                        imageRequest.data()
+                );
+
+                // DB 업데이트
+                ProductOption option = productOptionRepository.findById(imageRequest.productOptionId())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "존재하지 않는 상품 옵션입니다: " + imageRequest.productOptionId()));
+
+                option.updateImageUrl(imageUrl);
+                productOptionRepository.save(option);
+
+                log.info("Image uploaded for option ID: {} -> {}",
+                        imageRequest.productOptionId(), imageUrl);
+
+            } catch (Exception e) {
+                log.error("Failed to upload image for option ID: {}",
+                        imageRequest.productOptionId(), e);
+            }
         }
     }
 
@@ -140,7 +182,7 @@ public class ProductOptionImageService {
     }
 
     /**
-     * 상품 옵션 이미지 URL만 업데이트 (이벤트 처리용)
+     * 상품 옵션 이미지 URL만 업데이트
      */
     @Transactional
     public void updateProductOptionImageUrl(Long productOptionId, String imageUrl) {
