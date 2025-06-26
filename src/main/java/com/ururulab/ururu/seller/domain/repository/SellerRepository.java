@@ -13,13 +13,23 @@ import java.util.Optional;
 // 판매자 도메인 리포지토리
 @Repository
 public interface SellerRepository extends JpaRepository<Seller, Long> {
-    Optional<Seller> findByEmail(String email);
-    Optional<Seller> findByBusinessNumber(String businessNumber);
-    Optional<Seller> findByName(String name);
+    @Query("SELECT s FROM Seller s WHERE s.email = :email AND s.isDeleted = false")
+    Optional<Seller> findByEmail(@Param("email") String email);
+    
+    @Query("SELECT s FROM Seller s WHERE s.businessNumber = :businessNumber AND s.isDeleted = false")
+    Optional<Seller> findByBusinessNumber(@Param("businessNumber") String businessNumber);
+    
+    @Query("SELECT s FROM Seller s WHERE s.name = :name AND s.isDeleted = false")
+    Optional<Seller> findByName(@Param("name") String name);
 
-    boolean existsByEmail(String email);
-    boolean existsByBusinessNumber(String businessNumber);
-    boolean existsByName(String name);
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Seller s WHERE s.email = :email AND s.isDeleted = false")
+    boolean existsByEmail(@Param("email") String email);
+    
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Seller s WHERE s.businessNumber = :businessNumber AND s.isDeleted = false")
+    boolean existsByBusinessNumber(@Param("businessNumber") String businessNumber);
+    
+    @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM Seller s WHERE s.name = :name AND s.isDeleted = false")
+    boolean existsByName(@Param("name") String name);
 
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN false ELSE true END FROM Seller s WHERE s.email = :email AND s.isDeleted = false")
     boolean isEmailAvailable(@Param("email") String email);
