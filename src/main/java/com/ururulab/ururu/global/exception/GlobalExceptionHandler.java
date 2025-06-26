@@ -1,10 +1,16 @@
 package com.ururulab.ururu.global.exception;
 
+import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
+import com.ururulab.ururu.auth.exception.InvalidRefreshTokenException;
+import com.ururulab.ururu.auth.exception.MissingAuthorizationHeaderException;
+import com.ururulab.ururu.auth.exception.RedisConnectionException;
 import com.ururulab.ururu.auth.exception.SocialLoginException;
 import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
 import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
 import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
 import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -116,5 +122,55 @@ public final class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponseFormat.fail("서버 내부 오류가 발생했습니다."));
+    }
+    @ExceptionHandler(InvalidJwtTokenException.class)
+    public ResponseEntity<ApiResponseFormat<Void>> handleInvalidJwtToken(
+            final InvalidJwtTokenException exception) {
+        log.warn("Invalid JWT token: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponseFormat.fail("유효하지 않은 토큰입니다."));
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ApiResponseFormat<Void>> handleInvalidRefreshToken(
+            final InvalidRefreshTokenException exception) {
+        log.warn("Invalid refresh token: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponseFormat.fail("유효하지 않은 리프레시 토큰입니다."));
+    }
+
+    @ExceptionHandler(MissingAuthorizationHeaderException.class)
+    public ResponseEntity<ApiResponseFormat<Void>> handleMissingAuthorizationHeader(
+            final MissingAuthorizationHeaderException exception) {
+        log.warn("Missing authorization header: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponseFormat.fail("인증 헤더가 누락되었습니다."));
+    }
+
+    @ExceptionHandler(RedisConnectionException.class)
+    public ResponseEntity<ApiResponseFormat<Void>> handleRedisConnection(
+            final RedisConnectionException exception) {
+        log.error("Redis connection failed: {}", exception.getMessage(), exception);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponseFormat.fail("일시적인 서버 오류입니다."));
+    }
+
+    // JJWT 라이브러리 예외 처리
+    @ExceptionHandler({
+            io.jsonwebtoken.JwtException.class,
+            ExpiredJwtException.class,
+            MalformedJwtException.class,
+            SecurityException.class
+    })
+    public ResponseEntity<ApiResponseFormat<Void>> handleJjwtException(
+            final RuntimeException exception) {
+        log.warn("JJWT processing failed: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponseFormat.fail("유효하지 않은 토큰입니다."));
     }
 }
