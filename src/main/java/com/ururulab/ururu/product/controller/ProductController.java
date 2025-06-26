@@ -1,5 +1,6 @@
 package com.ururulab.ururu.product.controller;
 
+import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductListResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
@@ -11,14 +12,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,15 +34,6 @@ public class ProductController {
 
     private final ProductService productService;
 
-//    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> createProduct(
-//            @RequestPart("product") ProductRequest productRequest,
-//            @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
-//    ) {
-//        ProductResponse response = productService.createProduct(productRequest, optionImages);
-//        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품이 등록되었습니다.", response));
-//    }
-
     @Operation(
             summary = "상품 등록",
             description = "새로운 상품을 등록합니다. 상품 정보와 옵션 이미지를 함께 업로드할 수 있습니다. " +
@@ -58,7 +48,7 @@ public class ProductController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<ProductResponse>> createProduct(
+    public ResponseEntity<ApiResponseFormat<ProductResponse>> createProduct(
             @Parameter(
                     description = "상품 등록 정보 (JSON 형태)",
                     required = true,
@@ -80,7 +70,7 @@ public class ProductController {
             @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
     ) {
         ProductResponse response = productService.createProduct(productRequest, optionImages);
-        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품이 등록되었습니다.", response));
+        return ResponseEntity.ok(ApiResponseFormat.success("상품이 등록되었습니다.", response));
     }
 
     @Operation(
@@ -94,13 +84,13 @@ public class ProductController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping
-    public ResponseEntity<com.ururulab.ururu.global.common.dto.ApiResponse<Page<ProductListResponse>>> getProducts(
+    public ResponseEntity<ApiResponseFormat<Page<ProductListResponse>>> getProducts(
             @Parameter(description = "페이지 정보 (page, size, sort 파라미터)", example = "page=0&size=8&sort=createdAt,desc")
             @PageableDefault(page = 0, size = 10, sort = {"createdAt", "id"}, direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
         Page<ProductListResponse> products = productService.getProducts(pageable);
-        return ResponseEntity.ok(com.ururulab.ururu.global.common.dto.ApiResponse.success("상품 목록 조회가 성공했습니다.", products));
+        return ResponseEntity.ok(ApiResponseFormat.success("상품 목록 조회가 성공했습니다.", products));
     }
 
 }
