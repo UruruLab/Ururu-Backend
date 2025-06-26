@@ -5,7 +5,7 @@ import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
-import com.ururulab.ururu.global.common.dto.ApiResponse;
+import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public final class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/social/sessions")
-    public ResponseEntity<ApiResponse<SocialLoginResponse>> socialLogin(
+    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> socialLogin(
             @Valid @RequestBody final SocialLoginRequest request
     ) {
         try {
@@ -53,19 +53,19 @@ public final class AuthController {
                     request.provider(), loginResponse.memberInfo().memberId());
 
             return ResponseEntity.ok(
-                    ApiResponse.success("소셜 로그인에 성공했습니다.", loginResponse)
+                    ApiResponseFormat.success("소셜 로그인에 성공했습니다.", loginResponse)
             );
 
         } catch (final Exception e) {
             log.error("Social login failed for provider: {}", request.provider(), e);
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.fail("소셜 로그인에 실패했습니다: " + e.getMessage()));
+                    .body(ApiResponseFormat.fail("소셜 로그인에 실패했습니다: " + e.getMessage()));
         }
     }
 
 
     @GetMapping("/social/providers")
-    public ResponseEntity<ApiResponse<GetSocialProvidersResponse>> getSocialProviders() {
+    public ResponseEntity<ApiResponseFormat<GetSocialProvidersResponse>> getSocialProviders() {
         final List<SocialProviderInfo> providers = Arrays.stream(SocialProvider.values())
                 .map(provider -> SocialProviderInfo.of(
                         provider.name().toLowerCase(),
@@ -78,7 +78,7 @@ public final class AuthController {
         final GetSocialProvidersResponse response = GetSocialProvidersResponse.of(providers);
 
         return ResponseEntity.ok(
-                ApiResponse.success("지원 소셜 로그인 목록을 조회했습니다.", response)
+                ApiResponseFormat.success("지원 소셜 로그인 목록을 조회했습니다.", response)
         );
     }
 
@@ -115,20 +115,20 @@ public final class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
+    public ResponseEntity<ApiResponseFormat<Void>> logout() {
         log.info("Member logout requested");
         return ResponseEntity.ok(
-                ApiResponse.success("로그아웃되었습니다.")
+                ApiResponseFormat.success("로그아웃되었습니다.")
         );
     }
 
     @GetMapping("/status")
-    public ResponseEntity<ApiResponse<AuthStatusResponse>> getAuthStatus(
+    public ResponseEntity<ApiResponseFormat<AuthStatusResponse>> getAuthStatus(
             @RequestHeader(value = "Authorization", required = false) final String authorization) {
 
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return ResponseEntity.ok(
-                    ApiResponse.success("인증되지 않은 상태입니다.",
+                    ApiResponseFormat.success("인증되지 않은 상태입니다.",
                             AuthStatusResponse.unauthenticated())
             );
         }
@@ -141,17 +141,17 @@ public final class AuthController {
 
             if (jwtTokenProvider.validateToken(token)) {
                 return ResponseEntity.ok(
-                        ApiResponse.success("인증된 상태입니다.",
+                        ApiResponseFormat.success("인증된 상태입니다.",
                                 AuthStatusResponse.authenticated(memberId, email, role))
                 );
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponse.fail("토큰이 유효하지 않습니다."));
+                        .body(ApiResponseFormat.fail("토큰이 유효하지 않습니다."));
             }
         } catch (final Exception e) {
             log.warn("Token validation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.fail("토큰 검증에 실패했습니다."));
+                    .body(ApiResponseFormat.fail("토큰 검증에 실패했습니다."));
         }
     }
 

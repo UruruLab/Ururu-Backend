@@ -15,5 +15,6 @@ public interface ShippingAddressRepository extends JpaRepository<ShippingAddress
     Optional<ShippingAddress> findByMemberAndIsDefaultTrue(Member member);
     Optional<ShippingAddress> findByMemberIdAndIsDefaultTrue(Long memberId);
     Optional<ShippingAddress> findByIdAndMemberId(Long id, Long memberId);
-
+    int countByMemberId(Long memberId);
+    void deleteByMemberId(Long memberId);
 }

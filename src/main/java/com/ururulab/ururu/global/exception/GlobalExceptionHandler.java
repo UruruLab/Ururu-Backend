@@ -4,7 +4,7 @@ import com.ururulab.ururu.auth.exception.SocialLoginException;
 import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
 import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
 import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
-import com.ururulab.ururu.global.common.dto.ApiResponse;
+import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,59 +26,59 @@ public final class GlobalExceptionHandler {
      * 지원하지 않는 소셜 제공자 예외 처리.
      */
     @ExceptionHandler(UnsupportedSocialProviderException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUnsupportedSocialProvider(
+    public ResponseEntity<ApiResponseFormat<Void>> handleUnsupportedSocialProvider(
             final UnsupportedSocialProviderException exception
     ) {
         log.warn("Unsupported social provider: {}", exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(exception.getMessage()));
+                .body(ApiResponseFormat.fail(exception.getMessage()));
     }
 
     /**
      * 소셜 토큰 교환 실패 예외 처리.
      */
     @ExceptionHandler(SocialTokenExchangeException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSocialTokenExchange(
+    public ResponseEntity<ApiResponseFormat<Void>> handleSocialTokenExchange(
             final SocialTokenExchangeException exception
     ) {
         log.error("Social token exchange failed: {}", exception.getMessage(), exception);
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.fail("소셜 로그인 인증에 실패했습니다."));
+                .body(ApiResponseFormat.fail("소셜 로그인 인증에 실패했습니다."));
     }
 
     /**
      * 소셜 회원 정보 조회 실패 예외 처리.
      */
     @ExceptionHandler(SocialMemberInfoException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSocialMemberInfo(
+    public ResponseEntity<ApiResponseFormat<Void>> handleSocialMemberInfo(
             final SocialMemberInfoException exception
     ) {
         log.error("Social member info retrieval failed: {}", exception.getMessage(), exception);
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.fail("회원 정보를 가져올 수 없습니다."));
+                .body(ApiResponseFormat.fail("회원 정보를 가져올 수 없습니다."));
     }
 
     /**
      * 일반적인 소셜 로그인 예외 처리.
      */
     @ExceptionHandler(SocialLoginException.class)
-    public ResponseEntity<ApiResponse<Void>> handleSocialLogin(
+    public ResponseEntity<ApiResponseFormat<Void>> handleSocialLogin(
             final SocialLoginException exception
     ) {
         log.error("Social login failed: {}", exception.getMessage(), exception);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail("소셜 로그인 처리 중 오류가 발생했습니다."));
+                .body(ApiResponseFormat.fail("소셜 로그인 처리 중 오류가 발생했습니다."));
     }
 
     /**
      * 요청 데이터 검증 실패 예외 처리.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidation(
+    public ResponseEntity<ApiResponseFormat<Void>> handleValidation(
             final MethodArgumentNotValidException exception
     ) {
         final String errorMessage = exception.getBindingResult()
@@ -91,30 +91,30 @@ public final class GlobalExceptionHandler {
         log.warn("Validation failed: {}", errorMessage);
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(errorMessage));
+                .body(ApiResponseFormat.fail(errorMessage));
     }
 
     /**
      * IllegalArgumentException 처리.
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(
+    public ResponseEntity<ApiResponseFormat<Void>> handleIllegalArgument(
             final IllegalArgumentException exception
     ) {
         log.warn("Invalid argument: {}", exception.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.fail(exception.getMessage()));
+                .body(ApiResponseFormat.fail(exception.getMessage()));
     }
 
     /**
      * 예상하지 못한 모든 예외 처리.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleGeneral(final Exception exception) {
+    public ResponseEntity<ApiResponseFormat<Void>> handleGeneral(final Exception exception) {
         log.error("Unexpected error occurred: {}", exception.getMessage(), exception);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail("서버 내부 오류가 발생했습니다."));
+                .body(ApiResponseFormat.fail("서버 내부 오류가 발생했습니다."));
     }
 }
