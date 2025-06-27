@@ -72,4 +72,19 @@ public class BeautyProfileController {
                 ApiResponseFormat.success("뷰티 프로필이 수정되었습니다.", response)
         );
     }
+
+    @Operation(summary = "뷰티 프로필 삭제", description = "특정 회원의 뷰티 프로필을 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "뷰티 프로필 삭제 성공"),
+            @ApiResponse(responseCode = "404", description = "회원 또는 뷰티 프로필을 찾을 수 없음")
+    })
+    @DeleteMapping("/{memberId}/beauty-profile")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteBeautyProfile(
+            @PathVariable final Long memberId
+    ) {
+        beautyProfileService.deleteBeautyProfile(memberId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("뷰티 프로필이 삭제되었습니다.")
+        );
+    }
 }

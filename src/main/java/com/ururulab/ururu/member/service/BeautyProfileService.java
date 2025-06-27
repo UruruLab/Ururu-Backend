@@ -88,6 +88,16 @@ public class BeautyProfileService {
         return UpdateBeautyProfileResponse.from(updatedProfile);
     }
 
+    @Transactional
+    public void deleteBeautyProfile(Long memberId) {
+        BeautyProfile beautyProfile = beautyProfileRepository.findByMemberId(memberId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "뷰티 프로필을 찾을 수 없습니다. Member ID: " +memberId));
+
+        beautyProfileRepository.delete(beautyProfile);
+        log.info("BeautyProfile deleted for member ID: {}", memberId);
+    }
+
     private SkinType parseSkinType(final String skinTypeString) {
         if (skinTypeString == null) {
             return null;
