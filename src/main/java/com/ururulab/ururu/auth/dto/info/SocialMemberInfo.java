@@ -95,10 +95,11 @@ public record SocialMemberInfo(
             throw new IllegalArgumentException("구글 회원 정보가 없습니다");
         }
 
-        final String socialId = (String) attributes.get("sub");
-        if (socialId == null || socialId.isBlank()) {
+        final Object idObj = attributes.get("id");
+        if (idObj == null) {
             throw new IllegalArgumentException("구글 회원 ID가 없습니다");
         }
+        final String socialId = String.valueOf(idObj);
 
         final String email = (String) attributes.get("email");
         final String nickname = (String) attributes.get("name");
