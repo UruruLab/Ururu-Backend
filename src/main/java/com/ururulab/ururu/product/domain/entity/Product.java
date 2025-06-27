@@ -23,9 +23,9 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "seller_id", nullable = false)
-//    private Seller seller;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private Seller seller;
 
     @Column(nullable = false , length = PRODUCT_NAME_MAX)
     private String name;
@@ -49,13 +49,13 @@ public class Product extends BaseEntity {
     private List<ProductTag> productTags = new ArrayList<>();
 
     public static Product of(
-            //Seller seller,
+            Seller seller,
             String name,
             String description,
             Status status
     ) {
         Product product = new Product();
-        //product.seller = seller;
+        product.seller = seller;
         product.name = name;
         product.description = description;
         product.status = status;
