@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.member.domain.entity.MemberAgreement;
 import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 
-import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -30,7 +29,7 @@ public record CreateMemberAgreementResponse(
             Long id,
             AgreementType type,
             Boolean agreed,
-            @JsonProperty("agree_at") LocalDateTime agreeAt
+            @JsonProperty("agree_at") ZonedDateTime agreeAt
     ) {
         public static AgreementItem from(final MemberAgreement memberAgreement) {
             return new AgreementItem(

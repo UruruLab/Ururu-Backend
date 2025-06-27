@@ -1,5 +1,8 @@
 package com.ururulab.ururu.member.domain.dto.validation;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class MemberAgreementValidationMessages {
     public static final String AGREEMENTS_REQUIRED = "약관 동의 내역은 최소 " +
             MemberAgreementValidationConstants.MIN_AGREEMENTS_COUNT + "개 이상이어야 합니다.";

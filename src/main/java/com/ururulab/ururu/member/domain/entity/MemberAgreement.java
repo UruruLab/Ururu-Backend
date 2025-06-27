@@ -7,7 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 @Getter
@@ -30,7 +30,7 @@ public class MemberAgreement extends BaseEntity {
     @Column(nullable = false)
     private boolean agreed;
 
-    private LocalDateTime agreeAt;
+    private ZonedDateTime agreeAt;
 
     public static MemberAgreement of (
             Member member,
@@ -41,7 +41,7 @@ public class MemberAgreement extends BaseEntity {
         memberAgreement.member = member;
         memberAgreement.type = type;
         memberAgreement.agreed = agreed;
-        memberAgreement.agreeAt = agreed ? LocalDateTime.now() : null;
+        memberAgreement.agreeAt = agreed ? ZonedDateTime.now() : null;
         return memberAgreement;
     }
 }
