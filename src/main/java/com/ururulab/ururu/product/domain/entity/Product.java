@@ -2,6 +2,7 @@ package com.ururulab.ururu.product.domain.entity;
 
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,7 +15,7 @@ import static com.ururulab.ururu.product.domain.dto.validation.ProductValidation
 
 @Entity
 @Getter
-@Table(name = "Product")
+@Table(name = "products")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Product extends BaseEntity {
 
@@ -22,7 +23,6 @@ public class Product extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //TODO 판매자 JOIN
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "seller_id", nullable = false)
 //    private Seller seller;

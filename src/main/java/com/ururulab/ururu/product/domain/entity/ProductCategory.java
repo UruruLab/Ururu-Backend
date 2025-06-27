@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "ProductCategory")
+@Table(name = "product_categories")
 public class ProductCategory extends BaseEntity {
 
     @Id

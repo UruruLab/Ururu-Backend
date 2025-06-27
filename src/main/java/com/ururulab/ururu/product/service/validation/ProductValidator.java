@@ -1,5 +1,7 @@
 package com.ururulab.ururu.product.service.validation;
 
+import com.ururulab.ururu.global.common.entity.TagCategory;
+import com.ururulab.ururu.global.common.repository.TagCategoryRepository;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.repository.CategoryRepository;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -21,6 +24,7 @@ import static com.ururulab.ururu.product.domain.dto.validation.ProductValidation
 public class ProductValidator {
 
     private final CategoryRepository categoryRepository;
+    private final TagCategoryRepository tagCategoryRepository;
 
     /**
      * 상품 등록 요청 데이터를 검증합니다
@@ -47,23 +51,53 @@ public class ProductValidator {
             throw new IllegalArgumentException(CATEGORIES_REQUIRED);
         }
 
-        // Set으로 중복 제거 후 조회
-        Set<Long> uniqueCategoryIds = new LinkedHashSet<>(categoryIds);
+        // 1. 중복 제거를 List로 바로 처리
+        List<Long> uniqueCategoryIds = categoryIds.stream().distinct().toList();
+
+        // 2. 배치 조회
         List<Category> categories = categoryRepository.findAllById(uniqueCategoryIds);
 
-        // 존재 여부 확인
-        Set<Long> foundCategoryIds = categories.stream()
-                .map(Category::getId)
-                .collect(Collectors.toSet());
+        // 3. 존재 여부 확인 최적화
+        if (categories.size() != uniqueCategoryIds.size()) {
+            Map<Long, Category> categoryMap = categories.stream()
+                    .collect(Collectors.toMap(Category::getId, category -> category));
 
-        Set<Long> missingIds = uniqueCategoryIds.stream()
-                .filter(id -> !foundCategoryIds.contains(id))
-                .collect(Collectors.toSet());
+            List<Long> missingIds = uniqueCategoryIds.stream()
+                    .filter(id -> !categoryMap.containsKey(id))
+                    .toList();
 
-        if (!missingIds.isEmpty()) {
-            throw new IllegalArgumentException("존재하지 않는 카테고리: " + missingIds);
+            throw new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + missingIds);
         }
 
         return categories;
+    }
+
+    /**
+     * 태그 카테고리 유효성 검증 후 TagCategory 엔티티 반환
+     */
+    public List<TagCategory> validateAndGetTagCategories(List<Long> tagCategoryIds) {
+        if (tagCategoryIds == null || tagCategoryIds.isEmpty()) {
+            throw new IllegalArgumentException(TAG_CATEGORIES_REQUIRED);
+        }
+
+        // 1. 중복 제거
+        List<Long> uniqueIds = tagCategoryIds.stream().distinct().toList();
+
+        // 2. 배치 조회
+        List<TagCategory> tagCategories = tagCategoryRepository.findAllById(uniqueIds);
+
+        // 3. 존재 여부 확인
+        if (tagCategories.size() != uniqueIds.size()) {
+            Map<Long, TagCategory> foundMap = tagCategories.stream()
+                    .collect(Collectors.toMap(TagCategory::getId, t -> t));
+
+            List<Long> missingIds = uniqueIds.stream()
+                    .filter(id -> !foundMap.containsKey(id))
+                    .toList();
+
+            throw new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": "+ missingIds);
+        }
+
+        return tagCategories;
     }
 }

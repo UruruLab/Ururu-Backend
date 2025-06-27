@@ -47,4 +47,14 @@ public class ProductValidationMessages {
     public static final String WARRANTY_SIZE = "품질보증기준은 " + WARRANTY_MAX + "자를 초과할 수 없습니다";
     public static final String CUSTOMER_SERVICE_NUMBER_REQUIRED = "고객센터 번호는 필수입니다";
     public static final String CUSTOMER_SERVICE_NUMBER_SIZE = "고객센터 번호는 " + ProductValidationConstants.CUSTOMER_SERVICE_NUMBER_MAX + "자를 초과할 수 없습니다";
+
+    //TagCategory 관련 메시지
+    public static final String TAG_CATEGORIES_REQUIRED = "태그 카테고리는 최소 1개 이상 선택해야 합니다";
+    public static final String TAG_CATEGORIES_NOT_EXIST = "존재하지 않는 태그 카테고리가 있습니다";
+    public static final String TAG_CATEGORIES_DUPLICATE = "중복된 태그 카테고리가 있습니다";
+
+    //Category 관련 메시지
+    public static final String CATEGORIES_NOT_EXIST = "존재하지 않는 카테고리가 있습니다";
+
+
 }
