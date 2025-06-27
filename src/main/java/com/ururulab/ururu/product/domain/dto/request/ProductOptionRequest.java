@@ -20,7 +20,7 @@ public record ProductOptionRequest(
 
         @NotNull(message = OPTION_PRICE_REQUIRED)
         @Min(value = 0, message = OPTION_PRICE_MIN)
-        int price,
+        Integer price,
 
         @Nullable
         String imageUrl,

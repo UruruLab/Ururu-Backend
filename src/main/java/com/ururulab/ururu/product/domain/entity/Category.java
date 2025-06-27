@@ -12,7 +12,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "Category")
+@Table(name = "categories")
 public class Category extends BaseEntity {
 
     @Id
@@ -25,11 +25,11 @@ public class Category extends BaseEntity {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false)
-    private int depth;
+    @Column(nullable = true)
+    private Integer depth;
 
-    @Column(nullable = false)
-    private int orderIndex;
+    @Column(nullable = true)
+    private Integer orderIndex;
 
     @Column(nullable = false, length = 500)
     private String path;
@@ -40,8 +40,8 @@ public class Category extends BaseEntity {
     public static Category of(
             Long parentId,
             String name,
-            int depth,
-            int orderIndex,
+            Integer depth,
+            Integer orderIndex,
             String path
     ){
         Category category = new Category();
