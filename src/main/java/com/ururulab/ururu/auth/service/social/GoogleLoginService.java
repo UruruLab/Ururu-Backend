@@ -44,9 +44,6 @@ public final class GoogleLoginService implements SocialLoginService {
 
     @Override
     public String getAuthorizationUrl(final String state) {
-        if (state == null || state.isBlank()) {
-            throw new IllegalArgumentException("CSRF 방지를 위한 state 파라미터는 필수입니다.");
-        }
         return googleOAuthProperties.buildAuthorizationUrl(state);
     }
 
@@ -57,7 +54,7 @@ public final class GoogleLoginService implements SocialLoginService {
         }
 
         try {
-            final String requestBody = buildTokenRequestBody(code);
+            final String requestBody = googleOAuthProperties.buildTokenRequestBody(code);
             log.debug("Requesting Google access token with code: {}", maskSensitiveData(code));
 
             final String response = restClient.post()
@@ -84,21 +81,21 @@ public final class GoogleLoginService implements SocialLoginService {
         }
 
         try {
-            log.debug("Requesting Google user info with token: {}", maskSensitiveData(accessToken));
+            log.debug("Requesting Google member info with token: {}", maskSensitiveData(accessToken));
 
             final String response = restClient.get()
-                    .uri(googleOAuthProperties.getUserInfoUri())
+                    .uri(googleOAuthProperties.getMemberInfoUri())
                     .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
                     .retrieve()
                     .body(String.class);
 
             final SocialMemberInfo memberInfo = parseMemberInfoFromResponse(response);
-            log.info("Google user info acquired for member: {}",
+            log.info("Google member info acquired for member: {}",
                     maskSensitiveData(memberInfo.email()));
             return memberInfo;
 
         } catch (final RestClientException e) {
-            log.error("Failed to get Google user info", e);
+            log.error("Failed to get Google member info", e);
             throw new SocialMemberInfoException("Google 사용자 정보 조회에 실패했습니다.", e);
         }
     }
@@ -137,14 +134,6 @@ public final class GoogleLoginService implements SocialLoginService {
     @Override
     public SocialProvider getProvider() {
         return SocialProvider.GOOGLE;
-    }
-
-    private String buildTokenRequestBody(final String code) {
-        return "grant_type=authorization_code" +
-                "&client_id=" + googleOAuthProperties.getClientId() +
-                "&client_secret=" + googleOAuthProperties.getClientSecret() +
-                "&redirect_uri=" + googleOAuthProperties.getRedirectUri() +
-                "&code=" + code;
     }
 
     private String extractAccessTokenFromResponse(final String responseBody) {
