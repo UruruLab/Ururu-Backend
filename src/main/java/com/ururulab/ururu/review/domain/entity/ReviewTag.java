@@ -1,7 +1,7 @@
 package com.ururulab.ururu.review.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.global.common.entity.Tag;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.Tag;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

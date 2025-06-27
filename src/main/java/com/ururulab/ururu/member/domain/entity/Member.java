@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.global.common.entity.enumerated.Gender;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.dto.validation.MemberValidationConstants;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;

@@ -2,8 +2,8 @@ package com.ururulab.ururu.review.domain.dto.request;
 
 import java.util.List;
 
-import com.ururulab.ururu.global.common.entity.enumerated.Gender;
-import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.review.domain.dto.validation.ValidationConstants;
 import com.ururulab.ururu.review.domain.dto.validation.ValidationMessages;
