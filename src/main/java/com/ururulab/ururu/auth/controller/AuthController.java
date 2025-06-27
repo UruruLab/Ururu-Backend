@@ -2,6 +2,7 @@ package com.ururulab.ururu.auth.controller;
 
 import com.ururulab.ururu.auth.dto.request.SocialLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
+import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
@@ -10,7 +11,6 @@ import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
@@ -45,22 +45,15 @@ public final class AuthController {
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> socialLogin(
             @Valid @RequestBody final SocialLoginRequest request
     ) {
-        try {
-            final SocialLoginService loginService = socialLoginServiceFactory.getService(request.provider());
-            final SocialLoginResponse loginResponse = loginService.processLogin(request.code());
+        final SocialLoginService loginService = socialLoginServiceFactory.getService(request.provider());
+        final SocialLoginResponse loginResponse = loginService.processLogin(request.code());
 
-            log.info("Social login successful for provider: {}, member: {}",
-                    request.provider(), loginResponse.memberInfo().memberId());
+        log.info("Social login successful for provider: {}, member: {}",
+                request.provider(), loginResponse.memberInfo().memberId());
 
-            return ResponseEntity.ok(
-                    ApiResponseFormat.success("소셜 로그인에 성공했습니다.", loginResponse)
-            );
-
-        } catch (final Exception e) {
-            log.error("Social login failed for provider: {}", request.provider(), e);
-            return ResponseEntity.badRequest()
-                    .body(ApiResponseFormat.fail("소셜 로그인에 실패했습니다: " + e.getMessage()));
-        }
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("소셜 로그인에 성공했습니다.", loginResponse)
+        );
     }
 
 
@@ -114,12 +107,44 @@ public final class AuthController {
         return redirectView;
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<ApiResponseFormat<Void>> logout() {
-        log.info("Member logout requested");
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("로그아웃되었습니다.")
-        );
+    /**
+     * 구글 OAuth 콜백을 처리합니다.
+     *
+     * @param code OAuth 인증 코드
+     * @param state CSRF 방지용 상태값
+     * @param error 인증 실패 시 에러 코드
+     * @return 프론트엔드로 리다이렉트
+     */
+    @GetMapping("/oauth/google")
+    public RedirectView handleGoogleCallback(
+            @RequestParam(required = false) final String code,
+            @RequestParam(required = false) final String state,
+            @RequestParam(required = false) final String error) {
+
+        log.debug("Google callback received: code={}, state={}, error={}",
+                maskSensitiveData(code), maskSensitiveData(state), error);
+
+        final RedirectView redirectView = new RedirectView();
+        redirectView.setContextRelative(true);
+
+        if (error != null) {
+            redirectView.setUrl("/?error=" + URLEncoder.encode(error, StandardCharsets.UTF_8));
+            log.warn("Google authentication failed: error={}", error);
+        } else if (code != null) {
+            final StringBuilder url = new StringBuilder("/?code=")
+                    .append(URLEncoder.encode(code, StandardCharsets.UTF_8));
+
+            if (state != null) {
+                url.append("&state=").append(URLEncoder.encode(state, StandardCharsets.UTF_8));
+            }
+            redirectView.setUrl(url.toString());
+            log.debug("Redirecting to index with auth code");
+        } else {
+            redirectView.setUrl("/?error=missing_parameters");
+            log.warn("Google callback missing required parameters");
+        }
+
+        return redirectView;
     }
 
     @GetMapping("/status")
@@ -133,26 +158,19 @@ public final class AuthController {
             );
         }
 
-        try {
-            final String token = authorization.substring(7);
-            final Long memberId = jwtTokenProvider.getMemberId(token);
-            final String email = jwtTokenProvider.getEmail(token);
-            final String role = jwtTokenProvider.getRole(token);
+        final String token = authorization.substring(7);
+        final Long memberId = jwtTokenProvider.getMemberId(token);
+        final String email = jwtTokenProvider.getEmail(token);
+        final String role = jwtTokenProvider.getRole(token);
 
-            if (jwtTokenProvider.validateToken(token)) {
-                return ResponseEntity.ok(
-                        ApiResponseFormat.success("인증된 상태입니다.",
-                                AuthStatusResponse.authenticated(memberId, email, role))
-                );
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(ApiResponseFormat.fail("토큰이 유효하지 않습니다."));
-            }
-        } catch (final Exception e) {
-            log.warn("Token validation failed: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponseFormat.fail("토큰 검증에 실패했습니다."));
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new InvalidJwtTokenException("토큰이 유효하지 않습니다.");
         }
+
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("인증된 상태입니다.",
+                        AuthStatusResponse.authenticated(memberId, email, role))
+        );
     }
 
     private String generateSecureState() {
@@ -162,14 +180,9 @@ public final class AuthController {
     }
 
     private String generateAuthUrl(final SocialProvider provider) {
-        try {
-            final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
-            final String state = generateSecureState();
-            return loginService.getAuthorizationUrl(state);
-        } catch (final Exception e) {
-            log.warn("Failed to generate auth URL for provider: {}", provider, e);
-            return "";
-        }
+        final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
+        final String state = generateSecureState();
+        return loginService.getAuthorizationUrl(state);
     }
 
     private String maskSensitiveData(final String data) {

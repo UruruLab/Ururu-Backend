@@ -2,6 +2,8 @@ package com.ururulab.ururu.product.domain.repository;
 
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,9 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // List<Product> findBySellerIdAndStatus(Long sellerId, Status status);
 
     // 임시: 상품 상태별 조회 (판매자 연관관계 추가 전까지 사용)
-    List<Product> findByStatusNot(Status status);
-
-    List<Product> findByStatus(Status status);
+    Page<Product> findByStatusNot(Status status, Pageable pageable);
 
     // 상품 ID와 상태로 조회
     Optional<Product> findByIdAndStatus(Long id, Status status);
@@ -36,4 +36,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     //상품 + 정보고시 함께 조회 -> 엔티티 구조 변경 후 주석 제거
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.productNotice WHERE p.id = :productId")
     Optional<Product> findByIdWithNotice(@Param("productId") Long productId);
+
+    @Query("SELECT p FROM Product p WHERE p.status IN :statuses ORDER BY p.createdAt DESC, p.id DESC")
+    Page<Product> findByStatusIn(@Param("statuses") List<Status> statuses, Pageable pageable);
+
 }

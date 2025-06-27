@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "GroupBuyOption")
+@Table(name = "GroupBuyOptions")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupBuyOption extends BaseEntity {
 

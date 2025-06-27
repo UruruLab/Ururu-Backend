@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "order_history")
+@Table(name = "order_histories")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class OrderHistory extends BaseEntity {
 

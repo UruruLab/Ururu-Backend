@@ -5,9 +5,9 @@ import com.ururulab.ururu.product.domain.entity.Category;
 public record CategoryResponse(
         Long id,
         String name,
-        int depth,
+        Integer depth,
         String path,
-        int orderIndex
+        Integer orderIndex
 ) {
     public static CategoryResponse from(Category category) {
         return new CategoryResponse(

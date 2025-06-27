@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 public final class JwtProperties {
 
     private String secret;
-    private long accessTokenExpiry = 3600L;
-    private long refreshTokenExpiry = 1209600L;
-    private String issuer = "ururu-backend";
-    private String audience = "ururu-client";
+    private long accessTokenExpiry;
+    private long refreshTokenExpiry;
+    private String issuer;
+    private String audience;
 }
