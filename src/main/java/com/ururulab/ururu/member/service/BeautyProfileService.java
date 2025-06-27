@@ -90,11 +90,11 @@ public class BeautyProfileService {
 
     @Transactional
     public void deleteBeautyProfile(Long memberId) {
-        BeautyProfile beautyProfile = beautyProfileRepository.findByMemberId(memberId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "뷰티 프로필을 찾을 수 없습니다. Member ID: " +memberId));
+        if (!beautyProfileRepository.existsByMemberId(memberId)) {
+            throw new EntityNotFoundException("뷰티 프로필을 찾을 수 없습니다. Member ID: " + memberId);
+        }
 
-        beautyProfileRepository.delete(beautyProfile);
+        beautyProfileRepository.deleteByMemberId(memberId);
         log.info("BeautyProfile deleted for member ID: {}", memberId);
     }
 
