@@ -13,9 +13,10 @@ public record ProductListResponse(
         Status status,
         ZonedDateTime createdAt,
         ZonedDateTime updatedAt,
-        List<CategoryResponse> categories
+        List<CategoryResponse> categories,
+        List<ProductTagResponse> tagCategories
 ) {
-    public static ProductListResponse from(Product product, List<CategoryResponse> categories) {
+    public static ProductListResponse from(Product product, List<CategoryResponse> categories, List<ProductTagResponse> tagCategories) {
         return new ProductListResponse(
                 product.getId(),
                 product.getName(),
@@ -23,7 +24,8 @@ public record ProductListResponse(
                 product.getStatus(),
                 product.getCreatedAt(),
                 product.getUpdatedAt(),
-                categories
+                categories,
+                tagCategories
         );
     }
 }

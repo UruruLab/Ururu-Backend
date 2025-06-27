@@ -244,7 +244,7 @@ public class ProductService {
             return Page.empty(pageable);
         }
 
-        // 2. 카테고리 배치 조회
+        // 2. 카테고리 및 태그 배치 조회
         stopWatch.start("categoryBatchQuery");
         List<Product> products = productPage.getContent();
         List<Long> productIds = products.stream()
@@ -262,13 +262,29 @@ public class ProductService {
                 ));
         stopWatch.stop();
 
+        stopWatch.start("tagBatchQuery");
+        Map<Long, List<ProductTagResponse>> tagsMap = productTagRepository
+                .findByProductIdsWithTagCategory(productIds).stream()
+                .collect(Collectors.groupingBy(
+                        pt -> pt.getProduct().getId(),              // 상품 ID로 그룹핑
+                        Collectors.mapping(
+                                ProductTagResponse::from,            // DTO 변환
+                                Collectors.toList()
+                        )
+                ));
+        stopWatch.stop();
+
         // 3. 응답 생성
         stopWatch.start("responseCreation");
         List<ProductListResponse> content = products.stream()
                 .map(product -> {
                     List<CategoryResponse> categories = categoriesMap
                             .getOrDefault(product.getId(), Collections.emptyList());
-                    return ProductListResponse.from(product, categories);
+
+                    List<ProductTagResponse> tags = tagsMap
+                            .getOrDefault(product.getId(), Collections.emptyList());
+
+                    return ProductListResponse.from(product, categories, tags);
                 })
                 .toList();
 
