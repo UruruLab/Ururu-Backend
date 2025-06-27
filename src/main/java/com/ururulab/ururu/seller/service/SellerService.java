@@ -36,8 +36,11 @@ public class SellerService {
     public SellerSignupResponse signup(final SellerSignupRequest request) {
         log.info("판매자 회원가입 시작: {}", MaskingUtils.maskEmail(request.email()));
 
+        // 이메일 정규화 (소문자 변환)
+        final String normalizedEmail = request.email().toLowerCase().trim();
+
         // 트랜잭션 범위 내에서 중복 체크 (1차 방어)
-        validateSignupRequest(request);
+        validateSignupRequest(request, normalizedEmail);
 
         // 비밀번호 암호화
         final String encodedPassword = passwordEncoder.encode(request.password());
@@ -48,7 +51,7 @@ public class SellerService {
                 request.businessName(),
                 request.ownerName(),
                 request.businessNumber(),
-                request.email(),
+                normalizedEmail,
                 encodedPassword,
                 request.phone(),
                 request.image(),
@@ -75,12 +78,15 @@ public class SellerService {
 
     /**
      * 이메일 중복 체크
+     *
      * @param email 체크할 이메일
      * @return 가용성 응답
      */
     public SellerAvailabilityResponse checkEmailAvailability(final String email) {
-        final boolean isAvailable = sellerRepository.isEmailAvailable(email);
-        log.debug("이메일 가용성 체크: {} = {}", MaskingUtils.maskEmail(email), isAvailable);
+        // 이메일 정규화 (소문자 변환)
+        final String normalizedEmail = email.toLowerCase().trim();
+        final boolean isAvailable = sellerRepository.isEmailAvailable(normalizedEmail);
+        log.debug("이메일 가용성 체크: {} = {}", MaskingUtils.maskEmail(normalizedEmail), isAvailable);
         return SellerAvailabilityResponse.ofEmailAvailability(isAvailable);
     }
 
@@ -118,10 +124,10 @@ public class SellerService {
 
 
      //회원가입 요청 유효성 검증
-    private void validateSignupRequest(final SellerSignupRequest request) {
+    private void validateSignupRequest(final SellerSignupRequest request, final String normalizedEmail) {
         // 이메일 중복 체크
-        if (!sellerRepository.isEmailAvailable(request.email())) {
-            log.warn("이메일 중복: {}", MaskingUtils.maskEmail(request.email()));
+        if (!sellerRepository.isEmailAvailable(normalizedEmail)) {
+            log.warn("이메일 중복: {}", MaskingUtils.maskEmail(normalizedEmail));
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
 

@@ -45,7 +45,10 @@ public class SellerPolicy {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_REQUIRED);
         }
 
-        if (!email.trim().matches(SellerValidationPatterns.EMAIL_PATTERN)) {
+        // 이메일 정규화 (소문자 변환)
+        final String normalizedEmail = email.trim().toLowerCase();
+        
+        if (!normalizedEmail.matches(SellerValidationPatterns.EMAIL_PATTERN)) {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_FORMAT);
         }
     }
