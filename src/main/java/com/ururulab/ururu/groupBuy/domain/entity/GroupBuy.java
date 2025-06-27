@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,13 +55,11 @@ public class GroupBuy extends BaseEntity {
     @Column(nullable = false)
     private GroupBuyStatus status; // 공동구매 상태
 
-    //TODO zonedDateTime으로 수정
     @Column(nullable = false)
-    private LocalDateTime startAt; // 공동구매 시작일
+    private ZonedDateTime startAt; // 공동구매 시작일
 
-    //TODO zonedDateTime으로 수정
     @Column(nullable = false)
-    private LocalDateTime endsAt; // 공동구매 종료일
+    private ZonedDateTime endsAt; // 공동구매 종료일
 
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupBuyImage> groupBuyImages = new ArrayList<>();
@@ -75,8 +73,8 @@ public class GroupBuy extends BaseEntity {
             String discountStages,
             Integer limitQuantityPerMember,
             GroupBuyStatus status,
-            LocalDateTime startAt,
-            LocalDateTime endsAt
+            ZonedDateTime startAt,
+            ZonedDateTime endsAt
     ) {
         GroupBuy groupBuy = new GroupBuy();
         groupBuy.product = product;

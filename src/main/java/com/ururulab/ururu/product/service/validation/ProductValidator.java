@@ -66,7 +66,7 @@ public class ProductValidator {
                     .filter(id -> !categoryMap.containsKey(id))
                     .toList();
 
-            throw new IllegalArgumentException("존재하지 않는 카테고리: " + missingIds);
+            throw new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + missingIds);
         }
 
         return categories;
@@ -82,36 +82,22 @@ public class ProductValidator {
 
         // 1. 중복 제거
         List<Long> uniqueIds = tagCategoryIds.stream().distinct().toList();
-        if (uniqueIds.size() != tagCategoryIds.size()) {
-            throw new IllegalArgumentException(TAG_CATEGORIES_DUPLICATE);
-        }
 
         // 2. 배치 조회
         List<TagCategory> tagCategories = tagCategoryRepository.findAllById(uniqueIds);
 
         // 3. 존재 여부 확인
         if (tagCategories.size() != uniqueIds.size()) {
-            throw new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST);
-        }
+            Map<Long, TagCategory> foundMap = tagCategories.stream()
+                    .collect(Collectors.toMap(TagCategory::getId, t -> t));
 
-        // 4. 활성화 상태 확인 - 스트림 최적화
-        List<TagCategory> activeCategories = tagCategories.stream()
-                .filter(TagCategory::getIsActive)
-                .toList();
-
-        if (activeCategories.size() != uniqueIds.size()) {
-            // 비활성화된 카테고리 ID 찾기
-            Set<Long> activeIds = activeCategories.stream()
-                    .map(TagCategory::getId)
-                    .collect(Collectors.toSet());
-
-            List<Long> inactiveIds = uniqueIds.stream()
-                    .filter(id -> !activeIds.contains(id))
+            List<Long> missingIds = uniqueIds.stream()
+                    .filter(id -> !foundMap.containsKey(id))
                     .toList();
 
-            throw new IllegalArgumentException("비활성화된 태그 카테고리: " + inactiveIds);
+            throw new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": "+ missingIds);
         }
 
-        return activeCategories;
+        return tagCategories;
     }
 }
