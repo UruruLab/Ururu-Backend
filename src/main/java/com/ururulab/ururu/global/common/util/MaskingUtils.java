@@ -18,7 +18,7 @@ public class MaskingUtils {
         }
         final int atIndex = email.indexOf('@');
         if (atIndex <= 1) {
-            return email.substring(0, 1) + "***@" + email.substring(atIndex + 1);
+            return "***";
         }
         return email.substring(0, 1) + "***@" + email.substring(atIndex + 1);
     }
@@ -27,7 +27,7 @@ public class MaskingUtils {
      * 사업자등록번호 마스킹
      */
     public static String maskBusinessNumber(final String businessNumber) {
-        if (businessNumber == null || businessNumber.length() <= 4) {
+        if (businessNumber == null || businessNumber.length() <= 7) {
             return "***";
         }
         return businessNumber.substring(0, 3) + "****" + businessNumber.substring(7);
@@ -37,7 +37,7 @@ public class MaskingUtils {
      * 전화번호 마스킹
      */
     public static String maskPhone(final String phone) {
-        if (phone == null || phone.length() <= 4) {
+        if (phone == null || phone.length() <= 7) {
             return "***";
         }
         return phone.substring(0, 3) + "****" + phone.substring(7);
