@@ -1,8 +1,9 @@
 package com.ururulab.ururu.member.service;
 
+import com.ururulab.ururu.member.domain.dto.request.MemberAgreementRequest;
+import com.ururulab.ururu.member.domain.dto.response.CreateMemberAgreementResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberAgreement;
-import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -23,16 +23,20 @@ public class MemberAgreementService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public void createAgreements(Long memberId, Map<AgreementType, Boolean> agreements) {
+    public CreateMemberAgreementResponse createAgreements(Long memberId, MemberAgreementRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
-        List<MemberAgreement> memberAgreements = agreements.entrySet().stream()
-                .map(entry -> MemberAgreement.of(member, entry.getKey(), entry.getValue()))
+        List<MemberAgreement> memberAgreements = request.agreements().stream()
+                .map(agreementItem -> MemberAgreement.of(
+                        member,
+                        agreementItem.type(),
+                        agreementItem.agreed()))
                 .toList();
 
-        memberAgreementRepository.saveAll(memberAgreements);
+        List<MemberAgreement> savedAgreements = memberAgreementRepository.saveAll(memberAgreements);
         log.info("Member agreements created for member ID: {}", memberId);
+        return CreateMemberAgreementResponse.of(memberId, savedAgreements);
     }
 }
