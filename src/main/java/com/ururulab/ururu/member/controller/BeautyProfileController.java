@@ -4,6 +4,7 @@ import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.domain.dto.response.CreateBeautyProfileResponse;
 import com.ururulab.ururu.member.domain.dto.response.GetBeautyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.UpdateBeautyProfileResponse;
 import com.ururulab.ururu.member.service.BeautyProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -52,6 +53,23 @@ public class BeautyProfileController {
         final GetBeautyProfileResponse response = beautyProfileService.getBeautyProfile(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("뷰티 프로필을 조회했습니다.", response)
+        );
+    }
+
+    @Operation(summary = "뷰티 프로필 수정", description = "특정 회원의 뷰티 프로필을 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "뷰티 프로필 수정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "404", description = "회원 또는 뷰티 프로필을 찾을 수 없음")
+    })
+    @PatchMapping("/{memberId}/beauty-profile")
+    public ResponseEntity<ApiResponseFormat<UpdateBeautyProfileResponse>> updateBeautyProfile(
+            @PathVariable final Long memberId,
+            @Valid @RequestBody final BeautyProfileRequest request
+    ) {
+        final UpdateBeautyProfileResponse response = beautyProfileService.updateBeautyProfile(memberId, request);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("뷰티 프로필이 수정되었습니다.", response)
         );
     }
 }
