@@ -48,6 +48,8 @@ dependencies {
     // S3 (AWS SDK for Java v2)
     implementation 'software.amazon.awssdk:s3:2.20.74'
 
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
     // https://mvnrepository.com/artifact/org.springdoc/springdoc-openapi-starter-webmvc-ui
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
 }
