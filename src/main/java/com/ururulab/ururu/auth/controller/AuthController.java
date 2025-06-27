@@ -107,6 +107,46 @@ public final class AuthController {
         return redirectView;
     }
 
+    /**
+     * 구글 OAuth 콜백을 처리합니다.
+     *
+     * @param code OAuth 인증 코드
+     * @param state CSRF 방지용 상태값
+     * @param error 인증 실패 시 에러 코드
+     * @return 프론트엔드로 리다이렉트
+     */
+    @GetMapping("/oauth/google")
+    public RedirectView handleGoogleCallback(
+            @RequestParam(required = false) final String code,
+            @RequestParam(required = false) final String state,
+            @RequestParam(required = false) final String error) {
+
+        log.debug("Google callback received: code={}, state={}, error={}",
+                maskSensitiveData(code), maskSensitiveData(state), error);
+
+        final RedirectView redirectView = new RedirectView();
+        redirectView.setContextRelative(true);
+
+        if (error != null) {
+            redirectView.setUrl("/?error=" + URLEncoder.encode(error, StandardCharsets.UTF_8));
+            log.warn("Google authentication failed: error={}", error);
+        } else if (code != null) {
+            final StringBuilder url = new StringBuilder("/?code=")
+                    .append(URLEncoder.encode(code, StandardCharsets.UTF_8));
+
+            if (state != null) {
+                url.append("&state=").append(URLEncoder.encode(state, StandardCharsets.UTF_8));
+            }
+            redirectView.setUrl(url.toString());
+            log.debug("Redirecting to index with auth code");
+        } else {
+            redirectView.setUrl("/?error=missing_parameters");
+            log.warn("Google callback missing required parameters");
+        }
+
+        return redirectView;
+    }
+
     @GetMapping("/status")
     public ResponseEntity<ApiResponseFormat<AuthStatusResponse>> getAuthStatus(
             @RequestHeader(value = "Authorization", required = false) final String authorization) {
