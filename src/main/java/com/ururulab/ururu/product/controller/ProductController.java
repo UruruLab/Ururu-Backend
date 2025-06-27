@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -57,7 +58,7 @@ public class ProductController {
                             schema = @Schema(implementation = ProductRequest.class)
                     )
             )
-            @RequestPart("product") ProductRequest productRequest,
+            @Valid @RequestPart("product") ProductRequest productRequest,
 
             @Parameter(
                     description = "상품 옵션별 이미지 파일들 (선택사항). 옵션 순서와 이미지 순서가 일치해야 합니다.",
