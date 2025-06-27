@@ -11,7 +11,7 @@ import static com.ururulab.ururu.product.domain.dto.validation.ProductValidation
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "ProductNotices")
+@Table(name = "product_notices")
 public class ProductNotice extends BaseEntity {
 
     @Id

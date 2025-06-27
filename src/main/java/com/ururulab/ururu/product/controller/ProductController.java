@@ -92,5 +92,4 @@ public class ProductController {
         Page<ProductListResponse> products = productService.getProducts(pageable);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 목록 조회가 성공했습니다.", products));
     }
-
 }
