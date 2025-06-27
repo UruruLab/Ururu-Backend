@@ -90,10 +90,10 @@ public class Seller extends BaseEntity {
         seller.businessNumber = businessNumber.trim();
         seller.email = email.trim();
         seller.password = password; // 암호화는 Service 레이어에서 처리
-        seller.phone = phone;
+        seller.phone = phone.trim();
         seller.image = image;
         seller.address1 = address1.trim();
-        seller.address2 = address2 != null ? address2.trim() : "";
+        seller.address2 = address2.trim();
         seller.mailOrderNumber = mailOrderNumber.trim();
         return seller;
     }
@@ -115,7 +115,7 @@ public class Seller extends BaseEntity {
 
     public void updatePhone(final String phone) {
         SellerPolicy.validatePhone(phone);
-        this.phone = phone;
+        this.phone = phone.trim();
     }
 
     public void updateImage(final String image) {

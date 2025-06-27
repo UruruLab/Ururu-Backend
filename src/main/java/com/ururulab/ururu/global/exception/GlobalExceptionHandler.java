@@ -12,6 +12,7 @@ import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -98,6 +99,19 @@ public final class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponseFormat.fail(errorMessage));
+    }
+
+    /**
+     * DB 무결성 제약조건 위반 예외 처리.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponseFormat<Void>> handleDataIntegrityViolation(
+            final DataIntegrityViolationException exception
+    ) {
+        log.warn("Data integrity violation: {}", exception.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ApiResponseFormat.fail("이미 사용 중인 정보입니다."));
     }
 
     /**
