@@ -11,14 +11,19 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * HTTP 클라이언트 설정.
+ *
+ * <p>소셜 로그인 API 호출을 위한 안정적인 RestClient 설정을 제공합니다.
+ * 타임아웃, 연결 풀, 네트워크 안정성 설정이 포함됩니다.</p>
+ */
 @Configuration
 public class HttpClientConfig {
 
-    private static final int CONNECTION_TIMEOUT_MILLIS = 5000;
     private static final int READ_TIMEOUT_MILLIS = 10000;
+    private static final int CONNECTION_REQUEST_TIMEOUT_MILLIS = 3000;
     private static final int MAX_TOTAL_CONNECTIONS = 100;
     private static final int MAX_CONNECTIONS_PER_ROUTE = 20;
-    private static final int CONNECTION_REQUEST_TIMEOUT_MILLIS = 3000;
 
     @Bean
     public PoolingHttpClientConnectionManager connectionManager() {
@@ -32,7 +37,6 @@ public class HttpClientConfig {
     public RequestConfig requestConfig() {
         return RequestConfig.custom()
                 .setConnectionRequestTimeout(Timeout.ofMilliseconds(CONNECTION_REQUEST_TIMEOUT_MILLIS))
-                .setConnectTimeout(Timeout.ofMilliseconds(CONNECTION_TIMEOUT_MILLIS))
                 .setResponseTimeout(Timeout.ofMilliseconds(READ_TIMEOUT_MILLIS))
                 .build();
     }
@@ -48,7 +52,9 @@ public class HttpClientConfig {
 
     @Bean
     public HttpComponentsClientHttpRequestFactory httpRequestFactory(final HttpClient httpClient) {
-        return new HttpComponentsClientHttpRequestFactory(httpClient);
+        final HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        factory.setHttpClient(httpClient);
+        return factory;
     }
 
     @Bean
@@ -56,11 +62,23 @@ public class HttpClientConfig {
         return RestClient.builder()
                 .requestFactory(httpRequestFactory)
                 .defaultHeader("Accept", "application/json")
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+    }
+
+    @Bean("socialLoginRestClient")
+    public RestClient socialLoginRestClient(final HttpComponentsClientHttpRequestFactory httpRequestFactory) {
+        return RestClient.builder()
+                .requestFactory(httpRequestFactory)
+                .defaultHeader("Accept", "application/json")
+                .defaultHeader("User-Agent", "UruruApp/1.0")
                 .build();
     }
 
     @Bean
     public RestTemplate restTemplate(final HttpComponentsClientHttpRequestFactory httpRequestFactory) {
-        return new RestTemplate(httpRequestFactory);
+        final RestTemplate restTemplate = new RestTemplate();
+        restTemplate.setRequestFactory(httpRequestFactory);
+        return restTemplate;
     }
 }
