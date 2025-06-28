@@ -1,19 +1,20 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
+import com.ururulab.ururu.member.domain.dto.request.ShippingAddressRequest;
 import com.ururulab.ururu.member.domain.dto.response.ShippingAddressListResponse;
 import com.ururulab.ururu.member.domain.dto.response.ShippingAddressResponse;
+import com.ururulab.ururu.member.domain.entity.ShippingAddress;
 import com.ururulab.ururu.member.service.ShippingAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -44,5 +45,22 @@ public class ShippingAddressController {
         return ResponseEntity.ok(
                 ApiResponseFormat.success("배송지 목록을 조회했습니다.", response)
         );
+    }
+
+    @Operation(summary = "배송지 생성", description = "새로운 배송지를 등록합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "배송지 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @PostMapping
+    public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> createShippingAddress(
+            @PathVariable Long memberId,
+            @Valid @RequestBody final ShippingAddressRequest request
+    ) {
+        final ShippingAddress shippingAddress = shippingAddressService.createShippingAddress(memberId, request);
+        final ShippingAddressResponse response = ShippingAddressResponse.from(shippingAddress);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponseFormat.success("배송지가 등록되었습니다.", response));
     }
 }
