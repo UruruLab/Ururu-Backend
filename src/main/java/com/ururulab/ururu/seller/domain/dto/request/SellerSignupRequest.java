@@ -5,7 +5,7 @@ import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationMessages;
 import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationPatterns;
 import jakarta.validation.constraints.*;
 
-public record SellerRequest(
+public record SellerSignupRequest(
         @NotBlank(message = SellerValidationMessages.NAME_REQUIRED)
         @Size(max = SellerValidationConstants.NAME_MAX_LENGTH,
                 message = SellerValidationMessages.NAME_SIZE)
@@ -64,4 +64,4 @@ public record SellerRequest(
                 message = SellerValidationMessages.MAIL_ORDER_NUMBER_SIZE)
         String mailOrderNumber
 ) {
-}
+} 

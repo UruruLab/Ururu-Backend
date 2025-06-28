@@ -1,6 +1,6 @@
 package com.ururulab.ururu.order.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;

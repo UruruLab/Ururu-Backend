@@ -6,7 +6,7 @@ import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

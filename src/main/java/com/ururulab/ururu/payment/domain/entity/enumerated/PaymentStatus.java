@@ -1,6 +1,6 @@
 package com.ururulab.ururu.payment.domain.entity.enumerated;
 
-import com.ururulab.ururu.global.common.entity.enumerated.EnumParser;
+import com.ururulab.ururu.global.domain.entity.enumerated.EnumParser;
 
 public enum PaymentStatus {
     PENDING,    // 결제 대기

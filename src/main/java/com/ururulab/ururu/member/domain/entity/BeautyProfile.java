@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationConstants;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationMessages;
 import jakarta.persistence.*;
