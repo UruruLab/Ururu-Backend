@@ -58,6 +58,12 @@ public class ShippingAddressService {
         return shippingAddressRepository.findByMemberId(memberId);
     }
 
+    public ShippingAddress getShippingAddressesById(Long memberId, Long addressId) {
+        return shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "배송지를 찾을 수 없습니다. Address ID: " + addressId +", Member ID: " + memberId));
+    }
+
     @Transactional
     public ShippingAddress updateShippingAddress(
             Long memberId,

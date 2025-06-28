@@ -99,4 +99,21 @@ public class ShippingAddressController {
                 ApiResponseFormat.success("배송지가 삭제되었습니다.")
         );
     }
+
+    @Operation(summary = "특정 배송지 조회", description = "특정 배송지의 상세 정보를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "배송지 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "배송지를 찾을 수 없음")
+    })
+    @GetMapping("/{addressId}")
+    public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> getShippingAddressById(
+            @PathVariable final Long memberId,
+            @PathVariable final Long addressId
+    ) {
+        final ShippingAddress shippingAddress = shippingAddressService.getShippingAddressesById(memberId, addressId);
+        final ShippingAddressResponse response = ShippingAddressResponse.from(shippingAddress);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("특정 배송지를 조회했습니다.", response)
+        );
+    }
 }
