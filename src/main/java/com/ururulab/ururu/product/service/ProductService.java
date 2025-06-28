@@ -1,6 +1,6 @@
 package com.ururulab.ururu.product.service;
 
-import com.ururulab.ururu.global.common.entity.TagCategory;
+import com.ururulab.ururu.global.domain.entity.TagCategory;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;

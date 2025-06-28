@@ -1,6 +1,6 @@
 package com.ururulab.ururu.product.controller;
 
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductListResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;

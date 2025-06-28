@@ -4,7 +4,7 @@ import com.ururulab.ururu.auth.dto.request.RefreshTokenRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.exception.RedisConnectionException;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

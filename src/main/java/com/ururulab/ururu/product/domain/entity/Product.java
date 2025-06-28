@@ -1,27 +1,16 @@
 package com.ururulab.ururu.product.domain.entity;
 
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.*;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.product.domain.entity.enumerated.Status;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.PRODUCT_NAME_MAX;
 
 @Entity
 @Getter
