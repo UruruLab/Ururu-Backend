@@ -93,11 +93,12 @@ public class ShippingAddressService {
 
     @Transactional
     public void deleteShippingAddress(Long memberId, Long addressId) {
-        ShippingAddress shippingAddress = shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "배송지를 찾을 수 없습니다. Address ID: " + addressId));
+        boolean exists = shippingAddressRepository.existsByIdAndMemberId(addressId, memberId);
+        if (!exists) {
+            throw new EntityNotFoundException("배송지를 찾을 수 없습니다. Address ID: "+addressId);
+        }
 
-        shippingAddressRepository.delete(shippingAddress);
+        shippingAddressRepository.deleteByIdAndMemberId(addressId, memberId);
         log.info("ShippingAddress deleted for member ID: {}, address ID: {}", memberId, addressId);
     }
 

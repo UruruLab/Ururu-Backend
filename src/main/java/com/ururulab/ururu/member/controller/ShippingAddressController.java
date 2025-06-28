@@ -83,4 +83,20 @@ public class ShippingAddressController {
                 ApiResponseFormat.success("배송지가 수정되었습니다.", response)
         );
     }
+
+    @Operation(summary = "배송지 삭제", description = "배송지를 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "배송지 삭제 성공"),
+            @ApiResponse(responseCode = "404", description = "배송지를 찾을 수 없음")
+    })
+    @DeleteMapping("/{addressId}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteShippingAddress(
+            @PathVariable final Long memberId,
+            @PathVariable final Long addressId
+    ) {
+        shippingAddressService.deleteShippingAddress(memberId, addressId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("배송지가 삭제되었습니다.")
+        );
+    }
 }
