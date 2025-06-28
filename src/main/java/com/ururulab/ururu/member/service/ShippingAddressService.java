@@ -27,6 +27,11 @@ public class ShippingAddressService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
+        int currentCount = shippingAddressRepository.countByMemberId(memberId);
+        if (currentCount >= 5) {
+            throw new IllegalArgumentException("배송지는 최대 5개까지 등록할 수 있습니다.");
+        }
+
         if (request.isDefault()) {
             unsetExistingDefaultAddress(member);
         }

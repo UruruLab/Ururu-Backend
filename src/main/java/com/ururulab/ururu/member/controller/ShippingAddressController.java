@@ -63,4 +63,24 @@ public class ShippingAddressController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponseFormat.success("배송지가 등록되었습니다.", response));
     }
+
+    @Operation(summary = "배송지 수정", description = "기존 배송지 정보를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "배송지 수정 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "404", description = "배송지를 찾을 수 없음")
+    })
+    @PutMapping("/{addressId}")
+    public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> updateShippingAddress(
+            @PathVariable final Long memberId,
+            @PathVariable final Long addressId,
+            @Valid @RequestBody final ShippingAddressRequest request
+    ) {
+        final ShippingAddress shippingAddress = shippingAddressService.updateShippingAddress(memberId, addressId, request);
+        final ShippingAddressResponse response = ShippingAddressResponse.from(shippingAddress);
+
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("배송지가 수정되었습니다.", response)
+        );
+    }
 }
