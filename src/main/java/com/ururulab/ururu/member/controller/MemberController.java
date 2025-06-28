@@ -1,6 +1,6 @@
 package com.ururulab.ururu.member.controller;
 
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.dto.response.*;
 import com.ururulab.ururu.member.service.MemberService;

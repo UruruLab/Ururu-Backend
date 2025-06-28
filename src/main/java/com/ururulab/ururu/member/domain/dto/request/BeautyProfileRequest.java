@@ -1,6 +1,6 @@
 package com.ururulab.ururu.member.domain.dto.request;
 
-import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationConstants;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationMessages;

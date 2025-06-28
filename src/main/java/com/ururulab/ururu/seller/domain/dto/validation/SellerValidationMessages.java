@@ -27,6 +27,8 @@ public class SellerValidationMessages {
             SellerValidationConstants.EMAIL_MAX_LENGTH + "자 이하여야 합니다.";
 
     public static final String PASSWORD_REQUIRED = "비밀번호는 필수입니다.";
+    public static final String PASSWORD_SIZE = "비밀번호는 " +
+            SellerValidationConstants.PASSWORD_MAX_LENGTH + "자 이하여야 합니다.";
     public static final String PASSWORD_PATTERN = "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.";
 
     public static final String PHONE_REQUIRED = "전화번호는 필수입니다.";

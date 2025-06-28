@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.common.repository;
+package com.ururulab.ururu.global.domain.repository;
 
 import com.ururulab.ururu.global.common.entity.TagCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
