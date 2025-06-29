@@ -250,8 +250,7 @@ public class OrderCreationService {
      * @param context 주문 생성 컨텍스트
      * @return 생성된 주문서 정보
      */
-    @Transactional
-    protected OrderCreateResponse createAndSaveOrder(OrderCreationContext context) {
+    private OrderCreateResponse createAndSaveOrder(OrderCreationContext context) {
         Order order = Order.create(context.getGroupBuy(), context.getMember());
 
         for (int i = 0; i < context.getOrderItems().size(); i++) {
