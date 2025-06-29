@@ -1,6 +1,6 @@
 package com.ururulab.ururu.product.controller;
 
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductListResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
@@ -14,7 +14,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;

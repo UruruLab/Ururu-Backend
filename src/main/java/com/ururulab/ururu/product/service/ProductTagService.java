@@ -1,6 +1,6 @@
 package com.ururulab.ururu.product.service;
 
-import com.ururulab.ururu.global.common.entity.TagCategory;
+import com.ururulab.ururu.global.domain.entity.TagCategory;
 import com.ururulab.ururu.product.domain.dto.response.ProductTagResponse;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductTag;
