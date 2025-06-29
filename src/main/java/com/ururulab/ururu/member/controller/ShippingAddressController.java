@@ -110,7 +110,7 @@ public class ShippingAddressController {
             @PathVariable final Long memberId,
             @PathVariable final Long addressId
     ) {
-        final ShippingAddress shippingAddress = shippingAddressService.getShippingAddressesById(memberId, addressId);
+        final ShippingAddress shippingAddress = shippingAddressService.getShippingAddressById(memberId, addressId);
         final ShippingAddressResponse response = ShippingAddressResponse.from(shippingAddress);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("특정 배송지를 조회했습니다.", response)
