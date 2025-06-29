@@ -28,4 +28,7 @@ public class OrderPolicy {
 
     // 시스템 메시지
     public static final String ORDER_CREATION_MESSAGE = "주문이 생성되었습니다.";
+    public static final String PAYMENT_INFO_ONLY_PENDING = "PENDING 상태에서만 결제 정보를 완성할 수 있습니다.";
+    public static final String PAYMENT_INFO_COMPLETED = "결제 정보가 완성되었습니다.";
+
 }
