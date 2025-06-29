@@ -135,4 +135,20 @@ public class ShippingAddressController {
                 ApiResponseFormat.success("기본 배송지로 설정했습니다. ", response)
         );
     }
+
+    @Operation(summary = "기본 배송지 조회", description = "회원의 기본 배송지를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "기본 배송지 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "기본 배송지가 없음")
+    })
+    @GetMapping("/default")
+    public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> getDefaultShippingAddress(
+            @PathVariable final Long memberId
+    ) {
+        final ShippingAddress shippingAddress = shippingAddressService.getDefaultShippingAddress(memberId);
+        final ShippingAddressResponse response = ShippingAddressResponse.from(shippingAddress);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("기본 배송지를 조회했습니다. ", response)
+        );
+    }
 }

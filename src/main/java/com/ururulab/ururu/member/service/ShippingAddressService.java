@@ -64,6 +64,12 @@ public class ShippingAddressService {
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId +", Member ID: " + memberId));
     }
 
+    public ShippingAddress getDefaultShippingAddress(Long memberId) {
+        return shippingAddressRepository.findByMemberIdAndIsDefaultTrue(memberId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "기본 배송지를 찾을 수 없습니다. Member ID: " + memberId));
+    }
+
     @Transactional
     public ShippingAddress updateShippingAddress(
             Long memberId,
