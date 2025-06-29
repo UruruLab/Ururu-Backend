@@ -6,14 +6,18 @@ import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
+import com.ururulab.ururu.product.event.ProductImageDeleteEvent;
+import com.ururulab.ururu.product.event.ProductImageUploadEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,21 +29,48 @@ import static com.ururulab.ururu.image.domain.ImageCategory.PRODUCTS;
 public class ProductOptionImageService {
     private final ImageService imageService;
     private final ProductOptionRepository productOptionRepository;
+    private final ImageHashService imageHashService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 상품 옵션 이미지 검증
      */
     public void validateImage(MultipartFile image) {
+        long start = System.currentTimeMillis();
         if (image == null || image.isEmpty()) {
             return;
         }
         validateSingleImage(image);
+        long end = System.currentTimeMillis();
+        log.info("Image validation took: {}ms for file: {}", end - start, image.getOriginalFilename());
     }
 
     private void validateSingleImage(MultipartFile file) {
         ImageFormat extFmt = parseExtension(file);
         ImageFormat mimeFmt = parseMimeType(file);
         ensureMatchingFormats(extFmt, mimeFmt, file);
+    }
+
+    public void validateAllImages(List<MultipartFile> optionImages) {
+        if (optionImages == null || optionImages.isEmpty()) {
+            return;
+        }
+
+        for (int i = 0; i < optionImages.size(); i++) {
+            MultipartFile imageFile = optionImages.get(i);
+
+            if (imageFile == null || imageFile.isEmpty()) {
+                continue;
+            }
+
+            try {
+                validateImage(imageFile);  // 기존 메서드 재사용
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        String.format("옵션 %d번째 이미지가 유효하지 않습니다: %s", i + 1, e.getMessage()), e
+                );
+            }
+        }
     }
 
     private ImageFormat parseExtension(MultipartFile file) {
@@ -131,7 +162,8 @@ public class ProductOptionImageService {
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "존재하지 않는 상품 옵션입니다: " + imageRequest.productOptionId()));
 
-                option.updateImageUrl(imageUrl);
+                //option.updateImageUrl(imageUrl);
+                option.updateImageInfo(imageUrl, imageRequest.imageHash());
                 productOptionRepository.save(option);
 
                 log.info("Image uploaded for option ID: {} -> {}",
@@ -141,6 +173,51 @@ public class ProductOptionImageService {
                 log.error("Failed to upload image for option ID: {}",
                         imageRequest.productOptionId(), e);
             }
+        }
+    }
+
+    // 🆕 이 메서드 추가
+    public List<ProductImageUploadRequest> createImageUploadRequests(
+            List<ProductOption> savedOptions, List<MultipartFile> optionImages) {
+
+        List<ProductImageUploadRequest> requests = new ArrayList<>();
+
+        for (int i = 0; i < savedOptions.size() && i < optionImages.size(); i++) {
+            MultipartFile imageFile = optionImages.get(i);
+
+            if (imageFile == null || imageFile.isEmpty()) {
+                continue;
+            }
+
+            ProductOption option = savedOptions.get(i);
+
+            try {
+                String imageHash = imageHashService.calculateImageHash(imageFile);
+                requests.add(new ProductImageUploadRequest(
+                        option.getId(),
+                        imageFile.getOriginalFilename(),
+                        imageFile.getBytes(),
+                        imageHash
+                ));
+            } catch (IOException e) {
+                log.error("Failed to read image file for option: {}", option.getId(), e);
+                throw new RuntimeException("이미지 파일 읽기 실패" + e.getMessage(), e);
+            }
+        }
+
+        return requests;
+    }
+
+    public void publishImageEvents(Long productId, List<ProductImageUploadRequest> imageUploadRequests,
+                                   List<String> imagesToDelete) {
+        if (!imageUploadRequests.isEmpty()) {
+            eventPublisher.publishEvent(new ProductImageUploadEvent(productId, imageUploadRequests));
+            log.info("Scheduled {} images for upload", imageUploadRequests.size());
+        }
+
+        if (!imagesToDelete.isEmpty()) {
+            eventPublisher.publishEvent(new ProductImageDeleteEvent(productId, imagesToDelete));
+            log.info("Scheduled {} images for deletion: {}", imagesToDelete.size(), imagesToDelete);
         }
     }
 

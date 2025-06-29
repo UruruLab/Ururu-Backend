@@ -5,15 +5,13 @@ import com.ururulab.ururu.global.common.repository.TagCategoryRepository;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.repository.CategoryRepository;
-import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationMessages.*;
@@ -46,6 +44,7 @@ public class ProductValidator {
     /**
      * 카테고리 유효성 검증
      */
+    @Cacheable(value = "categories", key = "#categoryIds")
     public List<Category> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             throw new IllegalArgumentException(CATEGORIES_REQUIRED);
@@ -75,6 +74,7 @@ public class ProductValidator {
     /**
      * 태그 카테고리 유효성 검증 후 TagCategory 엔티티 반환
      */
+    @Cacheable(value = "tagCategories", key = "#tagCategoryIds")
     public List<TagCategory> validateAndGetTagCategories(List<Long> tagCategoryIds) {
         if (tagCategoryIds == null || tagCategoryIds.isEmpty()) {
             throw new IllegalArgumentException(TAG_CATEGORIES_REQUIRED);

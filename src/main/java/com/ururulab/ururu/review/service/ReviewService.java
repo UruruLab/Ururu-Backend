@@ -44,11 +44,11 @@ public class ReviewService {
 	// TODO: productRepository 구현 완료 시 product 검증 추가
 	// TODO: reviewImageService 구현 완료 시 이미지 저장 처리 추가
 
-	private final static Product product = Product.of(
-			"name",
-			"description",
-			Status.ACTIVE
-	);
+//	private final static Product product = Product.of(
+//			"name",
+//			"description",
+//			Status.ACTIVE
+//	);
 
 	private static final Member member = Member.of(
 			"nickname",

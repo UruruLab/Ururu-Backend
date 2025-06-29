@@ -34,6 +34,9 @@ public class ProductOption extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String fullIngredients; // 전성분
 
+    @Column(nullable = true)
+    private String imageHash;  // 이미지 해시값 저장 (SHA-256)
+
     public static ProductOption of(
             Product product,
             String name,
@@ -56,6 +59,23 @@ public class ProductOption extends BaseEntity {
         this.imageUrl = imageUrl;
     }
 
+    // 이미지 해시 업데이트 메서드
+    public void updateImageHash(String imageHash) {
+        this.imageHash = imageHash;
+    }
+
+    // 이미지 URL과 해시 동시 업데이트 메서드
+    public void updateImageInfo(String imageUrl, String imageHash) {
+        this.imageUrl = imageUrl;
+        this.imageHash = imageHash;
+    }
+
+    // 이미지 정보 제거 메서드
+    public void removeImageInfo() {
+        this.imageUrl = null;
+        this.imageHash = null;
+    }
+
     // 이미지 URL 제거 메서드 추가
     public void removeImageUrl() {
         this.imageUrl = null;
@@ -70,4 +90,9 @@ public class ProductOption extends BaseEntity {
     public void restore() {
         this.isDeleted = false;
     }
+
+    public void updateName(String name) { this.name = name; }
+    public void updatePrice(Integer price) { this.price = price; }
+    public void updateFullIngredients(String fullIngredients) { this.fullIngredients = fullIngredients; }
+
 }

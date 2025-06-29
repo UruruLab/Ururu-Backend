@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,14 @@ import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import lombok.RequiredArgsConstructor;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ImageService {
 
 	private final S3Client s3Client;
@@ -95,5 +98,47 @@ public class ImageService {
 		URL url = s3Client.utilities()
 				.getUrl(GetUrlRequest.builder().bucket(bucket).key(key).build());
 		return url.toString();
+	}
+
+	/**
+	 * S3에서 이미지 삭제
+	 */
+	public void deleteImage(String imageUrl) {
+		try {
+			String key = extractKeyFromUrl(imageUrl);
+
+			DeleteObjectRequest deleteReq = DeleteObjectRequest.builder()
+					.bucket(bucket)
+					.key(key)
+					.build();
+
+			s3Client.deleteObject(deleteReq);
+
+			log.info("Successfully deleted image from S3: {}", key);
+		} catch (S3Exception e) {
+			log.error("S3 deletion failed for URL: {}", imageUrl, e);
+			throw new RuntimeException("S3 이미지 삭제 실패: " + e.getMessage(), e);
+		} catch (Exception e) {
+			log.error("Failed to delete image: {}", imageUrl, e);
+			throw new RuntimeException("이미지 삭제 실패", e);
+		}
+	}
+
+	/**
+	 * 이미지 URL에서 S3 키 추출
+	 */
+	private String extractKeyFromUrl(String imageUrl) {
+		try {
+			int productsIndex = imageUrl.indexOf("/products/");
+			if (productsIndex == -1) {
+				throw new IllegalArgumentException("Invalid image URL format - no products path found");
+			}
+
+			return imageUrl.substring(productsIndex + 1); // 맨 앞 "/" 제거
+
+		} catch (Exception e) {
+			log.error("Failed to extract S3 key from URL: {}", imageUrl, e);
+			throw new IllegalArgumentException("이미지 URL에서 S3 키 추출 실패: " + imageUrl, e);
+		}
 	}
 }

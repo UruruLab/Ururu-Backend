@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface ProductCategoryRepository extends JpaRepository<ProductCategory, Long> {
@@ -32,4 +33,7 @@ public interface ProductCategoryRepository extends JpaRepository<ProductCategory
      */
     @Query("SELECT pc FROM ProductCategory pc JOIN FETCH pc.category WHERE pc.product.id IN :productIds")
     List<ProductCategory> findByProductIdsWithCategory(@Param("productIds") List<Long> productIds);
+
+    void deleteByProductIdAndCategoryIdIn(Long productId, Set<Long> categoryIds);
+
 }
