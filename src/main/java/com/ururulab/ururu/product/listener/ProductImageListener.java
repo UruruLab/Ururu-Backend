@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.listner;
+package com.ururulab.ururu.product.listener;
 
 import com.ururulab.ururu.product.event.ProductImageUploadEvent;
 import com.ururulab.ururu.product.service.ProductOptionImageService;
