@@ -251,7 +251,7 @@ public class OrderCreationService {
      * @return 생성된 주문서 정보
      */
     private OrderCreateResponse createAndSaveOrder(OrderCreationContext context) {
-        Order order = Order.create(context.getGroupBuy(), context.getMember());
+        Order order = Order.create(context.getMember());
 
         for (int i = 0; i < context.getOrderItems().size(); i++) {
             OrderItemRequest orderItemRequest = context.getOrderItems().get(i);

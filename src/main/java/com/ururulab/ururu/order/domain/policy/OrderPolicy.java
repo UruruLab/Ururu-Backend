@@ -13,7 +13,6 @@ public class OrderPolicy {
     public static final int TRACKING_NUMBER_MAX_LENGTH = 50;
 
     // 에러 메시지
-    public static final String GROUPBUY_REQUIRED = "공동구매 정보는 필수입니다.";
     public static final String MEMBER_REQUIRED = "회원 정보는 필수입니다.";
     public static final String ORDER_ITEM_REQUIRED = "주문 아이템은 필수입니다.";
     public static final String STATUS_REQUIRED = "주문 상태는 필수입니다.";

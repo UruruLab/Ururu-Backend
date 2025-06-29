@@ -25,10 +25,6 @@ public class Order extends BaseEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "groupbuy_id", nullable = false)
-    private GroupBuy groupBuy;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
@@ -57,20 +53,13 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderHistory> orderHistories = new ArrayList<>();
 
-    public static Order create(
-            GroupBuy groupBuy,
-            Member member
-    ) {
-        if (groupBuy == null) {
-            throw new IllegalArgumentException(OrderPolicy.GROUPBUY_REQUIRED);
-        }
+    public static Order create(Member member) {
         if (member == null) {
             throw new IllegalArgumentException(OrderPolicy.MEMBER_REQUIRED);
         }
 
         Order order = new Order();
         order.id = UUID.randomUUID().toString();
-        order.groupBuy = groupBuy;
         order.member = member;
         order.status = OrderStatus.PENDING;
         order.phone = null;
