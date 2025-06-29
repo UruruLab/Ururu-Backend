@@ -24,10 +24,10 @@ public record GetBeautyProfileResponse(
         return new GetBeautyProfileResponse(
                 beautyProfile.getId(),
                 beautyProfile.getSkinType(),
-                beautyProfile.getConcerns(),
+                List.copyOf(beautyProfile.getConcerns()),
                 beautyProfile.getHasAllergy(),
-                beautyProfile.getAllergies(),
-                beautyProfile.getInterestCategories(),
+                List.copyOf(beautyProfile.getAllergies()),
+                List.copyOf(beautyProfile.getInterestCategories()),
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
                 beautyProfile.getAdditionalInfo(),
