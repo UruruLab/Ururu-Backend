@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.global.common.entity.Tag;
-import com.ururulab.ururu.global.common.entity.enumerated.Gender;
-import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.Tag;
+import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;

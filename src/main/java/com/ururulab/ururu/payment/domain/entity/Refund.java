@@ -1,6 +1,6 @@
 package com.ururulab.ururu.payment.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.policy.RefundPolicy;
 import jakarta.persistence.*;

@@ -1,13 +1,13 @@
 package com.ururulab.ururu.member.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 @Getter
@@ -30,7 +30,7 @@ public class MemberAgreement extends BaseEntity {
     @Column(nullable = false)
     private boolean agreed;
 
-    private LocalDateTime agreeAt;
+    private ZonedDateTime agreeAt;
 
     public static MemberAgreement of (
             Member member,
@@ -41,7 +41,7 @@ public class MemberAgreement extends BaseEntity {
         memberAgreement.member = member;
         memberAgreement.type = type;
         memberAgreement.agreed = agreed;
-        memberAgreement.agreeAt = agreed ? LocalDateTime.now() : null;
+        memberAgreement.agreeAt = agreed ? ZonedDateTime.now() : null;
         return memberAgreement;
     }
 }

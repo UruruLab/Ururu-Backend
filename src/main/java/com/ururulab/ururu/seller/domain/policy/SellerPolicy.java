@@ -1,5 +1,6 @@
 package com.ururulab.ururu.seller.domain.policy;
 
+import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationConstants;
 import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationMessages;
 import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationPatterns;
 import lombok.experimental.UtilityClass;
@@ -44,7 +45,10 @@ public class SellerPolicy {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_REQUIRED);
         }
 
-        if (!email.trim().contains("@")) {
+        // 이메일 정규화 (소문자 변환)
+        final String normalizedEmail = email.trim().toLowerCase();
+        
+        if (!normalizedEmail.matches(SellerValidationPatterns.EMAIL_PATTERN)) {
             throw new IllegalArgumentException(SellerValidationMessages.EMAIL_FORMAT);
         }
     }
@@ -53,6 +57,9 @@ public class SellerPolicy {
     public static void validatePassword(String password) {
         if (password == null || password.trim().isEmpty()) {
             throw new IllegalArgumentException(SellerValidationMessages.PASSWORD_REQUIRED);
+        }
+        if (password.length() > SellerValidationConstants.PASSWORD_MAX_LENGTH) {
+            throw new IllegalArgumentException(SellerValidationMessages.PASSWORD_SIZE);
         }
         if (!password.matches(SellerValidationPatterns.PASSWORD_PATTERN)) {
             throw new IllegalArgumentException(SellerValidationMessages.PASSWORD_PATTERN);

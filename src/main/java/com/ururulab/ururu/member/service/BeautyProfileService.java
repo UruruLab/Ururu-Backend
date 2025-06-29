@@ -1,6 +1,10 @@
 package com.ururulab.ururu.member.service;
 
+import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
+import com.ururulab.ururu.member.domain.dto.response.CreateBeautyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.GetBeautyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.UpdateBeautyProfileResponse;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
@@ -20,16 +24,21 @@ public class BeautyProfileService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public BeautyProfile createBeautyProfile(Long memberId, BeautyProfileRequest request){
+    public CreateBeautyProfileResponse createBeautyProfile(Long memberId, BeautyProfileRequest request){
+        if (beautyProfileRepository.existsByMemberId(memberId)) {
+            throw new IllegalStateException("이미 뷰티 프로필이 존재합니다.");
+        }
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
         request.validateBusinessRules();
+        SkinType skinType = parseSkinType(request.skinType());
 
         BeautyProfile beautyProfile = BeautyProfile.of(
                 member,
-                request.skinType(),
+                skinType,
                 request.concerns(),
                 request.hasAllergy(),
                 request.allergies(),
@@ -42,25 +51,28 @@ public class BeautyProfileService {
         BeautyProfile savedProfile = beautyProfileRepository.save(beautyProfile);
         log.info("BeautyProfile created for member ID: {}", memberId);
 
-        return savedProfile;
+        return CreateBeautyProfileResponse.from(savedProfile);
     }
 
-    public BeautyProfile getBeautyProfile(Long memberId) {
-        return beautyProfileRepository.findByMemberId(memberId)
+    public GetBeautyProfileResponse getBeautyProfile(Long memberId) {
+        BeautyProfile beautyProfile =  beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "뷰티 프로필을 찾을 수 없습니다. Member ID: "+ memberId));
+
+        return GetBeautyProfileResponse.from(beautyProfile);
     }
 
     @Transactional
-    public BeautyProfile updateBeautyProfile(Long memberId, BeautyProfileRequest request) {
+    public UpdateBeautyProfileResponse updateBeautyProfile(Long memberId, BeautyProfileRequest request) {
         BeautyProfile beautyProfile = beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "뷰티 프로필을 찾을 수 없습니다. Member ID: " + memberId));
 
         request.validateBusinessRules();
+        SkinType skinType = parseSkinType(request.skinType());
 
         beautyProfile.updateProfile(
-                request.skinType(),
+                skinType,
                 request.concerns(),
                 request.hasAllergy(),
                 request.allergies(),
@@ -73,7 +85,27 @@ public class BeautyProfileService {
         BeautyProfile updatedProfile = beautyProfileRepository.save(beautyProfile);
         log.info("BeautyProfile updated for member ID: {}", memberId);
 
-        return updatedProfile;
+        return UpdateBeautyProfileResponse.from(updatedProfile);
     }
 
+    @Transactional
+    public void deleteBeautyProfile(Long memberId) {
+        if (!beautyProfileRepository.existsByMemberId(memberId)) {
+            throw new EntityNotFoundException("뷰티 프로필을 찾을 수 없습니다. Member ID: " + memberId);
+        }
+
+        beautyProfileRepository.deleteByMemberId(memberId);
+        log.info("BeautyProfile deleted for member ID: {}", memberId);
+    }
+
+    private SkinType parseSkinType(final String skinTypeString) {
+        if (skinTypeString == null) {
+            return null;
+        }
+        try {
+            return SkinType.from(skinTypeString);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("올바른 피부 타입 값이 아닙니다: " + skinTypeString, e);
+        }
+    }
 }

@@ -1,6 +1,6 @@
 package com.ururulab.ururu.order.domain.entity.enumerated;
 
-import com.ururulab.ururu.global.common.entity.enumerated.EnumParser;
+import com.ururulab.ururu.global.domain.entity.enumerated.EnumParser;
 
 public enum OrderStatus {
     ORDERED,    // 주문 완료

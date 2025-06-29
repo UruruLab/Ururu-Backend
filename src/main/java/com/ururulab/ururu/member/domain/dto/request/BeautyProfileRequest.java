@@ -1,6 +1,6 @@
 package com.ururulab.ururu.member.domain.dto.request;
 
-import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationConstants;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationMessages;
@@ -13,7 +13,7 @@ import java.util.List;
 public record BeautyProfileRequest(
         @NotNull(message = BeautyProfileValidationMessages.SKIN_TYPE_REQUIRED)
         @EnumValue(enumClass = SkinType.class, message = BeautyProfileValidationMessages.SKIN_TYPE_INVALID)
-        SkinType skinType,
+        String skinType,
 
         @Size(max = BeautyProfileValidationConstants.MAX_CONCERNS_COUNT,
                 message = BeautyProfileValidationMessages.SKIN_CONCERNS_SIZE)

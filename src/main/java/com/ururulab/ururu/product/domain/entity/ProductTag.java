@@ -1,7 +1,7 @@
 package com.ururulab.ururu.product.domain.entity;
 
-import com.ururulab.ururu.global.common.entity.BaseEntity;
-import com.ururulab.ururu.global.common.entity.TagCategory;
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.TagCategory;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
