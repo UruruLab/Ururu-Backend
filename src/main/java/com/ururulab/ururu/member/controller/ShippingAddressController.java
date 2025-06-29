@@ -5,7 +5,6 @@ import com.ururulab.ururu.member.domain.dto.request.ShippingAddressRequest;
 import com.ururulab.ururu.member.domain.dto.response.ShippingAddressListResponse;
 import com.ururulab.ururu.member.domain.dto.response.ShippingAddressResponse;
 import com.ururulab.ururu.member.domain.entity.ShippingAddress;
-import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.service.ShippingAddressService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,7 +25,6 @@ import java.util.List;
 public class ShippingAddressController {
 
     private final ShippingAddressService shippingAddressService;
-    private final ShippingAddressRepository shippingAddressRepository;
 
     @Operation(summary = "배송지 목록 조회", description = "특정 회원의 모든 배송지를 조회합니다.")
     @ApiResponses({

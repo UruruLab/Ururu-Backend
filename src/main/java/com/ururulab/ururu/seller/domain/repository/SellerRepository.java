@@ -25,6 +25,7 @@ public interface SellerRepository extends JpaRepository<Seller, Long> {
     boolean existsByEmailAndIsDeletedFalse(String email);
     boolean existsByBusinessNumberAndIsDeletedFalse(String businessNumber);
     boolean existsByNameAndIsDeletedFalse(String name);
+    boolean existsByIdAndIsDeletedFalse(Long id);
 
     // === 가용성 체크 ===
     default boolean isEmailAvailable(String email) {
