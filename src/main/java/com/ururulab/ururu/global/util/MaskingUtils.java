@@ -1,4 +1,4 @@
-package com.ururulab.ururu.global.common.util;
+package com.ururulab.ururu.global.util;
 
 import lombok.experimental.UtilityClass;
 
