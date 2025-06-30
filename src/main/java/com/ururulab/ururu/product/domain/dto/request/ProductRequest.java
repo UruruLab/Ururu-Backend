@@ -43,7 +43,7 @@ public record ProductRequest(
                 seller,
                 name,
                 description,
-                Status.ACTIVE
+                Status.INACTIVE
         );
     }
 }

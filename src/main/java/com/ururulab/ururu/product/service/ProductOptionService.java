@@ -7,6 +7,7 @@ import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -232,6 +233,30 @@ public class ProductOptionService {
         }
 
         return savedOption;
+    }
+
+    @Transactional
+    public void deleteProductOption(Long productId, Long optionId, Long sellerId) {
+        productRepository.findByIdAndSellerIdAndStatusIn(
+                productId, sellerId, Arrays.asList(Status.ACTIVE, Status.INACTIVE)
+        ).orElseThrow(() -> new BusinessException(ErrorCode.ACCESS_DENIED));
+
+        ProductOption option = productOptionRepository.findByIdAndIsDeletedFalse(optionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND, optionId));
+
+        if (!option.getProduct().getId().equals(productId)) {
+            throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT);
+        }
+
+        List<ProductOption> activeOptions = productOptionRepository.findByProductIdAndIsDeletedFalse(productId);
+
+        if (activeOptions.size() <= 1) {
+            throw new BusinessException(ErrorCode.CANNOT_DELETE_LAST_OPTION);
+        }
+
+        // 삭제 처리
+        option.markAsDeleted();
+        productOptionRepository.save(option);
     }
 
 }

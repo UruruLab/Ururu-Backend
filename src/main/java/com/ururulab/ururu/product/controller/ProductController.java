@@ -1,5 +1,6 @@
 package com.ururulab.ururu.product.controller;
 
+import com.nimbusds.jwt.JWT;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductListResponse;
@@ -32,7 +33,7 @@ import java.util.List;
 @Tag(name = "상품", description = "상품 관리 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/products/{sellerId}")  // sellerId를 경로에 포함
+@RequestMapping("/products/{sellerId}")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
 public class ProductController {
 
     private final ProductService productService;
@@ -49,10 +50,13 @@ public class ProductController {
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponseFormat<ProductResponse>> createProduct(
-            @PathVariable Long sellerId,
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @Valid @RequestPart("product") ProductRequest productRequest,
             @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
     ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
         ProductResponse response = productService.createProduct(productRequest, optionImages, sellerId);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponseFormat.success("상품이 등록되었습니다.", response));
@@ -67,10 +71,14 @@ public class ProductController {
     })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<Page<ProductListResponse>>> getProducts(
-            @PathVariable Long sellerId,
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PageableDefault(page = 0, size = 10, sort = {"createdAt", "id"}, direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
+
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
         Page<ProductListResponse> products = productService.getProducts(pageable, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 목록 조회가 성공했습니다.", products));
     }
@@ -84,9 +92,12 @@ public class ProductController {
     })
     @GetMapping("/{productId}")
     public ResponseEntity<ApiResponseFormat<ProductResponse>> getProduct(
-            @PathVariable Long sellerId,
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId
     ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
         ProductResponse response = productService.getProduct(productId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 상세 조회가 성공했습니다.", response));
     }
@@ -103,11 +114,14 @@ public class ProductController {
     })
     @PatchMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponseFormat<ProductResponse>> updateProduct(
-            @PathVariable Long sellerId,
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId,
             @Valid @RequestPart("product") ProductRequest productRequest,
             @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
     ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
         ProductResponse response = productService.updateProduct(productId, productRequest, optionImages, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품이 수정되었습니다.", response));
     }
@@ -121,18 +135,53 @@ public class ProductController {
     })
     @GetMapping("/{productId}/options")
     public ResponseEntity<ApiResponseFormat<List<ProductOptionResponse>>> getProductOptions(
-            @PathVariable Long sellerId,  // URL에서 받되
+            @PathVariable Long sellerId,  // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId
-            //HttpServletRequest request
     ) {
         // TODO: JWT 구현 후 주석 제거
-        // Long jwtSellerId = extractSellerIdFromJWT(request);
-        // if (!sellerId.equals(jwtSellerId)) {
-        //     throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        // }
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
 
         List<ProductOptionResponse> response = productOptionService.getProductOptions(productId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 옵션 조회가 성공했습니다.", response));
     }
 
+    @Operation(summary = "상품 옵션 삭제", description = "판매자가 특정 상품의 옵션을 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 옵션 삭제 성공"),
+            @ApiResponse(responseCode = "400", description = "상품의 마지막 옵션은 삭제할 수 없음"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 옵션"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @DeleteMapping("/{productId}/options/{optionId}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteProductOption(
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
+            @PathVariable Long productId,
+            @PathVariable Long optionId
+    ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
+        productOptionService.deleteProductOption(productId, optionId, sellerId);
+        return ResponseEntity.ok(ApiResponseFormat.success("상품 옵션이 삭제되었습니다."));
+    }
+
+    @Operation(summary = "상품 삭제", description = "판매자가 상품을 삭제합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 삭제 성공"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 상품"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteProduct(
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
+            @PathVariable Long productId
+    ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
+        productService.deleteProduct(productId, sellerId);
+        return ResponseEntity.ok(ApiResponseFormat.success("상품이 삭제되었습니다."));
+    }
 }

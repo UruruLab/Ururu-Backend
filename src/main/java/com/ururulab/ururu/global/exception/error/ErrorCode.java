@@ -40,8 +40,10 @@ public enum ErrorCode {
 	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
 
 	// --- 상품 ---
-	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다: %s"),
+	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
 	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
+	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
+	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH001", "접근 권한이 없습니다."),
 
 	// --- 판매자 ---

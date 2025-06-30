@@ -2,6 +2,7 @@ package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.domain.entity.TagCategory;
 import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductNoticeRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
@@ -435,5 +436,32 @@ public class ProductService {
             log.info("Product notice unchanged for product: {}", product.getId());
             return ProductNoticeResponse.from(existingNotice);
         }
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId, Long sellerId) {
+        // 1. 상품 존재 여부 먼저 확인
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // 2. 상품 상태 확인 (이미 삭제된 상품)
+        if (product.getStatus() == Status.DELETED) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        // 3. 권한 확인
+        if (!product.getSeller().getId().equals(sellerId)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 4. 상태 확인 (ACTIVE, INACTIVE만 삭제 가능)
+        if (!Arrays.asList(Status.ACTIVE, Status.INACTIVE).contains(product.getStatus())) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 5. 삭제 처리
+        product.updateStatus(Status.DELETED);
+        productOptionRepository.markAllAsDeletedByProductId(productId);
+        productRepository.save(product);
     }
 }
