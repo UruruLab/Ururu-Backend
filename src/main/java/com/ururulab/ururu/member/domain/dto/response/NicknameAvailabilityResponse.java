@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record NicknameAvailabilityResponse(
         @JsonProperty("is_available") boolean isAvailable
 ) {
-    public static NicknameAvailabilityResponse of(final boolean isAvailable){
+    public static NicknameAvailabilityResponse from(final boolean isAvailable){
         return new NicknameAvailabilityResponse(isAvailable);
     }
 }

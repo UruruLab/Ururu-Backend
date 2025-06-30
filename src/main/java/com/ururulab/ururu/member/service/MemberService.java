@@ -124,7 +124,7 @@ public class MemberService {
 
     public NicknameAvailabilityResponse getNicknameAvailability(final String nickname) {
         final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
-        return NicknameAvailabilityResponse.of(isAvailable);
+        return NicknameAvailabilityResponse.from(isAvailable);
     }
 
     public boolean checkEmailExists(final String email) {
@@ -133,7 +133,7 @@ public class MemberService {
 
     public EmailAvailabilityResponse getEmailAvailability(final String email) {
         final boolean isAvailable = memberRepository.isEmailAvailable(email);
-        return EmailAvailabilityResponse.of(isAvailable);
+        return EmailAvailabilityResponse.from(isAvailable);
     }
 
     @Transactional
