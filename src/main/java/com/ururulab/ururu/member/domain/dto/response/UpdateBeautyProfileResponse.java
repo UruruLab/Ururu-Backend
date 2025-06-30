@@ -25,7 +25,7 @@ public record UpdateBeautyProfileResponse(
                 beautyProfile.getSkinType(),
                 List.copyOf(beautyProfile.getConcerns()),
                 beautyProfile.getHasAllergy(),
-                List.copyOf(beautyProfile.getAllergies()),
+                beautyProfile.getAllergies() != null ? List.copyOf(beautyProfile.getAllergies()) : List.of(),
                 List.copyOf(beautyProfile.getInterestCategories()),
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
