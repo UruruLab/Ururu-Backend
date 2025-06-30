@@ -179,7 +179,7 @@ public class CartService {
                 option.getProductOption().getName(),
                 option.getProductOption().getImageUrl(),
                 option.getSalePrice(),
-                toZonedDateTime(option.getGroupBuy().getEndsAt())
+                toZonedDateTime(option.getGroupBuy().getEndsAt()).toInstant()
         );
     }
 

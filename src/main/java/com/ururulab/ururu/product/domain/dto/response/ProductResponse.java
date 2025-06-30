@@ -4,16 +4,17 @@ import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductTag;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public record ProductResponse(
         Long id,
         String name,
         String description,
         Status status,
-        ZonedDateTime createdAt,
-        ZonedDateTime updatedAt,
+        Instant createdAt,
+        Instant updatedAt,
         List<CategoryResponse> categories,
         List<ProductOptionResponse> productOptions,
         ProductNoticeResponse productNotice,

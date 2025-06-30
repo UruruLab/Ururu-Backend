@@ -36,6 +36,8 @@ public record SellerSignupRequest(
         String email,
 
         @NotBlank(message = SellerValidationMessages.PASSWORD_REQUIRED)
+        @Size(max = SellerValidationConstants.PASSWORD_MAX_LENGTH,
+                message = SellerValidationMessages.PASSWORD_SIZE)
         @Pattern(regexp = SellerValidationPatterns.PASSWORD_PATTERN,
                 message = SellerValidationMessages.PASSWORD_PATTERN)
         String password,
