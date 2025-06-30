@@ -57,15 +57,13 @@ public class ProductService {
         Seller seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 판매자입니다."));
 
-        // 2. 요청 데이터 검증 (이미지 검증 포함) - 기존과 동일
-        productValidator.validateProductRequest(productRequest);
-
-        if (optionImages != null && !optionImages.isEmpty()) {
-            productOptionImageService.validateAllImages(optionImages); // 업로드 전 검증
+        if (optionImages != null) {
+            productValidator.validateOptionImagePair(productRequest.productOptions(), optionImages);
         }
+
         stopWatch.stop();
 
-        // 3. 카테고리 및 태그카테고리 유효성 검증 - 기존과 동일
+        // 3. 카테고리 및 태그카테고리 유효성 검증
         stopWatch.start("categoryValidation");
         List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
         List<TagCategory> tagCategories = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
@@ -172,7 +170,7 @@ public class ProductService {
      */
     @Transactional(readOnly = true)
     public ProductResponse getProduct(Long productId, Long sellerId) {
-        StopWatch stopWatch = new StopWatch("vaildate");
+        StopWatch stopWatch = new StopWatch("validate");
 
         log.info("Getting product detail for ID: {} by seller: {}", productId, sellerId);
 
@@ -283,12 +281,12 @@ public class ProductService {
                 productId, sellerId, Arrays.asList(Status.ACTIVE, Status.INACTIVE)
         ).orElseThrow(() -> new RuntimeException("존재하지 않는 상품이거나 접근 권한이 없습니다."));
 
-        // 2. 요청 데이터 검증 (기존과 동일)
-        productValidator.validateProductRequest(productRequest);
 
-        if (optionImages != null && !optionImages.isEmpty()) {
-            productOptionImageService.validateAllImages(optionImages);
+        // 2. 옵션-이미지 검증
+        if (optionImages != null) {
+            productValidator.validateOptionImagePair(productRequest.productOptions(), optionImages);
         }
+
         stopWatch.stop();
 
         // 3. 카테고리 및 태그카테고리 유효성 검증 (기존과 동일)

@@ -1,13 +1,14 @@
 package com.ururulab.ururu.product.service;
 
-import com.ururulab.ururu.image.domain.ImageFormat;
-import com.ururulab.ururu.image.exception.InvalidImageFormatException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import com.ururulab.ururu.product.event.ProductImageDeleteEvent;
 import com.ururulab.ururu.product.event.ProductImageUploadEvent;
+import com.ururulab.ururu.product.service.validation.ProductValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,95 +32,15 @@ public class ProductOptionImageService {
     private final ProductOptionRepository productOptionRepository;
     private final ImageHashService imageHashService;
     private final ApplicationEventPublisher eventPublisher;
+    private final ProductValidator productValidator;
 
-    /**
-     * 상품 옵션 이미지 검증
-     */
-    public void validateImage(MultipartFile image) {
-        long start = System.currentTimeMillis();
-        if (image == null || image.isEmpty()) {
-            return;
-        }
-        validateSingleImage(image);
-        long end = System.currentTimeMillis();
-        log.info("Image validation took: {}ms for file: {}", end - start, image.getOriginalFilename());
-    }
-
-    private void validateSingleImage(MultipartFile file) {
-        ImageFormat extFmt = parseExtension(file);
-        ImageFormat mimeFmt = parseMimeType(file);
-        ensureMatchingFormats(extFmt, mimeFmt, file);
-    }
-
-    public void validateAllImages(List<MultipartFile> optionImages) {
-        if (optionImages == null || optionImages.isEmpty()) {
-            return;
-        }
-
-        for (int i = 0; i < optionImages.size(); i++) {
-            MultipartFile imageFile = optionImages.get(i);
-
-            if (imageFile == null || imageFile.isEmpty()) {
-                continue;
-            }
-
-            try {
-                validateImage(imageFile);  // 기존 메서드 재사용
-            } catch (Exception e) {
-                throw new IllegalArgumentException(
-                        String.format("옵션 %d번째 이미지가 유효하지 않습니다: %s", i + 1, e.getMessage()), e
-                );
-            }
-        }
-    }
-
-    private ImageFormat parseExtension(MultipartFile file) {
-        String filename = Optional.ofNullable(file.getOriginalFilename())
-                .filter(n -> n.contains("."))
-                .orElseThrow(() ->
-                        new InvalidImageFormatException("파일명이 없거나 확장자를 찾을 수 없습니다.")
-                );
-        int idx = filename.lastIndexOf('.');
-        if (idx == filename.length() - 1) {
-            throw new InvalidImageFormatException("파일명이 마침표로 끝납니다: " + filename);
-        }
-        String ext = filename.substring(idx + 1).toLowerCase();
-        return ImageFormat.fromExtension(ext)
-                .orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 확장자: " + ext));
-    }
-
-    private ImageFormat parseMimeType(MultipartFile file) {
-        String mime = Optional.ofNullable(file.getContentType())
-                .orElseThrow(() ->
-                        new InvalidImageFormatException("MIME 타입을 확인할 수 없습니다.")
-                );
-        return ImageFormat.fromMimeType(mime)
-                .orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 MIME 타입: " + mime));
-    }
-
-    private void ensureMatchingFormats(
-            ImageFormat extFmt,
-            ImageFormat mimeFmt,
-            MultipartFile file
-    ) {
-        if (extFmt != mimeFmt) {
-            throw new InvalidImageFormatException(
-                    String.format(
-                            "확장자(%s)와 MIME(%s)이 일치하지 않습니다: file=%s",
-                            extFmt.getExtension(),
-                            mimeFmt.getMimeType(),
-                            file.getOriginalFilename()
-                    )
-            );
-        }
-    }
 
     /**
      * 상품 옵션 이미지 단일 업로드
      */
     public String uploadProductOptionImage(MultipartFile file) {
         try {
-            validateImage(file);
+            productValidator.validateImage(file);
             String filename = Optional.ofNullable(file.getOriginalFilename())
                     .orElseThrow(() -> new IllegalArgumentException("파일명이 없습니다."));
 
@@ -176,13 +97,18 @@ public class ProductOptionImageService {
         }
     }
 
-    // 🆕 이 메서드 추가
     public List<ProductImageUploadRequest> createImageUploadRequests(
             List<ProductOption> savedOptions, List<MultipartFile> optionImages) {
 
+        // 개수 불일치 체크
+        if (savedOptions.size() != optionImages.size()) {
+            throw new BusinessException(ErrorCode.OPTION_IMAGE_COUNT_MISMATCH,
+                    savedOptions.size(), optionImages.size());
+        }
+
         List<ProductImageUploadRequest> requests = new ArrayList<>();
 
-        for (int i = 0; i < savedOptions.size() && i < optionImages.size(); i++) {
+        for (int i = 0; i < savedOptions.size(); i++) {
             MultipartFile imageFile = optionImages.get(i);
 
             if (imageFile == null || imageFile.isEmpty()) {
