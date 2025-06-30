@@ -25,10 +25,6 @@ public class Order extends BaseEntity {
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "groupbuy_id", nullable = false)
-    private GroupBuy groupBuy;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
@@ -36,13 +32,13 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus status;
 
-    @Column(length = OrderPolicy.PHONE_MAX_LENGTH, nullable = false)
+    @Column(length = OrderPolicy.PHONE_MAX_LENGTH)
     private String phone;
 
-    @Column(length = OrderPolicy.ZONECODE_MAX_LENGTH, nullable = false)
+    @Column(length = OrderPolicy.ZONECODE_MAX_LENGTH)
     private String zonecode;
 
-    @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH, nullable = false)
+    @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH)
     private String address1;
 
     @Column(length = OrderPolicy.ADDRESS_MAX_LENGTH)
@@ -57,20 +53,30 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderHistory> orderHistories = new ArrayList<>();
 
-    public static Order create(
-            GroupBuy groupBuy,
-            Member member,
-            String phone,
-            String zonecode,
-            String address1,
-            String address2
-    ) {
-        if (groupBuy == null) {
-            throw new IllegalArgumentException(OrderPolicy.GROUPBUY_REQUIRED);
-        }
+    public static Order create(Member member) {
         if (member == null) {
             throw new IllegalArgumentException(OrderPolicy.MEMBER_REQUIRED);
         }
+
+        Order order = new Order();
+        order.id = UUID.randomUUID().toString();
+        order.member = member;
+        order.status = OrderStatus.PENDING;
+        order.phone = null;
+        order.zonecode = null;
+        order.address1 = null;
+        order.address2 = null;
+
+        order.addOrderHistory(OrderStatus.PENDING, OrderPolicy.ORDER_CREATION_MESSAGE);
+
+        return order;
+    }
+
+    public void completePaymentInfo(String phone, String zonecode, String address1, String address2) {
+        if (this.status != OrderStatus.PENDING) {
+            throw new IllegalStateException(OrderPolicy.PAYMENT_INFO_ONLY_PENDING);
+        }
+
         if (phone == null || phone.trim().isEmpty()) {
             throw new IllegalArgumentException(OrderPolicy.PHONE_REQUIRED);
         }
@@ -93,19 +99,12 @@ public class Order extends BaseEntity {
             throw new IllegalArgumentException(OrderPolicy.ADDRESS2_TOO_LONG);
         }
 
-        Order order = new Order();
-        order.id = UUID.randomUUID().toString();
-        order.groupBuy = groupBuy;
-        order.member = member;
-        order.status = OrderStatus.ORDERED;
-        order.phone = phone.trim();
-        order.zonecode = zonecode.trim();
-        order.address1 = address1.trim();
-        order.address2 = address2;
+        this.phone = phone.trim();
+        this.zonecode = zonecode.trim();
+        this.address1 = address1.trim();
+        this.address2 = address2.trim();
 
-        order.addOrderHistory(OrderStatus.ORDERED, OrderPolicy.ORDER_CREATION_MESSAGE);
-
-        return order;
+        this.addOrderHistory(OrderStatus.PENDING, OrderPolicy.PAYMENT_INFO_COMPLETED);
     }
 
     public void addOrderItem(OrderItem orderItem) {
