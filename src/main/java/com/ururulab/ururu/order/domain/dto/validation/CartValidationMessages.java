@@ -3,7 +3,7 @@ package com.ururulab.ururu.order.domain.dto.validation;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class ValidationMessages {
+public class CartValidationMessages {
 
     // 장바구니 추가 관련
     public static final String GROUPBUY_OPTION_ID_REQUIRED = "공구 옵션 ID는 필수입니다.";

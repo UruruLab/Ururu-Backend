@@ -1,6 +1,6 @@
 package com.ururulab.ururu.order.controller;
 
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.order.domain.dto.request.CartItemAddRequest;
 import com.ururulab.ururu.order.domain.dto.request.CartItemQuantityChangeRequest;
 import com.ururulab.ururu.order.domain.dto.response.CartItemAddResponse;

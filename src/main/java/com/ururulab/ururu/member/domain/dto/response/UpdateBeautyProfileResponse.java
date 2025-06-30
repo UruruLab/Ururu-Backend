@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.ururulab.ururu.global.common.entity.enumerated.SkinType;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 
 import java.time.ZonedDateTime;
@@ -23,10 +23,10 @@ public record UpdateBeautyProfileResponse(
         return new UpdateBeautyProfileResponse(
                 beautyProfile.getId(),
                 beautyProfile.getSkinType(),
-                beautyProfile.getConcerns(),
+                List.copyOf(beautyProfile.getConcerns()),
                 beautyProfile.getHasAllergy(),
-                beautyProfile.getAllergies(),
-                beautyProfile.getInterestCategories(),
+                beautyProfile.getAllergies() != null ? List.copyOf(beautyProfile.getAllergies()) : List.of(),
+                List.copyOf(beautyProfile.getInterestCategories()),
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
                 beautyProfile.getAdditionalInfo(),

@@ -21,8 +21,6 @@ import java.util.List;
 @Profile("dev")  // dev 환경에서만 활성화
 public class CorsConfig {
 
-    private static final String LOCALHOST_8080 = "http://localhost:8080";
-    private static final String LOCALHOST_IP = "http://127.0.0.1:5500";
     private static final long PREFLIGHT_CACHE_SECONDS = 3600L; // 1시간
 
     @Bean
@@ -46,12 +44,10 @@ public class CorsConfig {
     private CorsConfiguration createBaseCorsConfiguration() {
         final CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of(
-                LOCALHOST_8080,    // 백엔드 서버 자체
-                LOCALHOST_IP,      // IP 접근
-                "http://localhost:3000",  // 추후 React 개발 서버용
-                "http://localhost:3001",   // 추후 Next.js 개발 서버용
-                "http://127.0.0.1:5500"
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://*.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -74,7 +70,6 @@ public class CorsConfig {
         ));
 
         configuration.setAllowCredentials(true);
-
         configuration.setMaxAge(PREFLIGHT_CACHE_SECONDS);
 
         return configuration;

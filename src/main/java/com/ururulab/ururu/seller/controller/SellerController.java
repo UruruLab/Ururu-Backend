@@ -1,6 +1,6 @@
 package com.ururulab.ururu.seller.controller;
 
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.common.util.MaskingUtils;
 import com.ururulab.ururu.seller.domain.dto.request.SellerSignupRequest;
 import com.ururulab.ururu.seller.domain.dto.response.SellerAvailabilityResponse;

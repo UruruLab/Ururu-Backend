@@ -1,6 +1,6 @@
 package com.ururulab.ururu.member.controller;
 
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.domain.dto.response.CreateBeautyProfileResponse;
 import com.ururulab.ururu.member.domain.dto.response.GetBeautyProfileResponse;
