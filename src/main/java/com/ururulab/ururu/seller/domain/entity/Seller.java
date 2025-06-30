@@ -37,7 +37,7 @@ public class Seller extends BaseEntity {
     @Column(length = SellerValidationConstants.EMAIL_MAX_LENGTH, nullable = false, unique = true)
     private String email;
 
-    @Column(length = SellerValidationConstants.PASSWORD_MAX_LENGTH, nullable = false)
+    @Column(length = 255, nullable = false)
     private String password; // 암호화된 비밀번호
 
     @Column(length = SellerValidationConstants.PHONE_MAX_LENGTH, nullable = false)
@@ -77,7 +77,6 @@ public class Seller extends BaseEntity {
         SellerPolicy.validateOwnerName(ownerName);
         SellerPolicy.validateBusinessNumber(businessNumber);
         SellerPolicy.validateEmail(email);
-        SellerPolicy.validatePassword(password);
         SellerPolicy.validatePhone(phone);
         SellerPolicy.validateAddress1(address1);
         SellerPolicy.validateAddress2(address2);
