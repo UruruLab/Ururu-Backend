@@ -31,4 +31,8 @@ public class TagCategory extends BaseEntity{
 	// TagCategory - ProductTag 연관관계 설정 TagCategory 삭제 . ProductTag도 삭제
 	@OneToMany(mappedBy = "tagCategory", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<ProductTag> productTags = new ArrayList<>();
+
+	public void updateName(String newName) {
+		this.name = newName;
+	}
 }

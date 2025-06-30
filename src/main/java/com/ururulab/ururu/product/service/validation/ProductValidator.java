@@ -33,54 +33,35 @@ public class ProductValidator {
     /**
      * 카테고리 유효성 검증
      */
-    @Cacheable(value = "categories", key = "#categoryIds")
+    @Cacheable(value = "category", key = "#categoryId")
+    public Category findCategoryById(Long categoryId) {
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + categoryId));
+    }
+
+    @Cacheable(value = "tagCategory", key = "#tagCategoryId")
+    public TagCategory findTagCategoryById(Long tagCategoryId) {
+        return tagCategoryRepository.findById(tagCategoryId)
+                .orElseThrow(() -> new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": " + tagCategoryId));
+    }
+
+
     public List<Category> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
-        // 1. 중복 제거를 List로 바로 처리
-        List<Long> uniqueCategoryIds = categoryIds.stream().distinct().toList();
-
-        // 2. 배치 조회
-        List<Category> categories = categoryRepository.findAllById(uniqueCategoryIds);
-
-        // 3. 존재 여부 확인 최적화
-        if (categories.size() != uniqueCategoryIds.size()) {
-            Map<Long, Category> categoryMap = categories.stream()
-                    .collect(Collectors.toMap(Category::getId, category -> category));
-
-            List<Long> missingIds = uniqueCategoryIds.stream()
-                    .filter(id -> !categoryMap.containsKey(id))
-                    .toList();
-
-            throw new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + missingIds);
-        }
-
-        return categories;
+        return categoryIds.stream()
+                .distinct()
+                .sorted()
+                .map(this::findCategoryById) // 캐시 + 존재 검증 포함
+                .toList();
     }
 
-    /**
-     * 태그 카테고리 유효성 검증 후 TagCategory 엔티티 반환
-     */
-    @Cacheable(value = "tagCategories", key = "#tagCategoryIds")
     public List<TagCategory> validateAndGetTagCategories(List<Long> tagCategoryIds) {
-        // 1. 중복 제거
-        List<Long> uniqueIds = tagCategoryIds.stream().distinct().toList();
-
-        // 2. 배치 조회
-        List<TagCategory> tagCategories = tagCategoryRepository.findAllById(uniqueIds);
-
-        // 3. 존재 여부 확인
-        if (tagCategories.size() != uniqueIds.size()) {
-            Map<Long, TagCategory> foundMap = tagCategories.stream()
-                    .collect(Collectors.toMap(TagCategory::getId, t -> t));
-
-            List<Long> missingIds = uniqueIds.stream()
-                    .filter(id -> !foundMap.containsKey(id))
-                    .toList();
-
-            throw new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": "+ missingIds);
-        }
-
-        return tagCategories;
+        return tagCategoryIds.stream()
+                .distinct()
+                .sorted()
+                .map(this::findTagCategoryById)
+                .toList();
     }
+
 
     public void validateOptionImagePair(List<ProductOptionRequest> options, List<MultipartFile> images) {
         validateOptionImageCount(options, images);
