@@ -4,23 +4,24 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.member.domain.entity.MemberAgreement;
 import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public record MemberAgreementCreateResponse(
         @JsonProperty("member_id") Long memberId,
         List<AgreementItem> agreements,
-        @JsonProperty("created_at") ZonedDateTime createdAt
+        @JsonProperty("created_at") Instant createdAt
 ) {
     public static MemberAgreementCreateResponse of(final Long memberId, final List<MemberAgreement> memberAgreements) {
         final List<AgreementItem> agreements = memberAgreements.stream()
                 .map(AgreementItem::from)
                 .toList();
 
-        final ZonedDateTime createdAt = memberAgreements.stream()
+        final Instant createdAt = memberAgreements.stream()
                 .findFirst()
                 .map(MemberAgreement::getCreatedAt)
-                .orElse(ZonedDateTime.now());
+                .orElse(Instant.now());
 
         return new MemberAgreementCreateResponse(memberId, agreements, createdAt);
     }
@@ -29,14 +30,14 @@ public record MemberAgreementCreateResponse(
             Long id,
             AgreementType type,
             Boolean agreed,
-            @JsonProperty("agree_at") ZonedDateTime agreeAt
+            @JsonProperty("agree_at") Instant agreeAt
     ) {
         public static AgreementItem from(final MemberAgreement memberAgreement) {
             return new AgreementItem(
                     memberAgreement.getId(),
                     memberAgreement.getType(),
                     memberAgreement.isAgreed(),
-                    memberAgreement.getAgreeAt()
+                    memberAgreement.getAgreeAt() != null ? memberAgreement.getAgreeAt().toInstant() : null
             );
         }
     }

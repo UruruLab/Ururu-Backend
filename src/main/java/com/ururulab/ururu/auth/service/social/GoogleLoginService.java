@@ -12,35 +12,35 @@ import com.ururulab.ururu.auth.oauth.GoogleOAuthProperties;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import lombok.RequiredArgsConstructor;
+import com.ururulab.ururu.member.service.MemberService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
-import java.util.Map;
-
-/**
- * 구글 소셜 로그인 서비스.
- * KakaoLoginService와 동일한 패턴으로 구현됨.
- */
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public final class GoogleLoginService implements SocialLoginService {
+public final class GoogleLoginService extends AbstractSocialLoginService implements SocialLoginService {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 10;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
 
     private final GoogleOAuthProperties googleOAuthProperties;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final JwtProperties jwtProperties;
-    private final RestClient restClient;
-    private final ObjectMapper objectMapper;
-    private final MemberTransactionService memberTransactionService;
+    private final RestClient socialLoginRestClient;
+
+    public GoogleLoginService(
+            final GoogleOAuthProperties googleOAuthProperties,
+            final JwtTokenProvider jwtTokenProvider,
+            final JwtProperties jwtProperties,
+            @Qualifier("socialLoginRestClient") final RestClient socialLoginRestClient,
+            final ObjectMapper objectMapper,
+            final MemberService memberService
+    ) {
+        super(jwtTokenProvider, jwtProperties, objectMapper, memberService);
+        this.googleOAuthProperties = googleOAuthProperties;
+        this.socialLoginRestClient = socialLoginRestClient;
+    }
 
     @Override
     public String getAuthorizationUrl(final String state) {
@@ -49,86 +49,64 @@ public final class GoogleLoginService implements SocialLoginService {
 
     @Override
     public String getAccessToken(final String code) {
-        if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("인증 코드는 필수입니다.");
-        }
+        validateCode(code);
 
         try {
             final String requestBody = googleOAuthProperties.buildTokenRequestBody(code);
-            log.debug("Requesting Google access token with code: {}", maskSensitiveData(code));
-
-            final String response = restClient.post()
+            final String response = socialLoginRestClient.post()
                     .uri(googleOAuthProperties.getTokenUri())
-                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(requestBody)
                     .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+                        final String errorMsg = String.format("구글 토큰 요청 실패: %s", res.getStatusCode());
+                        log.error("{} - URI: {}", errorMsg, googleOAuthProperties.getTokenUri());
+                        throw new SocialTokenExchangeException(errorMsg);
+                    })
                     .body(String.class);
 
-            final String accessToken = extractAccessTokenFromResponse(response);
-            log.info("Google access token acquired successfully");
-            return accessToken;
-
-        } catch (final RestClientException e) {
-            log.error("Failed to get Google access token", e);
-            throw new SocialTokenExchangeException("Google 토큰 교환에 실패했습니다.", e);
+            return extractAccessToken(response);
+        } catch (final Exception e) {
+            if (e instanceof SocialTokenExchangeException) {
+                throw e;
+            }
+            log.error("구글 액세스 토큰 요청 중 예외 발생", e);
+            throw new SocialTokenExchangeException("구글 토큰 요청 처리 중 오류가 발생했습니다.", e);
         }
     }
 
     @Override
     public SocialMemberInfo getMemberInfo(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
-            throw new IllegalArgumentException("액세스 토큰은 필수입니다.");
-        }
+        validateAccessToken(accessToken);
 
         try {
-            log.debug("Requesting Google member info with token: {}", maskSensitiveData(accessToken));
-
-            final String response = restClient.get()
+            final String response = socialLoginRestClient.get()
                     .uri(googleOAuthProperties.getMemberInfoUri())
                     .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
                     .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+                        final String errorMsg = String.format("구글 회원 정보 조회 실패: %s", res.getStatusCode());
+                        log.error("{} - URI: {}", errorMsg, googleOAuthProperties.getMemberInfoUri());
+                        throw new SocialMemberInfoException(errorMsg);
+                    })
                     .body(String.class);
 
-            final SocialMemberInfo memberInfo = parseMemberInfoFromResponse(response);
-            log.info("Google member info acquired for member: {}",
-                    maskSensitiveData(memberInfo.email()));
-            return memberInfo;
-
-        } catch (final RestClientException e) {
-            log.error("Failed to get Google member info", e);
-            throw new SocialMemberInfoException("Google 사용자 정보 조회에 실패했습니다.", e);
+            return parseMemberInfo(response);
+        } catch (final Exception e) {
+            if (e instanceof SocialMemberInfoException) {
+                throw e;
+            }
+            log.error("구글 회원 정보 조회 중 예외 발생", e);
+            throw new SocialMemberInfoException("구글 회원 정보 조회 처리 중 오류가 발생했습니다.", e);
         }
     }
 
     @Override
     public SocialLoginResponse processLogin(final String code) {
-        if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("인증 코드는 필수입니다.");
-        }
-
         final String accessToken = getAccessToken(code);
-        final SocialMemberInfo socialMemberInfo = getMemberInfo(accessToken);
-
-        final Member member = memberTransactionService.findOrCreateMember(socialMemberInfo);
-
-        final String jwtAccessToken = jwtTokenProvider.generateAccessToken(
-                member.getId(),
-                member.getEmail(),
-                member.getRole().name()
-        );
-        final String jwtRefreshToken = jwtTokenProvider.generateRefreshToken(member.getId());
-
-        return SocialLoginResponse.of(
-                jwtAccessToken,
-                jwtRefreshToken,
-                jwtProperties.getAccessTokenExpiry(),
-                SocialLoginResponse.MemberInfo.of(
-                        member.getId(),
-                        member.getEmail(),
-                        member.getNickname(),
-                        member.getProfileImage()
-                )
-        );
+        final SocialMemberInfo memberInfo = getMemberInfo(accessToken);
+        final Member member = memberService.findOrCreateMember(memberInfo);
+        return createLoginResponse(member);
     }
 
     @Override
@@ -136,38 +114,39 @@ public final class GoogleLoginService implements SocialLoginService {
         return SocialProvider.GOOGLE;
     }
 
-    private String extractAccessTokenFromResponse(final String responseBody) {
-        try {
-            final JsonNode jsonNode = objectMapper.readTree(responseBody);
-            final JsonNode accessTokenNode = jsonNode.get("access_token");
-
-            if (accessTokenNode == null || accessTokenNode.isNull()) {
-                throw new SocialTokenExchangeException("응답에 액세스 토큰이 없습니다.");
-            }
-
-            return accessTokenNode.asText();
-        } catch (final Exception e) {
-            log.error("Failed to parse access token from response");
-            throw new SocialTokenExchangeException("액세스 토큰 파싱에 실패했습니다.", e);
+    private String extractAccessToken(final String response) {
+        if (response == null || response.isBlank()) {
+            throw new SocialTokenExchangeException("구글 토큰 응답이 비어있습니다.");
         }
+
+        final JsonNode jsonNode = parseJson(response, "구글 토큰 응답");
+        final JsonNode tokenNode = jsonNode.get("access_token");
+        if (tokenNode == null || tokenNode.asText().isBlank()) {
+            throw new SocialTokenExchangeException("구글 액세스 토큰을 찾을 수 없습니다.");
+        }
+        return tokenNode.asText();
     }
 
-    private SocialMemberInfo parseMemberInfoFromResponse(final String responseBody) {
-        try {
-            final JsonNode jsonNode = objectMapper.readTree(responseBody);
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> attributes = objectMapper.convertValue(jsonNode, Map.class);
-            return SocialMemberInfo.fromGoogleAttributes(attributes);
-        } catch (final Exception e) {
-            log.error("Failed to parse member info from response");
-            throw new SocialMemberInfoException("회원 정보 파싱에 실패했습니다.", e);
+    private SocialMemberInfo parseMemberInfo(final String response) {
+        if (response == null || response.isBlank()) {
+            throw new SocialMemberInfoException("구글 회원 정보 응답이 비어있습니다.");
         }
+
+        final JsonNode root = parseJson(response, "구글 회원 정보");
+        final String socialId = getTextSafely(root, "id");
+        final String email = getTextSafely(root, "email");
+        final String nickname = getTextSafely(root, "name");
+        final String profileImage = getTextSafely(root, "picture");
+
+        return SocialMemberInfo.of(socialId, email, nickname, profileImage, getProvider());
     }
 
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
+    private JsonNode parseJson(final String response, final String context) {
+        try {
+            return objectMapper.readTree(response);
+        } catch (final Exception e) {
+            log.error("JSON 파싱 실패 - {}: {}", context, e.getMessage());
+            throw new RuntimeException(context + " 파싱에 실패했습니다.", e);
         }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 }

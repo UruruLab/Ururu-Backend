@@ -25,7 +25,7 @@ public final class KakaoOAuthProperties {
     private String redirectUri;
     private String authorizationUri;
     private String tokenUri;
-    private String userInfoUri;
+    private String memberInfoUri;
     private String scope;
 
     public String buildAuthorizationUrl(final String state) {
@@ -54,5 +54,8 @@ public final class KakaoOAuthProperties {
             URLEncoder.encode(redirectUri, StandardCharsets.UTF_8),
             URLEncoder.encode(code, StandardCharsets.UTF_8)
         );
+    }
+    public String getMemberInfoUri() {
+        return memberInfoUri;
     }
 }

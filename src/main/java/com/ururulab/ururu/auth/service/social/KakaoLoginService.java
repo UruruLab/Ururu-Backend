@@ -9,40 +9,38 @@ import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.oauth.KakaoOAuthProperties;
-import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import lombok.RequiredArgsConstructor;
+import com.ururulab.ururu.member.service.MemberService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
 
-import java.util.Map;
-
-/**
- * 카카오 소셜 로그인 서비스.
- * RestClient를 사용한 동기적 HTTP 통신으로 리팩토링됨.
- */
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class KakaoLoginService implements SocialLoginService {
+public final class KakaoLoginService extends AbstractSocialLoginService implements SocialLoginService {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 10;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
 
     private final KakaoOAuthProperties kakaoOAuthProperties;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final JwtProperties jwtProperties;
-    private final JwtRefreshService jwtRefreshService;
-    private final RestClient restClient; // WebClient → RestClient 변경
-    private final ObjectMapper objectMapper;
-    private final MemberTransactionService memberTransactionService;
+    private final RestClient socialLoginRestClient;
+
+    public KakaoLoginService(
+            final KakaoOAuthProperties kakaoOAuthProperties,
+            final JwtTokenProvider jwtTokenProvider,
+            final JwtProperties jwtProperties,
+            @Qualifier("socialLoginRestClient") final RestClient socialLoginRestClient,
+            final ObjectMapper objectMapper,
+            final MemberService memberService
+    ) {
+        super(jwtTokenProvider, jwtProperties, objectMapper, memberService);
+        this.kakaoOAuthProperties = kakaoOAuthProperties;
+        this.socialLoginRestClient = socialLoginRestClient;
+    }
 
     @Override
     public String getAuthorizationUrl(final String state) {
@@ -54,79 +52,64 @@ public class KakaoLoginService implements SocialLoginService {
 
     @Override
     public String getAccessToken(final String code) {
-        if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("인증 코드는 필수입니다.");
-        }
+        validateCode(code);
 
         try {
             final String requestBody = kakaoOAuthProperties.buildTokenRequestBody(code);
-
-            log.debug("Requesting access token from Kakao with code: {}",
-                    maskSensitiveData(code));
-
-            // RestClient 동기 호출 (.block() 제거)
-            final String response = restClient.post()
+            final String response = socialLoginRestClient.post()
                     .uri(kakaoOAuthProperties.getTokenUri())
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(requestBody)
                     .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+                        final String errorMsg = String.format("카카오 토큰 요청 실패: %s", res.getStatusCode());
+                        log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getTokenUri());
+                        throw new SocialTokenExchangeException(errorMsg);
+                    })
                     .body(String.class);
 
-            return extractAccessTokenFromResponse(response);
-
-        } catch (final RestClientException e) { // WebClientException → RestClientException
-            log.error("Failed to exchange code for access token", e);
-            throw new SocialTokenExchangeException("카카오 액세스 토큰 교환에 실패했습니다.", e);
+            return extractAccessToken(response);
+        } catch (final Exception e) {
+            if (e instanceof SocialTokenExchangeException) {
+                throw e;
+            }
+            log.error("카카오 액세스 토큰 요청 중 예외 발생", e);
+            throw new SocialTokenExchangeException("카카오 토큰 요청 처리 중 오류가 발생했습니다.", e);
         }
     }
 
     @Override
     public SocialMemberInfo getMemberInfo(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
-            throw new IllegalArgumentException("액세스 토큰은 필수입니다.");
-        }
+        validateAccessToken(accessToken);
 
         try {
-            log.debug("Requesting member info from Kakao");
-
-            // RestClient 동기 호출 (.block() 제거)
-            final String response = restClient.get()
-                    .uri(kakaoOAuthProperties.getUserInfoUri())
+            final String response = socialLoginRestClient.get()
+                    .uri(kakaoOAuthProperties.getMemberInfoUri())
                     .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
                     .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+                        final String errorMsg = String.format("카카오 회원 정보 조회 실패: %s", res.getStatusCode());
+                        log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getMemberInfoUri());
+                        throw new SocialMemberInfoException(errorMsg);
+                    })
                     .body(String.class);
 
-            return parseMemberInfoFromResponse(response);
-
-        } catch (final RestClientException e) { // WebClientException → RestClientException
-            log.error("Failed to retrieve member info from Kakao", e);
-            throw new SocialMemberInfoException("카카오 회원 정보 조회에 실패했습니다.", e);
+            return parseMemberInfo(response);
+        } catch (final Exception e) {
+            if (e instanceof SocialMemberInfoException) {
+                throw e;
+            }
+            log.error("카카오 회원 정보 조회 중 예외 발생", e);
+            throw new SocialMemberInfoException("카카오 회원 정보 조회 처리 중 오류가 발생했습니다.", e);
         }
     }
 
     @Override
     public SocialLoginResponse processLogin(final String code) {
-        String kakaoAccessToken = getAccessToken(code);
-        SocialMemberInfo socialMemberInfo = getMemberInfo(kakaoAccessToken);
-        Member member = memberTransactionService.findOrCreateMember(socialMemberInfo);
-
-        String jwtAccessToken = jwtTokenProvider.generateAccessToken(
-                member.getId(), member.getEmail(), member.getRole().name());
-        String jwtRefreshToken = jwtTokenProvider.generateRefreshToken(member.getId());
-
-        jwtRefreshService.storeRefreshToken(member.getId(), jwtRefreshToken);
-
-        return SocialLoginResponse.of(
-                jwtAccessToken,
-                jwtRefreshToken,
-                jwtProperties.getAccessTokenExpiry(),
-                SocialLoginResponse.MemberInfo.of(
-                        member.getId(),
-                        member.getEmail(),
-                        member.getNickname(),
-                        member.getProfileImage()
-                )
-        );
+        final String accessToken = getAccessToken(code);
+        final SocialMemberInfo memberInfo = getMemberInfo(accessToken);
+        final Member member = memberService.findOrCreateMember(memberInfo);
+        return createLoginResponse(member);
     }
 
     @Override
@@ -134,38 +117,42 @@ public class KakaoLoginService implements SocialLoginService {
         return SocialProvider.KAKAO;
     }
 
-    private String extractAccessTokenFromResponse(final String responseBody) {
-        try {
-            final JsonNode jsonNode = objectMapper.readTree(responseBody);
-            final JsonNode accessTokenNode = jsonNode.get("access_token");
-
-            if (accessTokenNode == null || accessTokenNode.isNull()) {
-                throw new SocialTokenExchangeException("응답에 액세스 토큰이 없습니다.");
-            }
-
-            return accessTokenNode.asText();
-        } catch (final Exception e) {
-            log.error("Failed to parse access token from response");
-            throw new SocialTokenExchangeException("액세스 토큰 파싱에 실패했습니다.", e);
+    private String extractAccessToken(final String response) {
+        if (response == null || response.isBlank()) {
+            throw new SocialTokenExchangeException("카카오 토큰 응답이 비어있습니다.");
         }
+
+        final JsonNode jsonNode = parseJson(response, "카카오 토큰 응답");
+        final JsonNode tokenNode = jsonNode.get("access_token");
+        if (tokenNode == null || tokenNode.asText().isBlank()) {
+            throw new SocialTokenExchangeException("카카오 액세스 토큰을 찾을 수 없습니다.");
+        }
+        return tokenNode.asText();
     }
 
-    private SocialMemberInfo parseMemberInfoFromResponse(final String responseBody) {
-        try {
-            final JsonNode jsonNode = objectMapper.readTree(responseBody);
-            @SuppressWarnings("unchecked")
-            final Map<String, Object> attributes = objectMapper.convertValue(jsonNode, Map.class);
-            return SocialMemberInfo.fromKakaoAttributes(attributes);
-        } catch (final Exception e) {
-            log.error("Failed to parse member info from response");
-            throw new SocialMemberInfoException("회원 정보 파싱에 실패했습니다.", e);
+    private SocialMemberInfo parseMemberInfo(final String response) {
+        if (response == null || response.isBlank()) {
+            throw new SocialMemberInfoException("카카오 회원 정보 응답이 비어있습니다.");
         }
+
+        final JsonNode root = parseJson(response, "카카오 회원 정보");
+        final JsonNode kakaoAccount = root.get("kakao_account");
+        final JsonNode profile = kakaoAccount != null ? kakaoAccount.get("profile") : null;
+
+        final String socialId = root.get("id").asText();
+        final String email = kakaoAccount != null ? getTextSafely(kakaoAccount, "email") : null;
+        final String nickname = profile != null ? getTextSafely(profile, "nickname") : null;
+        final String profileImage = profile != null ? getTextSafely(profile, "profile_image_url") : null;
+
+        return SocialMemberInfo.of(socialId, email, nickname, profileImage, getProvider());
     }
 
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
+    private JsonNode parseJson(final String response, final String context) {
+        try {
+            return objectMapper.readTree(response);
+        } catch (final Exception e) {
+            log.error("JSON 파싱 실패 - {}: {}", context, e.getMessage());
+            throw new RuntimeException(context + " 파싱에 실패했습니다.", e);
         }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 }
