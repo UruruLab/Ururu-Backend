@@ -2,6 +2,8 @@ package com.ururulab.ururu.member.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.Instant;
+
 public record GetWithdrawalPreviewResponse(
         @JsonProperty("member_info") MemberInfo memberInfo,
         @JsonProperty("loss_info") LossInfo lossInfo
@@ -16,13 +18,13 @@ public record GetWithdrawalPreviewResponse(
     public record MemberInfo(
             String nickname,
             String email,
-            @JsonProperty("join_date") String joinDate,
+            @JsonProperty("join_date") Instant joinDate,
             @JsonProperty("profile_image") String profileImage
     ) {
         public static MemberInfo of(
                 final String nickname,
                 final String email,
-                final String joinDate,
+                final Instant joinDate,
                 final String profileImage
         ) {
             return new MemberInfo(nickname, email, joinDate, profileImage);
