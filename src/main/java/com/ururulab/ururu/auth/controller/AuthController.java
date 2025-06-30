@@ -2,7 +2,8 @@ package com.ururulab.ururu.auth.controller;
 
 import com.ururulab.ururu.auth.dto.request.SocialLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.SocialLoginService;
@@ -186,7 +187,7 @@ public final class AuthController {
         final String role = jwtTokenProvider.getRole(token);
 
         if (!jwtTokenProvider.validateToken(token)) {
-            throw new InvalidJwtTokenException("토큰이 유효하지 않습니다.");
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
         }
 
         return ResponseEntity.ok(
