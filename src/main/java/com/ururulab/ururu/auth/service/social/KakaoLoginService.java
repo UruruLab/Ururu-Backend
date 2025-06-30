@@ -54,34 +54,54 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
     public String getAccessToken(final String code) {
         validateCode(code);
 
-        final String requestBody = kakaoOAuthProperties.buildTokenRequestBody(code);
-        final String response = socialLoginRestClient.post()
-                .uri(kakaoOAuthProperties.getTokenUri())
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(requestBody)
-                .retrieve()
-                .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
-                    throw new SocialTokenExchangeException("카카오 토큰 요청 실패: " + res.getStatusCode());
-                })
-                .body(String.class);
+        try {
+            final String requestBody = kakaoOAuthProperties.buildTokenRequestBody(code);
+            final String response = socialLoginRestClient.post()
+                    .uri(kakaoOAuthProperties.getTokenUri())
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(requestBody)
+                    .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+                        final String errorMsg = String.format("카카오 토큰 요청 실패: %s", res.getStatusCode());
+                        log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getTokenUri());
+                        throw new SocialTokenExchangeException(errorMsg);
+                    })
+                    .body(String.class);
 
-        return extractAccessToken(response);
+            return extractAccessToken(response);
+        } catch (final Exception e) {
+            if (e instanceof SocialTokenExchangeException) {
+                throw e;
+            }
+            log.error("카카오 액세스 토큰 요청 중 예외 발생", e);
+            throw new SocialTokenExchangeException("카카오 토큰 요청 처리 중 오류가 발생했습니다.", e);
+        }
     }
 
     @Override
     public SocialMemberInfo getMemberInfo(final String accessToken) {
         validateAccessToken(accessToken);
 
-        final String response = socialLoginRestClient.get()
-                .uri(kakaoOAuthProperties.getMemberInfoUri())
-                .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
-                .retrieve()
-                .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
-                    throw new SocialMemberInfoException("카카오 회원 정보 조회 실패: " + res.getStatusCode());
-                })
-                .body(String.class);
+        try {
+            final String response = socialLoginRestClient.get()
+                    .uri(kakaoOAuthProperties.getMemberInfoUri())
+                    .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
+                    .retrieve()
+                    .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
+                        final String errorMsg = String.format("카카오 회원 정보 조회 실패: %s", res.getStatusCode());
+                        log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getMemberInfoUri());
+                        throw new SocialMemberInfoException(errorMsg);
+                    })
+                    .body(String.class);
 
-        return parseMemberInfo(response);
+            return parseMemberInfo(response);
+        } catch (final Exception e) {
+            if (e instanceof SocialMemberInfoException) {
+                throw e;
+            }
+            log.error("카카오 회원 정보 조회 중 예외 발생", e);
+            throw new SocialMemberInfoException("카카오 회원 정보 조회 처리 중 오류가 발생했습니다.", e);
+        }
     }
 
     @Override
