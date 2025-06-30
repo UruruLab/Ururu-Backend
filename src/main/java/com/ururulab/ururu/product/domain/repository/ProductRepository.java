@@ -23,6 +23,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // TODO: 판매자 연관관계 추가 후 수정 필요
     // List<Product> findBySellerIdAndStatus(Long sellerId, Status status);
 
+    /**
+     * 특정 판매자의 상품 목록 조회 (페이징)
+     */
+    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status IN :statuses ORDER BY p.createdAt DESC, p.id DESC")
+    Page<Product> findBySellerIdAndStatusIn(
+            @Param("sellerId") Long sellerId,
+            @Param("statuses") List<Status> statuses,
+            Pageable pageable
+    );
+
+
     // 임시: 상품 상태별 조회 (판매자 연관관계 추가 전까지 사용)
     Page<Product> findByStatusNot(Status status, Pageable pageable);
 
@@ -40,4 +51,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT p FROM Product p WHERE p.status IN :statuses ORDER BY p.createdAt DESC, p.id DESC")
     Page<Product> findByStatusIn(@Param("statuses") List<Status> statuses, Pageable pageable);
 
+    // 상세 조회용: 특정 판매자의 특정 상품 조회 (sellerId 기반)
+    @Query("SELECT p FROM Product p WHERE p.id = :id AND p.seller.id = :sellerId AND p.status IN :statuses")
+    Optional<Product> findByIdAndSellerIdAndStatusIn(
+            @Param("id") Long id,
+            @Param("sellerId") Long sellerId,
+            @Param("statuses") List<Status> statuses);
 }

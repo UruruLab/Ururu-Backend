@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface ProductTagRepository extends JpaRepository<ProductTag, Long> {
@@ -18,4 +19,14 @@ public interface ProductTagRepository extends JpaRepository<ProductTag, Long> {
         ORDER BY pt.product.id, pt.id
         """)
     List<ProductTag> findByProductIdsWithTagCategory(@Param("productIds") List<Long> productIds);
+
+    void deleteByProductIdAndTagCategoryIdIn(Long productId, Set<Long> tagCategoryIds);
+
+    @Query("""
+        SELECT pt FROM ProductTag pt 
+        LEFT JOIN FETCH pt.tagCategory 
+        WHERE pt.product.id = :productId
+        ORDER BY pt.id
+        """)
+    List<ProductTag> findByProductIdWithTagCategory(@Param("productId") Long productId);
 }

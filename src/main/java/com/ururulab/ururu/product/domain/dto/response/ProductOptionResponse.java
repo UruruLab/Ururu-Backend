@@ -10,6 +10,7 @@ public record ProductOptionResponse(
         Integer price,
         String imageUrl,
         String fullIngredients,
+        String imageHash, //추가
         ZonedDateTime createdAt,
         ZonedDateTime updatedAt
 ) {
@@ -28,6 +29,7 @@ public record ProductOptionResponse(
                 productOption.getPrice(),
                 imageUrl,
                 productOption.getFullIngredients(),
+                productOption.getImageHash(), //추가
                 productOption.getCreatedAt(),
                 productOption.getUpdatedAt()
         );
