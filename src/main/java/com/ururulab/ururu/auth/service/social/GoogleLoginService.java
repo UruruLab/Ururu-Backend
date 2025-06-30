@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
-import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.oauth.GoogleOAuthProperties;
@@ -61,17 +61,16 @@ public final class GoogleLoginService extends AbstractSocialLoginService impleme
                     .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
                         final String errorMsg = String.format("구글 토큰 요청 실패: %s", res.getStatusCode());
                         log.error("{} - URI: {}", errorMsg, googleOAuthProperties.getTokenUri());
-                        throw new SocialTokenExchangeException(errorMsg);
+                        throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
                     })
                     .body(String.class);
 
             return extractAccessToken(response);
+        } catch (final BusinessException e) {
+            throw e;
         } catch (final Exception e) {
-            if (e instanceof SocialTokenExchangeException) {
-                throw e;
-            }
             log.error("구글 액세스 토큰 요청 중 예외 발생", e);
-            throw new SocialTokenExchangeException("구글 토큰 요청 처리 중 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
     }
 
@@ -87,17 +86,16 @@ public final class GoogleLoginService extends AbstractSocialLoginService impleme
                     .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
                         final String errorMsg = String.format("구글 회원 정보 조회 실패: %s", res.getStatusCode());
                         log.error("{} - URI: {}", errorMsg, googleOAuthProperties.getMemberInfoUri());
-                        throw new SocialMemberInfoException(errorMsg);
+                        throw new BusinessException(ErrorCode.SOCIAL_MEMBER_INFO_FAILED);
                     })
                     .body(String.class);
 
             return parseMemberInfo(response);
+        } catch (final BusinessException e) {
+            throw e;
         } catch (final Exception e) {
-            if (e instanceof SocialMemberInfoException) {
-                throw e;
-            }
             log.error("구글 회원 정보 조회 중 예외 발생", e);
-            throw new SocialMemberInfoException("구글 회원 정보 조회 처리 중 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.SOCIAL_MEMBER_INFO_FAILED);
         }
     }
 
@@ -116,20 +114,20 @@ public final class GoogleLoginService extends AbstractSocialLoginService impleme
 
     private String extractAccessToken(final String response) {
         if (response == null || response.isBlank()) {
-            throw new SocialTokenExchangeException("구글 토큰 응답이 비어있습니다.");
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
 
         final JsonNode jsonNode = parseJson(response, "구글 토큰 응답");
         final JsonNode tokenNode = jsonNode.get("access_token");
         if (tokenNode == null || tokenNode.asText().isBlank()) {
-            throw new SocialTokenExchangeException("구글 액세스 토큰을 찾을 수 없습니다.");
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
         return tokenNode.asText();
     }
 
     private SocialMemberInfo parseMemberInfo(final String response) {
         if (response == null || response.isBlank()) {
-            throw new SocialMemberInfoException("구글 회원 정보 응답이 비어있습니다.");
+            throw new BusinessException(ErrorCode.SOCIAL_MEMBER_INFO_FAILED);
         }
 
         final JsonNode root = parseJson(response, "구글 회원 정보");

@@ -36,6 +36,18 @@ public enum ErrorCode {
 	ORDER_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "ORDER007", "이미 진행 중인 주문이 있습니다. 잠시 후 다시 시도해주세요."),
 	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
 
+	// --- 인증 ---
+	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
+	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
+	MISSING_AUTHORIZATION_HEADER(HttpStatus.BAD_REQUEST, "AUTH003", "인증 헤더가 누락되었습니다."),
+	EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH004", "만료된 토큰입니다."),
+	MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH005", "잘못된 형식의 토큰입니다."),
+	UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH006", "지원하지 않는 소셜 제공자입니다: %s"),
+	SOCIAL_TOKEN_EXCHANGE_FAILED(HttpStatus.UNAUTHORIZED, "AUTH007", "소셜 로그인 인증에 실패했습니다."),
+	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "회원 정보를 가져올 수 없습니다."),
+	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH009", "소셜 로그인 처리 중 오류가 발생했습니다."),
+	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "일시적인 서버 오류입니다."),
+
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다: %s"),
 
