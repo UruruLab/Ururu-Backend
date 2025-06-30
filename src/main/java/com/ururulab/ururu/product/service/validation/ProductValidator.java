@@ -9,6 +9,7 @@ import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.repository.CategoryRepository;
+import com.ururulab.ururu.product.service.CategoryCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -30,27 +31,31 @@ public class ProductValidator {
     private final CategoryRepository categoryRepository;
     private final TagCategoryRepository tagCategoryRepository;
 
+    private final CategoryCacheService categoryCacheService;
+
     /**
      * 카테고리 유효성 검증
      */
-    @Cacheable(value = "category", key = "#categoryId")
-    public Category findCategoryById(Long categoryId) {
-        return categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + categoryId));
-    }
-
-    @Cacheable(value = "tagCategory", key = "#tagCategoryId")
-    public TagCategory findTagCategoryById(Long tagCategoryId) {
-        return tagCategoryRepository.findById(tagCategoryId)
-                .orElseThrow(() -> new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": " + tagCategoryId));
-    }
+//    @Cacheable(value = "category", key = "#categoryId")
+//    public Category findCategoryById(Long categoryId) {
+//        log.info("DB hit: categoryId = {}", categoryId);
+//        return categoryRepository.findById(categoryId)
+//                .orElseThrow(() -> new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + categoryId));
+//    }
+//
+//    @Cacheable(value = "tagCategory", key = "#tagCategoryId")
+//    public TagCategory findTagCategoryById(Long tagCategoryId) {
+//        log.info("DB hit: tagCategoryId = {}", tagCategoryId);
+//        return tagCategoryRepository.findById(tagCategoryId)
+//                .orElseThrow(() -> new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": " + tagCategoryId));
+//    }
 
 
     public List<Category> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
         return categoryIds.stream()
                 .distinct()
                 .sorted()
-                .map(this::findCategoryById) // 캐시 + 존재 검증 포함
+                .map(categoryCacheService::findCategoryById) // 캐시 + 존재 검증 포함
                 .toList();
     }
 
@@ -58,7 +63,7 @@ public class ProductValidator {
         return tagCategoryIds.stream()
                 .distinct()
                 .sorted()
-                .map(this::findTagCategoryById)
+                .map(categoryCacheService::findTagCategoryById)
                 .toList();
     }
 
