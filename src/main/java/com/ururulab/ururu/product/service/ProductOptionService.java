@@ -85,17 +85,6 @@ public class ProductOptionService {
             }
         }
 
-        // 요청에 없는 기존 옵션들은 삭제 처리
-        List<ProductOption> optionsToDelete = existingOptions.stream()
-                .filter(option -> !processedOptionIds.contains(option.getId()))
-                .toList();
-
-        if (!optionsToDelete.isEmpty()) {
-            optionsToDelete.forEach(ProductOption::markAsDeleted);
-            changedOptions.addAll(optionsToDelete);
-            log.info("Marked {} options as deleted for product: {}", optionsToDelete.size(), product.getId());
-        }
-
         // 변경된 옵션들만 저장
         if (!changedOptions.isEmpty()) {
             productOptionRepository.saveAll(changedOptions);
