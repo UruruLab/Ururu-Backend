@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/members/{memberId}/preferences")
 @RequiredArgsConstructor
@@ -37,5 +39,20 @@ public class MemberPreferenceController {
         final MemberPreferenceResponse response = memberPreferenceService.createPreference(memberId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponseFormat.success("회원 선호도가 생성되었습니다.", response));
+    }
+
+    @Operation(summary = "회원 선호도 목록 조회", description = "특정 회원의 모든 판매자별 선호도를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "회원 선호도 조회 성공"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @GetMapping()
+    public ResponseEntity<ApiResponseFormat<List<MemberPreferenceResponse>>> getMemberPreference(
+            @PathVariable final Long memberId
+    ){
+        final List<MemberPreferenceResponse> responses = memberPreferenceService.getMemberPreferences(memberId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("회원 선호도 목록을 조회했습니다.", responses)
+        );
     }
 }

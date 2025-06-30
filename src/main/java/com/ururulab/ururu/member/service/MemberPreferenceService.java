@@ -59,8 +59,15 @@ public class MemberPreferenceService {
         return MemberPreferenceResponse.from(savedPreference);
     }
 
-    public List<MemberPreference> getMemberPreferences(Long memberId) {
-        return memberPreferenceRepository.findByMemberId(memberId);
+    public List<MemberPreferenceResponse> getMemberPreferences(Long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new EntityNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId);
+        }
+
+        final List<MemberPreference> preferences = memberPreferenceRepository.findByMemberId(memberId);
+        return preferences.stream()
+                .map(MemberPreferenceResponse::from)
+                .toList();
     }
 
     private void validateSellerExists(final Long sellerId) {
