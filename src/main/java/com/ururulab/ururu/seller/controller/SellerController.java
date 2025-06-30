@@ -5,7 +5,6 @@ import com.ururulab.ururu.global.common.util.MaskingUtils;
 import com.ururulab.ururu.seller.domain.dto.request.SellerSignupRequest;
 import com.ururulab.ururu.seller.domain.dto.response.SellerAvailabilityResponse;
 import com.ururulab.ururu.seller.domain.dto.response.SellerResponse;
-import com.ururulab.ururu.seller.domain.dto.response.SellerSignupResponse;
 import com.ururulab.ururu.seller.service.SellerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +27,10 @@ public class SellerController {
      * @return 회원가입 결과
      */
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponseFormat<SellerSignupResponse>> signup(
+    public ResponseEntity<ApiResponseFormat<SellerResponse>> signup(
             @Valid @RequestBody final SellerSignupRequest request
     ) {
-        final SellerSignupResponse response = sellerService.signup(request);
+        final SellerResponse response = sellerService.signup(request);
         log.info("판매자 회원가입 API 호출 성공: ID={}", response.id());
         
         return ResponseEntity.status(HttpStatus.CREATED)
