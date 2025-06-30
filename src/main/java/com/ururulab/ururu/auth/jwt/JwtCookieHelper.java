@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
@@ -77,13 +78,17 @@ public final class JwtCookieHelper {
                 SAME_SITE_STRICT));
     }
 
+    private static final String DEV_PROFILE = "dev";
+    
+    @Value("${spring.profiles.active:prod}")
+    private String activeProfile;
+
     private boolean isSecureEnvironment() {
         return !isDevelopmentProfile();
     }
 
     private boolean isDevelopmentProfile() {
-        final String activeProfile = System.getProperty("spring.profiles.active", "dev");
-        return "dev".equals(activeProfile) || "local".equals(activeProfile);
+        return DEV_PROFILE.equals(activeProfile);
     }
 
     private String maskSensitiveData(final String data) {
