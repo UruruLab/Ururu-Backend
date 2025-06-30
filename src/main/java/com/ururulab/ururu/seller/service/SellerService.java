@@ -67,7 +67,7 @@ public class SellerService {
             log.info("판매자 회원가입 성공: ID={}, 이메일={}", 
                     savedSeller.getId(), MaskingUtils.maskEmail(savedSeller.getEmail()));
 
-            return SellerSignupResponse.of(savedSeller);
+            return SellerSignupResponse.from(savedSeller);
 
         } catch (DataIntegrityViolationException e) {
             // DB 레벨에서 중복 감지 (동시성 환경에서 최종 방어선)

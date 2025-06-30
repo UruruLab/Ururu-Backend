@@ -10,6 +10,7 @@ import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
+import com.ururulab.ururu.global.common.util.TimeUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -153,7 +154,7 @@ public class MemberService {
                 GetWithdrawalPreviewResponse.MemberInfo.of(
                         member.getNickname(),
                         member.getEmail(),
-                        member.getCreatedAt().toLocalDate().toString(),
+                        TimeUtils.toKoreaZonedDateTime(member.getCreatedAt()).toLocalDate().toString(),
                         member.getProfileImage()
                 );
 

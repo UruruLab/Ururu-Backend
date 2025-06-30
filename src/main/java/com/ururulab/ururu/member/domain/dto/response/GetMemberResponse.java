@@ -3,8 +3,8 @@ package com.ururulab.ururu.member.domain.dto.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.member.domain.entity.Member;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
 
 public record GetMemberResponse(
         Long id,
@@ -18,8 +18,8 @@ public record GetMemberResponse(
         String role,
         int point,
         @JsonProperty("is_deleted") boolean isDeleted,
-        @JsonProperty("created_at") ZonedDateTime createdAt,
-        @JsonProperty("updated_at") ZonedDateTime updatedAt
+        @JsonProperty("created_at") Instant createdAt,
+        @JsonProperty("updated_at") Instant updatedAt
 ) {
     public static GetMemberResponse from(final Member member) {
         return new GetMemberResponse(
