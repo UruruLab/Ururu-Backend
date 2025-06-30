@@ -58,21 +58,38 @@ public class ImageService {
 				throw new InvalidImageFormatException("이미지 파싱 실패");
 			}
 
+			int imageType;
+			if (fmt.getExtension().equals("jpg") || fmt.getExtension().equals("jpeg")) {
+				// JPG는 투명도를 지원하지 않으므로 RGB 사용
+				imageType = BufferedImage.TYPE_INT_RGB;
+			} else {
+				imageType = BufferedImage.TYPE_INT_ARGB;
+			}
+
 			BufferedImage clean = new BufferedImage(
 					img.getWidth(), img.getHeight(),
-					BufferedImage.TYPE_INT_ARGB
+					imageType
 			);
 
 			Graphics2D g = clean.createGraphics();
 			try {
+				// JPG의 경우 흰색 배경으로 설정
+				if (fmt.getExtension().equals("jpg") || fmt.getExtension().equals("jpeg")) {
+					g.setColor(Color.WHITE);
+					g.fillRect(0, 0, clean.getWidth(), clean.getHeight());
+				}
 				g.drawImage(img, 0, 0, null);
 			} finally {
 				g.dispose();
 			}
 
 			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-				ImageIO.write(clean, fmt.getExtension(), baos);
-				return baos.toByteArray();
+				boolean success = ImageIO.write(clean, fmt.getExtension(), baos);
+				if (!success) {
+					throw new InvalidImageFormatException("이미지 쓰기 실패: " + fmt.getExtension());
+				}
+				byte[] result = baos.toByteArray();
+				return result;
 			}
 		} catch (IOException e) {
 			throw new RuntimeException("이미지 재인코딩 실패", e);

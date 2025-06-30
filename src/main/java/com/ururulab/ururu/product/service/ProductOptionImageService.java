@@ -101,7 +101,6 @@ public class ProductOptionImageService {
     public List<ProductImageUploadRequest> createImageUploadRequests(
             List<ProductOption> savedOptions, List<MultipartFile> optionImages) {
 
-        // 개수 불일치 체크
         if (savedOptions.size() != optionImages.size()) {
             throw new BusinessException(ErrorCode.OPTION_IMAGE_COUNT_MISMATCH,
                     savedOptions.size(), optionImages.size());
@@ -113,27 +112,35 @@ public class ProductOptionImageService {
             MultipartFile imageFile = optionImages.get(i);
 
             if (imageFile == null || imageFile.isEmpty()) {
+                log.warn("Image at index {} is null or empty", i);
                 continue;
             }
 
             ProductOption option = savedOptions.get(i);
 
             try {
-                String imageHash = imageHashService.calculateImageHash(imageFile);
+                byte[] imageData = imageFile.getBytes();
+                String imageHash = imageHashService.calculateImageHashFromBytes(imageData);
+
+                log.info("Image processed - optionId: {}, filename: {}, hash: {}, size: {} bytes",
+                        option.getId(), imageFile.getOriginalFilename(), imageHash, imageData.length);
+
                 requests.add(new ProductImageUploadRequest(
                         option.getId(),
                         imageFile.getOriginalFilename(),
-                        imageFile.getBytes(),
+                        imageData,
                         imageHash
                 ));
+
             } catch (IOException e) {
-                log.error("Failed to read image file for option: {}", option.getId(), e);
+                log.error("Failed to read image file for optionId: {}", option.getId(), e);
                 throw new BusinessException(IMAGE_READ_FAILED);
             }
         }
 
         return requests;
     }
+
 
     public void publishImageEvents(Long productId, List<ProductImageUploadRequest> imageUploadRequests,
                                    List<String> imagesToDelete) {

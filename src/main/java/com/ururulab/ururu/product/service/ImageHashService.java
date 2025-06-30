@@ -20,4 +20,17 @@ public class ImageHashService {
             throw new RuntimeException("이미지 해시 계산 실패: " + e.getMessage(), e);
         }
     }
+
+    /**
+     * 이미지 해시 계산 (SHA-256) - byte[]에서
+     */
+    public String calculateImageHashFromBytes(byte[] imageData) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(imageData);
+            return Base64.getEncoder().encodeToString(hashBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("이미지 해시 계산 실패: " + e.getMessage(), e);
+        }
+    }
 }

@@ -1,56 +1,31 @@
 package com.ururulab.ururu.product.service.validation;
 
 import com.ururulab.ururu.global.domain.entity.TagCategory;
-import com.ururulab.ururu.global.domain.repository.TagCategoryRepository;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
-import com.ururulab.ururu.product.domain.repository.CategoryRepository;
 import com.ururulab.ururu.product.service.CategoryCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationMessages.*;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class ProductValidator {
 
-    private final CategoryRepository categoryRepository;
-    private final TagCategoryRepository tagCategoryRepository;
-
     private final CategoryCacheService categoryCacheService;
 
     /**
      * 카테고리 유효성 검증
      */
-//    @Cacheable(value = "category", key = "#categoryId")
-//    public Category findCategoryById(Long categoryId) {
-//        log.info("DB hit: categoryId = {}", categoryId);
-//        return categoryRepository.findById(categoryId)
-//                .orElseThrow(() -> new IllegalArgumentException(CATEGORIES_NOT_EXIST + ": " + categoryId));
-//    }
-//
-//    @Cacheable(value = "tagCategory", key = "#tagCategoryId")
-//    public TagCategory findTagCategoryById(Long tagCategoryId) {
-//        log.info("DB hit: tagCategoryId = {}", tagCategoryId);
-//        return tagCategoryRepository.findById(tagCategoryId)
-//                .orElseThrow(() -> new IllegalArgumentException(TAG_CATEGORIES_NOT_EXIST + ": " + tagCategoryId));
-//    }
-
-
     public List<Category> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
         return categoryIds.stream()
                 .distinct()
@@ -153,7 +128,7 @@ public class ProductValidator {
             ImageFormat mimeFmt,
             MultipartFile file
     ) {
-        if (extFmt != mimeFmt) {
+        if (!extFmt.getMimeType().equals(mimeFmt.getMimeType())) {
             throw new InvalidImageFormatException(
                     String.format(
                             "확장자(%s)와 MIME(%s)이 일치하지 않습니다: file=%s",
@@ -164,4 +139,5 @@ public class ProductValidator {
             );
         }
     }
+
 }
