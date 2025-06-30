@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.filter;
 
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -88,7 +89,6 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void setAuthentication(final String token) {
         try {
             final Long memberId = jwtTokenProvider.getMemberId(token);
-            final String email = jwtTokenProvider.getEmail(token);
             final String role = jwtTokenProvider.getRole(token);
 
             final Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -98,11 +98,14 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("JWT 토큰으로 인증 완료 - memberId: {}, email: {}, role: {}",
-                    memberId, email, role);
+            log.debug("JWT 토큰으로 인증 완료 - memberId: {}, role: {}",
+                    memberId, role);
 
-        } catch (final Exception e) {
+        } catch (final JwtException e) { // 3. JwtException 구체적으로 처리
             log.warn("JWT 토큰 인증 처리 중 오류 발생: {}", e.getMessage());
+            SecurityContextHolder.clearContext();
+        } catch (final Exception e) { // 4. 예상치 못한 일반 예외 처리
+            log.error("예상치 못한 인증 오류 발생: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
     }
