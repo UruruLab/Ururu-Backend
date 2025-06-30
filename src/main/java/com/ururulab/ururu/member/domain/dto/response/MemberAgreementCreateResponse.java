@@ -7,12 +7,12 @@ import com.ururulab.ururu.member.domain.entity.enumerated.AgreementType;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-public record CreateMemberAgreementResponse(
+public record MemberAgreementCreateResponse(
         @JsonProperty("member_id") Long memberId,
         List<AgreementItem> agreements,
         @JsonProperty("created_at") ZonedDateTime createdAt
 ) {
-    public static CreateMemberAgreementResponse of(final Long memberId, final List<MemberAgreement> memberAgreements) {
+    public static MemberAgreementCreateResponse of(final Long memberId, final List<MemberAgreement> memberAgreements) {
         final List<AgreementItem> agreements = memberAgreements.stream()
                 .map(AgreementItem::from)
                 .toList();
@@ -22,7 +22,7 @@ public record CreateMemberAgreementResponse(
                 .map(MemberAgreement::getCreatedAt)
                 .orElse(ZonedDateTime.now());
 
-        return new CreateMemberAgreementResponse(memberId, agreements, createdAt);
+        return new MemberAgreementCreateResponse(memberId, agreements, createdAt);
     }
 
     public record AgreementItem(

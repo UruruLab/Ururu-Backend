@@ -2,9 +2,9 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
-import com.ururulab.ururu.member.domain.dto.response.CreateBeautyProfileResponse;
-import com.ururulab.ururu.member.domain.dto.response.GetBeautyProfileResponse;
-import com.ururulab.ururu.member.domain.dto.response.UpdateBeautyProfileResponse;
+import com.ururulab.ururu.member.domain.dto.response.BeautyProfileCreateResponse;
+import com.ururulab.ururu.member.domain.dto.response.BeautyProfileGetResponse;
+import com.ururulab.ururu.member.domain.dto.response.BeautyProfileUpdateResponse;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
@@ -24,7 +24,7 @@ public class BeautyProfileService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CreateBeautyProfileResponse createBeautyProfile(Long memberId, BeautyProfileRequest request){
+    public BeautyProfileCreateResponse createBeautyProfile(Long memberId, BeautyProfileRequest request){
         if (beautyProfileRepository.existsByMemberId(memberId)) {
             throw new IllegalStateException("이미 뷰티 프로필이 존재합니다.");
         }
@@ -51,19 +51,19 @@ public class BeautyProfileService {
         BeautyProfile savedProfile = beautyProfileRepository.save(beautyProfile);
         log.info("BeautyProfile created for member ID: {}", memberId);
 
-        return CreateBeautyProfileResponse.from(savedProfile);
+        return BeautyProfileCreateResponse.from(savedProfile);
     }
 
-    public GetBeautyProfileResponse getBeautyProfile(Long memberId) {
+    public BeautyProfileGetResponse getBeautyProfile(Long memberId) {
         BeautyProfile beautyProfile =  beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "뷰티 프로필을 찾을 수 없습니다. Member ID: "+ memberId));
 
-        return GetBeautyProfileResponse.from(beautyProfile);
+        return BeautyProfileGetResponse.from(beautyProfile);
     }
 
     @Transactional
-    public UpdateBeautyProfileResponse updateBeautyProfile(Long memberId, BeautyProfileRequest request) {
+    public BeautyProfileUpdateResponse updateBeautyProfile(Long memberId, BeautyProfileRequest request) {
         BeautyProfile beautyProfile = beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "뷰티 프로필을 찾을 수 없습니다. Member ID: " + memberId));
@@ -85,7 +85,7 @@ public class BeautyProfileService {
         BeautyProfile updatedProfile = beautyProfileRepository.save(beautyProfile);
         log.info("BeautyProfile updated for member ID: {}", memberId);
 
-        return UpdateBeautyProfileResponse.from(updatedProfile);
+        return BeautyProfileUpdateResponse.from(updatedProfile);
     }
 
     @Transactional

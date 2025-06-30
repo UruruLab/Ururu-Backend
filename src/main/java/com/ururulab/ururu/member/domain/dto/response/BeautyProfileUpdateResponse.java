@@ -7,7 +7,7 @@ import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import java.time.ZonedDateTime;
 import java.util.List;
 
-public record CreateBeautyProfileResponse(
+public record BeautyProfileUpdateResponse(
         Long id,
         @JsonProperty("skin_type") SkinType skinType,
         List<String> concerns,
@@ -17,10 +17,10 @@ public record CreateBeautyProfileResponse(
         @JsonProperty("min_price") Integer minPrice,
         @JsonProperty("max_price") Integer maxPrice,
         @JsonProperty("additional_info") String additionalInfo,
-        @JsonProperty("created_at") ZonedDateTime createdAt
+        @JsonProperty("updated_at") ZonedDateTime updatedAt
 ) {
-    public static CreateBeautyProfileResponse from(final BeautyProfile beautyProfile) {
-        return new CreateBeautyProfileResponse(
+    public static BeautyProfileUpdateResponse from(final BeautyProfile beautyProfile) {
+        return new BeautyProfileUpdateResponse(
                 beautyProfile.getId(),
                 beautyProfile.getSkinType(),
                 List.copyOf(beautyProfile.getConcerns()),
@@ -30,7 +30,7 @@ public record CreateBeautyProfileResponse(
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
                 beautyProfile.getAdditionalInfo(),
-                beautyProfile.getCreatedAt()
+                beautyProfile.getUpdatedAt()
         );
     }
 }
