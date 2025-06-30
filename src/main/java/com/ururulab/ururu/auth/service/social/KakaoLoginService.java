@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
-import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.oauth.KakaoOAuthProperties;
@@ -64,17 +64,16 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
                         final String errorMsg = String.format("카카오 토큰 요청 실패: %s", res.getStatusCode());
                         log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getTokenUri());
-                        throw new SocialTokenExchangeException(errorMsg);
+                        throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
                     })
                     .body(String.class);
 
             return extractAccessToken(response);
+        } catch (final BusinessException e) {
+            throw e;
         } catch (final Exception e) {
-            if (e instanceof SocialTokenExchangeException) {
-                throw e;
-            }
             log.error("카카오 액세스 토큰 요청 중 예외 발생", e);
-            throw new SocialTokenExchangeException("카카오 토큰 요청 처리 중 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
     }
 
@@ -90,17 +89,16 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
                         final String errorMsg = String.format("카카오 회원 정보 조회 실패: %s", res.getStatusCode());
                         log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getMemberInfoUri());
-                        throw new SocialMemberInfoException(errorMsg);
+                        throw new BusinessException(ErrorCode.SOCIAL_MEMBER_INFO_FAILED);
                     })
                     .body(String.class);
 
             return parseMemberInfo(response);
+        } catch (final BusinessException e) {
+            throw e;
         } catch (final Exception e) {
-            if (e instanceof SocialMemberInfoException) {
-                throw e;
-            }
             log.error("카카오 회원 정보 조회 중 예외 발생", e);
-            throw new SocialMemberInfoException("카카오 회원 정보 조회 처리 중 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.SOCIAL_MEMBER_INFO_FAILED);
         }
     }
 
@@ -119,20 +117,20 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
 
     private String extractAccessToken(final String response) {
         if (response == null || response.isBlank()) {
-            throw new SocialTokenExchangeException("카카오 토큰 응답이 비어있습니다.");
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
 
         final JsonNode jsonNode = parseJson(response, "카카오 토큰 응답");
         final JsonNode tokenNode = jsonNode.get("access_token");
         if (tokenNode == null || tokenNode.asText().isBlank()) {
-            throw new SocialTokenExchangeException("카카오 액세스 토큰을 찾을 수 없습니다.");
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
         return tokenNode.asText();
     }
 
     private SocialMemberInfo parseMemberInfo(final String response) {
         if (response == null || response.isBlank()) {
-            throw new SocialMemberInfoException("카카오 회원 정보 응답이 비어있습니다.");
+            throw new BusinessException(ErrorCode.SOCIAL_MEMBER_INFO_FAILED);
         }
 
         final JsonNode root = parseJson(response, "카카오 회원 정보");
