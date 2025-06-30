@@ -8,6 +8,7 @@ import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
+import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.ururulab.ururu.global.exception.error.ErrorCode.IMAGE_READ_FAILED;
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +30,7 @@ public class ProductOptionService {
     private final ProductOptionRepository productOptionRepository;
     private final ImageHashService imageHashService;
     private final ProductOptionImageService productOptionImageService;
+    private final ProductRepository productRepository;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public List<ProductOption> saveProductOptions(Product product, List<ProductOptionRequest> requests) {
@@ -113,6 +115,22 @@ public class ProductOptionService {
 
     @Transactional(readOnly = true)
     public List<ProductOptionResponse> getProductOptions(Long productId) {
+        return productOptionRepository.findByProductIdAndIsDeletedFalse(productId)
+                .stream()
+                .map(ProductOptionResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductOptionResponse> getProductOptions(Long productId, Long sellerId) {
+        // sellerId가 productId의 실제 소유자인지 확인
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
+
+        if (!product.getSeller().getId().equals(sellerId)) {
+            throw new BusinessException(ACCESS_DENIED);
+        }
+
         return productOptionRepository.findByProductIdAndIsDeletedFalse(productId)
                 .stream()
                 .map(ProductOptionResponse::from)

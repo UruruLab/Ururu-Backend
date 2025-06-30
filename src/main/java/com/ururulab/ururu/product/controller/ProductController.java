@@ -3,7 +3,9 @@ package com.ururulab.ururu.product.controller;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductListResponse;
+import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.dto.response.ProductResponse;
+import com.ururulab.ururu.product.service.ProductOptionService;
 import com.ururulab.ururu.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,6 +36,7 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final ProductOptionService productOptionService;
 
     @Operation(summary = "상품 등록", description = "판매자가 새로운 상품을 등록합니다.")
     @ApiResponses({
@@ -106,6 +110,29 @@ public class ProductController {
     ) {
         ProductResponse response = productService.updateProduct(productId, productRequest, optionImages, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품이 수정되었습니다.", response));
+    }
+
+    @Operation(summary = "특정 상품의 옵션 조회", description = "판매자가 특정 상품의 옵션을 조회 합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 옵션 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 옵션"),
+    })
+    @GetMapping("/{productId}/options")
+    public ResponseEntity<ApiResponseFormat<List<ProductOptionResponse>>> getProductOptions(
+            @PathVariable Long sellerId,  // URL에서 받되
+            @PathVariable Long productId
+            //HttpServletRequest request
+    ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long jwtSellerId = extractSellerIdFromJWT(request);
+        // if (!sellerId.equals(jwtSellerId)) {
+        //     throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        // }
+
+        List<ProductOptionResponse> response = productOptionService.getProductOptions(productId, sellerId);
+        return ResponseEntity.ok(ApiResponseFormat.success("상품 옵션 조회가 성공했습니다.", response));
     }
 
 }

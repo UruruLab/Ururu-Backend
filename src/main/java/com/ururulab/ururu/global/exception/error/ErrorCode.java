@@ -26,6 +26,9 @@ public enum ErrorCode {
 	// --- 태그 ---
 	TAG_NOT_FOUND(HttpStatus.BAD_REQUEST, "TAG001", "존재하지 않는 태그입니다."),
 
+	// --- 카테고리 ---
+	CATEGORY_NOT_FOUND(HttpStatus.BAD_REQUEST, "CATEGORY001", "존재하지 않는 카테고리입니다."),
+
 	// --- 주문 ---
 	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER001", "존재하지 않는 회원입니다."),
 	GROUPBUY_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER002", "존재하지 않는 공구 옵션입니다: %s"),
@@ -38,6 +41,11 @@ public enum ErrorCode {
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다: %s"),
+	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH001", "접근 권한이 없습니다."),
+
+	// --- 판매자 ---
+	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");

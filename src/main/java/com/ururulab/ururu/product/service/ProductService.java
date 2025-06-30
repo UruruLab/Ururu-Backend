@@ -1,6 +1,7 @@
 package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.domain.entity.TagCategory;
+import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductNoticeRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
@@ -24,6 +25,8 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
@@ -55,7 +58,7 @@ public class ProductService {
 
         // 1. Seller 조회 추가
         Seller seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 판매자입니다."));
+                .orElseThrow(() -> new BusinessException(SELLER_NOT_FOUND));
 
         if (optionImages != null) {
             productValidator.validateOptionImagePair(productRequest.productOptions(), optionImages);
@@ -185,7 +188,7 @@ public class ProductService {
                 productId,
                 sellerId,
                 Arrays.asList(Status.ACTIVE, Status.INACTIVE)
-        ).orElseThrow(() -> new RuntimeException("존재하지 않는 상품이거나 접근 권한이 없습니다."));
+        ).orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
         stopWatch.stop();
 
         stopWatch.start("categoryQuery");
@@ -279,7 +282,7 @@ public class ProductService {
 
         Product existingProduct = productRepository.findByIdAndSellerIdAndStatusIn(
                 productId, sellerId, Arrays.asList(Status.ACTIVE, Status.INACTIVE)
-        ).orElseThrow(() -> new RuntimeException("존재하지 않는 상품이거나 접근 권한이 없습니다."));
+        ).orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
 
 
         // 2. 옵션-이미지 검증

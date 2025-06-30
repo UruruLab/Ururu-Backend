@@ -1,6 +1,7 @@
 package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.GlobalExceptionHandler;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
@@ -43,7 +44,7 @@ public class ProductOptionImageService {
         try {
             productValidator.validateImage(file);
             String filename = Optional.ofNullable(file.getOriginalFilename())
-                    .orElseThrow(() -> new IllegalArgumentException("파일명이 없습니다."));
+                    .orElseThrow(() -> new BusinessException(INVALID_IMAGE_FILENAME));
 
             String imageUrl = imageService.uploadImage(
                     PRODUCTS.getPath(),
@@ -54,7 +55,7 @@ public class ProductOptionImageService {
             return imageUrl;
         } catch (IOException e) {
             log.error("IO Error while uploading product option image: {}", e.getMessage());
-            throw new RuntimeException("상품 옵션 이미지 업로드 중 IO 오류가 발생했습니다.", e);
+            throw new BusinessException(IMAGE_READ_FAILED);
         }
     }
 
@@ -81,8 +82,8 @@ public class ProductOptionImageService {
 
                 // DB 업데이트
                 ProductOption option = productOptionRepository.findById(imageRequest.productOptionId())
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "존재하지 않는 상품 옵션입니다: " + imageRequest.productOptionId()));
+                        .orElseThrow(() -> new BusinessException(
+                                PRODUCT_OPTION_NOT_FOUND, imageRequest.productOptionId()));
 
                 option.updateImageInfo(imageUrl, imageRequest.imageHash());
                 productOptionRepository.save(option);
