@@ -27,6 +27,11 @@ public class ShippingAddressService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
+        int currentCount = shippingAddressRepository.countByMemberId(memberId);
+        if (currentCount >= 5) {
+            throw new IllegalArgumentException("배송지는 최대 5개까지 등록할 수 있습니다.");
+        }
+
         if (request.isDefault()) {
             unsetExistingDefaultAddress(member);
         }
@@ -51,6 +56,12 @@ public class ShippingAddressService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
         return shippingAddressRepository.findByMemberId(memberId);
+    }
+
+    public ShippingAddress getShippingAddressById(Long memberId, Long addressId) {
+        return shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "배송지를 찾을 수 없습니다. Address ID: " + addressId +", Member ID: " + memberId));
     }
 
     @Transactional
@@ -88,11 +99,12 @@ public class ShippingAddressService {
 
     @Transactional
     public void deleteShippingAddress(Long memberId, Long addressId) {
-        ShippingAddress shippingAddress = shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "배송지를 찾을 수 없습니다. Address ID: " + addressId));
+        boolean exists = shippingAddressRepository.existsByIdAndMemberId(addressId, memberId);
+        if (!exists) {
+            throw new EntityNotFoundException("배송지를 찾을 수 없습니다. Address ID: "+addressId);
+        }
 
-        shippingAddressRepository.delete(shippingAddress);
+        shippingAddressRepository.deleteByIdAndMemberId(addressId, memberId);
         log.info("ShippingAddress deleted for member ID: {}, address ID: {}", memberId, addressId);
     }
 

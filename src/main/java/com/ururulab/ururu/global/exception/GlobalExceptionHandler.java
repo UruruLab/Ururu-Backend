@@ -16,7 +16,7 @@ import com.ururulab.ururu.auth.exception.SocialLoginException;
 import com.ururulab.ururu.auth.exception.SocialMemberInfoException;
 import com.ururulab.ururu.auth.exception.SocialTokenExchangeException;
 import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
-import com.ururulab.ururu.global.common.dto.ApiResponseFormat;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 
 import io.jsonwebtoken.ExpiredJwtException;

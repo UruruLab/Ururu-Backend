@@ -1,7 +1,7 @@
 package com.ururulab.ururu.product.service.validation;
 
-import com.ururulab.ururu.global.common.entity.TagCategory;
-import com.ururulab.ururu.global.common.repository.TagCategoryRepository;
+import com.ururulab.ururu.global.domain.entity.TagCategory;
+import com.ururulab.ururu.global.domain.repository.TagCategoryRepository;
 import com.ururulab.ururu.product.domain.dto.request.ProductRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.repository.CategoryRepository;
