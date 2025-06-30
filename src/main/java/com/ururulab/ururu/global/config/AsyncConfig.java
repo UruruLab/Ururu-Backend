@@ -19,4 +19,15 @@ public class AsyncConfig {
 		exec.initialize();
 		return exec;
 	}
+
+	@Bean(name = "imageDeleteExecutor")
+	public Executor imageDeleteExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(2); // 적절한 사이즈 설정
+		executor.setMaxPoolSize(5);
+		executor.setQueueCapacity(50);
+		executor.setThreadNamePrefix("image-delete-");
+		executor.initialize();
+		return executor;
+	}
 }

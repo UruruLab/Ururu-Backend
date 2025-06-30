@@ -19,7 +19,10 @@ public enum ErrorCode {
 	IMAGE_FORMAT_MISMATCH(HttpStatus.BAD_REQUEST, "IMAGE004", "확장자와 MIME 타입이 일치하지 않습니다: file=%s"),
 	IMAGE_FILENAME_MISSING(HttpStatus.BAD_REQUEST, "IMAGE005", "파일명이 없습니다."),
 	IMAGE_CONVERSION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE006", "이미지 변환에 실패했습니다."),
-
+	IMAGE_PROCESSING_FAILED(HttpStatus.BAD_REQUEST, "IMAGE007", "이미지 처리에 실패했습니다."),
+	IMAGE_READ_FAILED(HttpStatus.BAD_REQUEST, "IMAGE008", "이미지 파일을 읽을 수 없습니다."),
+	OPTION_IMAGE_COUNT_MISMATCH(HttpStatus.BAD_REQUEST, "IMAGE009", "옵션 개수(%d)와 이미지 개수(%d)가 일치하지 않습니다."),
+	IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE010", "이미지 업로드에 실패했습니다."),
 	// --- 태그 ---
 	TAG_NOT_FOUND(HttpStatus.BAD_REQUEST, "TAG001", "존재하지 않는 태그입니다."),
 
@@ -44,6 +47,9 @@ public enum ErrorCode {
 	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "회원 정보를 가져올 수 없습니다."),
 	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH009", "소셜 로그인 처리 중 오류가 발생했습니다."),
 	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "일시적인 서버 오류입니다."),
+
+	// --- 상품 ---
+	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다: %s"),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
