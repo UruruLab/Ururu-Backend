@@ -124,15 +124,7 @@ public final class GlobalExceptionHandler {
 				.status(HttpStatus.CONFLICT)
 				.body(ApiResponseFormat.fail("이미 사용 중인 정보입니다."));
 	}
-
-	@ExceptionHandler(BusinessException.class)
-	public ResponseEntity<ApiResponseFormat<ErrorCode>> handleBusiness(final BusinessException ex) {
-		log.warn("Business exception: {}", ex.getMessage(), ex);
-		return ResponseEntity
-				.status(ex.getErrorCode().getStatus())
-				.body(ApiResponseFormat.fail(ex.getErrorCode(), ex.getMessage()));
-	}
-
+	
 	/**
 	 * IllegalArgumentException 처리.
 	 */

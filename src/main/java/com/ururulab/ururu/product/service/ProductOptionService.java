@@ -1,5 +1,7 @@
 package com.ururulab.ururu.product.service;
 
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
@@ -16,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.ururulab.ururu.global.exception.error.ErrorCode.IMAGE_READ_FAILED;
 
 @Service
 @RequiredArgsConstructor
@@ -141,21 +145,20 @@ public class ProductOptionService {
             log.info("Option ingredients updated for ID: {}", existingOption.getId());
         }
 
-        // 이미지 변경 확인 (해시 비교)
         if (newImage != null && !newImage.isEmpty()) {
-            long start = System.currentTimeMillis();
-            String newImageHash = imageHashService.calculateImageHash(newImage);
-            long end = System.currentTimeMillis();
-            log.info("Hash calculation took: {}ms for file: {}", end - start, newImage.getOriginalFilename());
+            try {
+                long start = System.currentTimeMillis();
+                String newImageHash = imageHashService.calculateImageHash(newImage);
+                long end = System.currentTimeMillis();
+                log.info("Hash calculation took: {}ms for file: {}", end - start, newImage.getOriginalFilename());
 
-            if (!newImageHash.equals(existingOption.getImageHash())) {
-                String existingImageUrl = existingOption.getImageUrl();
-                if (existingImageUrl != null) {
-                    imagesToDelete.add(existingImageUrl);
-                    log.info("Different image detected, scheduled existing image for deletion: {}", existingImageUrl);
-                }
+                if (!newImageHash.equals(existingOption.getImageHash())) {
+                    String existingImageUrl = existingOption.getImageUrl();
+                    if (existingImageUrl != null) {
+                        imagesToDelete.add(existingImageUrl);
+                        log.info("Different image detected, scheduled existing image for deletion: {}", existingImageUrl);
+                    }
 
-                try {
                     imageUploadRequests.add(new ProductImageUploadRequest(
                             existingOption.getId(),
                             newImage.getOriginalFilename(),
@@ -167,12 +170,16 @@ public class ProductOptionService {
                     existingOption.updateImageUrl(null);
                     changed = true;
                     log.info("Different image detected, scheduled for upload for option: {}", existingOption.getId());
-                } catch (IOException e) {
-                    throw new RuntimeException("이미지 파일 읽기 실패", e);
+                } else {
+                    log.info("Same image detected (hash match: {}), skipping upload for option: {}",
+                            newImageHash, existingOption.getId());
                 }
-            } else {
-                log.info("Same image detected (hash match: {}), skipping upload for option: {}",
-                        newImageHash, existingOption.getId());
+            } catch (IOException e) {
+                log.error("Failed to read image file for option: {}", existingOption.getId(), e);
+                throw new BusinessException(ErrorCode.IMAGE_READ_FAILED);
+            } catch (Exception e) {
+                log.error("Failed to calculate image hash for option: {}", existingOption.getId(), e);
+                throw new BusinessException(ErrorCode.IMAGE_CONVERSION_FAILED);
             }
         } else {
             log.info("No image provided, keeping existing image for option: {} - {}",
@@ -202,7 +209,7 @@ public class ProductOptionService {
                 log.info("Image upload scheduled for new option: {} (hash: {})",
                         savedOption.getId(), imageHash);
             } catch (IOException e) {
-                throw new RuntimeException("이미지 파일 읽기 실패", e);
+                throw new BusinessException(IMAGE_READ_FAILED);
             }
         }
 

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 import static com.ururulab.ururu.image.domain.ImageCategory.PRODUCTS;
 
 @Service
@@ -83,7 +84,6 @@ public class ProductOptionImageService {
                         .orElseThrow(() -> new IllegalArgumentException(
                                 "존재하지 않는 상품 옵션입니다: " + imageRequest.productOptionId()));
 
-                //option.updateImageUrl(imageUrl);
                 option.updateImageInfo(imageUrl, imageRequest.imageHash());
                 productOptionRepository.save(option);
 
@@ -93,6 +93,7 @@ public class ProductOptionImageService {
             } catch (Exception e) {
                 log.error("Failed to upload image for option ID: {}",
                         imageRequest.productOptionId(), e);
+                throw new BusinessException(IMAGE_PROCESSING_FAILED);
             }
         }
     }
@@ -127,7 +128,7 @@ public class ProductOptionImageService {
                 ));
             } catch (IOException e) {
                 log.error("Failed to read image file for option: {}", option.getId(), e);
-                throw new RuntimeException("이미지 파일 읽기 실패" + e.getMessage(), e);
+                throw new BusinessException(IMAGE_READ_FAILED);
             }
         }
 
