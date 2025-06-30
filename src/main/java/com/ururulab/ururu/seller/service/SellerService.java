@@ -1,10 +1,9 @@
 package com.ururulab.ururu.seller.service;
 
-import com.ururulab.ururu.global.common.util.MaskingUtils;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.seller.domain.dto.request.SellerSignupRequest;
 import com.ururulab.ururu.seller.domain.dto.response.SellerAvailabilityResponse;
 import com.ururulab.ururu.seller.domain.dto.response.SellerResponse;
-import com.ururulab.ururu.seller.domain.dto.response.SellerSignupResponse;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,7 +32,7 @@ public class SellerService {
      * @return 생성된 판매자 정보
      */
     @Transactional
-    public SellerSignupResponse signup(final SellerSignupRequest request) {
+    public SellerResponse signup(final SellerSignupRequest request) {
         log.info("판매자 회원가입 시작: {}", MaskingUtils.maskEmail(request.email()));
 
         // 이메일 정규화 (소문자 변환)
@@ -67,7 +66,7 @@ public class SellerService {
             log.info("판매자 회원가입 성공: ID={}, 이메일={}", 
                     savedSeller.getId(), MaskingUtils.maskEmail(savedSeller.getEmail()));
 
-            return SellerSignupResponse.of(savedSeller);
+            return SellerResponse.forSignup(savedSeller);
 
         } catch (DataIntegrityViolationException e) {
             // DB 레벨에서 중복 감지 (동시성 환경에서 최종 방어선)
@@ -119,7 +118,7 @@ public class SellerService {
      */
     public SellerResponse getSellerProfile(final Long sellerId) {
         final Seller seller = findActiveSellerById(sellerId);
-        return SellerResponse.of(seller);
+        return SellerResponse.from(seller);
     }
 
 

@@ -3,7 +3,7 @@ package com.ururulab.ururu.product.domain.dto.response;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record ProductListResponse(
@@ -11,8 +11,8 @@ public record ProductListResponse(
         String name,
         String description,
         Status status,
-        ZonedDateTime createdAt,
-        ZonedDateTime updatedAt,
+        Instant createdAt,
+        Instant updatedAt,
         List<CategoryResponse> categories,
         List<ProductTagResponse> tagCategories
 ) {

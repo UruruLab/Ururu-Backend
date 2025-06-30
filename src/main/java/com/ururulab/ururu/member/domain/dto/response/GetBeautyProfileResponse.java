@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record GetBeautyProfileResponse(
         Long id,
+        @JsonProperty("member_id") Long memberId,
         @JsonProperty("skin_type") SkinType skinType,
         List<String> concerns,
         @JsonProperty("has_allergy") Boolean hasAllergy,
@@ -17,12 +18,13 @@ public record GetBeautyProfileResponse(
         @JsonProperty("min_price") Integer minPrice,
         @JsonProperty("max_price") Integer maxPrice,
         @JsonProperty("additional_info") String additionalInfo,
-        @JsonProperty("created_at") ZonedDateTime createdAt,
-        @JsonProperty("updated_at") ZonedDateTime updatedAt
+        @JsonProperty("created_at") Instant createdAt,
+        @JsonProperty("updated_at") Instant updatedAt
 ) {
     public static GetBeautyProfileResponse from(final BeautyProfile beautyProfile) {
         return new GetBeautyProfileResponse(
                 beautyProfile.getId(),
+                beautyProfile.getMember().getId(),
                 beautyProfile.getSkinType(),
                 List.copyOf(beautyProfile.getConcerns()),
                 beautyProfile.getHasAllergy(),

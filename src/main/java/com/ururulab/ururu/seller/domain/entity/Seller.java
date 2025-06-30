@@ -22,37 +22,37 @@ public class Seller extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = SellerValidationConstants.NAME_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.NAME_COLUMN_LENGTH, nullable = false)
     private String name; // 브랜드명
 
-    @Column(length = SellerValidationConstants.BUSINESS_NAME_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.BUSINESS_NAME_COLUMN_LENGTH, nullable = false)
     private String businessName; // 사업자명
 
-    @Column(length = SellerValidationConstants.OWNER_NAME_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.OWNER_NAME_COLUMN_LENGTH, nullable = false)
     private String ownerName; // 대표 CEO명
 
-    @Column(length = SellerValidationConstants.BUSINESS_NUMBER_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.BUSINESS_NUMBER_COLUMN_LENGTH, nullable = false)
     private String businessNumber; // 사업자등록번호
 
-    @Column(length = SellerValidationConstants.EMAIL_MAX_LENGTH, nullable = false, unique = true)
+    @Column(length = SellerValidationConstants.EMAIL_COLUMN_LENGTH, nullable = false, unique = true)
     private String email;
 
-    @Column(length = SellerValidationConstants.PASSWORD_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.PASSWORD_COLUMN_LENGTH, nullable = false)
     private String password; // 암호화된 비밀번호
 
-    @Column(length = SellerValidationConstants.PHONE_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.PHONE_COLUMN_LENGTH, nullable = false)
     private String phone;
 
-    @Column(length = SellerValidationConstants.IMAGE_MAX_LENGTH)
+    @Column(length = SellerValidationConstants.IMAGE_COLUMN_LENGTH)
     private String image; // 브랜드 대표 이미지
 
-    @Column(length = SellerValidationConstants.ADDRESS_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.ADDRESS_COLUMN_LENGTH, nullable = false)
     private String address1;
 
-    @Column(length = SellerValidationConstants.ADDRESS_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.ADDRESS_COLUMN_LENGTH, nullable = false)
     private String address2;
 
-    @Column(length = SellerValidationConstants.MAIL_ORDER_NUMBER_MAX_LENGTH, nullable = false)
+    @Column(length = SellerValidationConstants.MAIL_ORDER_NUMBER_COLUMN_LENGTH, nullable = false)
     private String mailOrderNumber; // 통신판매업 신고번호
 
     @Column(nullable = false)
@@ -77,7 +77,6 @@ public class Seller extends BaseEntity {
         SellerPolicy.validateOwnerName(ownerName);
         SellerPolicy.validateBusinessNumber(businessNumber);
         SellerPolicy.validateEmail(email);
-        SellerPolicy.validatePassword(password);
         SellerPolicy.validatePhone(phone);
         SellerPolicy.validateAddress1(address1);
         SellerPolicy.validateAddress2(address2);

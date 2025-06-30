@@ -2,7 +2,7 @@ package com.ururulab.ururu.product.domain.dto.response;
 
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
 public record ProductOptionResponse(
         Long id,
@@ -10,9 +10,8 @@ public record ProductOptionResponse(
         Integer price,
         String imageUrl,
         String fullIngredients,
-        String imageHash, //추가
-        ZonedDateTime createdAt,
-        ZonedDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {
 
     //임시 URL 경로
@@ -29,7 +28,18 @@ public record ProductOptionResponse(
                 productOption.getPrice(),
                 imageUrl,
                 productOption.getFullIngredients(),
-                productOption.getImageHash(), //추가
+                productOption.getCreatedAt(),
+                productOption.getUpdatedAt()
+        );
+    }
+
+    public static ProductOptionResponse of(final ProductOption productOption) {
+        return new ProductOptionResponse(
+                productOption.getId(),
+                productOption.getName(),
+                productOption.getPrice(),
+                productOption.getImageUrl(),
+                productOption.getFullIngredients(),
                 productOption.getCreatedAt(),
                 productOption.getUpdatedAt()
         );

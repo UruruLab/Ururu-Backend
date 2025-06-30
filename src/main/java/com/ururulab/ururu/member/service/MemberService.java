@@ -153,7 +153,7 @@ public class MemberService {
                 GetWithdrawalPreviewResponse.MemberInfo.of(
                         member.getNickname(),
                         member.getEmail(),
-                        member.getCreatedAt().toLocalDate().toString(),
+                        member.getCreatedAt(),
                         member.getProfileImage()
                 );
 
