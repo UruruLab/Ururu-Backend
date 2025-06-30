@@ -38,6 +38,9 @@ public class GroupBuyOption extends BaseEntity {
     @Min(0)
     private Integer salePrice; // 실제 판매가
 
+    @Version
+    private Long version;
+
     public static GroupBuyOption of(
             GroupBuy groupBuy,
             ProductOption productOption,
