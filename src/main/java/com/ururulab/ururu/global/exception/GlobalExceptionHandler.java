@@ -124,7 +124,7 @@ public final class GlobalExceptionHandler {
 				.status(HttpStatus.CONFLICT)
 				.body(ApiResponseFormat.fail("이미 사용 중인 정보입니다."));
 	}
-
+	
 	/**
 	 * IllegalArgumentException 처리.
 	 */

@@ -53,4 +53,13 @@ public class Category extends BaseEntity {
 
         return category;
     }
+
+    public void updateName(String newName) {
+        this.name = newName;
+    }
+
+    public void updateInfo(String newName, String newPath) {
+        this.name = newName;
+        this.path = newPath;
+    }
 }
