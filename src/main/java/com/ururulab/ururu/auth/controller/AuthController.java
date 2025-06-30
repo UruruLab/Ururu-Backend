@@ -3,11 +3,13 @@ package com.ururulab.ururu.auth.controller;
 import com.ururulab.ururu.auth.dto.request.SocialLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
+import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,22 +42,42 @@ public final class AuthController {
 
     private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtCookieHelper jwtCookieHelper;
 
     @PostMapping("/social/sessions")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> socialLogin(
-            @Valid @RequestBody final SocialLoginRequest request
+            @Valid @RequestBody final SocialLoginRequest request,
+            final HttpServletResponse response
     ) {
         final SocialLoginService loginService = socialLoginServiceFactory.getService(request.provider());
         final SocialLoginResponse loginResponse = loginService.processLogin(request.code());
 
-        log.info("Social login successful for provider: {}, member: {}",
+        jwtCookieHelper.setAccessTokenCookie(response, loginResponse.accessToken());
+        
+        if (loginResponse.refreshToken() != null) {
+            jwtCookieHelper.setRefreshTokenCookie(response, loginResponse.refreshToken());
+        }
+
+        log.info("Social login successful for provider: {}, member: {}, tokens set in cookies",
                 request.provider(), loginResponse.memberInfo().memberId());
 
+        final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
+
         return ResponseEntity.ok(
-                ApiResponseFormat.success("소셜 로그인에 성공했습니다.", loginResponse)
+                ApiResponseFormat.success("소셜 로그인에 성공했습니다.", secureResponse)
         );
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponseFormat<Void>> logout(final HttpServletResponse response) {
+        jwtCookieHelper.clearTokenCookies(response);
+        
+        log.info("User logged out, cookies cleared");
+        
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("로그아웃되었습니다.", null)
+        );
+    }
 
     @GetMapping("/social/providers")
     public ResponseEntity<ApiResponseFormat<GetSocialProvidersResponse>> getSocialProviders() {
@@ -190,6 +212,15 @@ public final class AuthController {
             return MASKED_DATA_PLACEHOLDER;
         }
         return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
+    }
+
+    private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
+        return SocialLoginResponse.of(
+                maskSensitiveData(original.accessToken()),
+                original.refreshToken() != null ? maskSensitiveData(original.refreshToken()) : null,
+                original.expiresIn(),
+                original.memberInfo()
+        );
     }
 
     public record GetSocialProvidersResponse(
