@@ -26,10 +26,22 @@ public enum ErrorCode {
 	// --- 태그 ---
 	TAG_NOT_FOUND(HttpStatus.BAD_REQUEST, "TAG001", "존재하지 않는 태그입니다."),
 
-	// --- 상품 ---
-	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다: %s");
+	// --- 주문 ---
+	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER001", "존재하지 않는 회원입니다."),
+	GROUPBUY_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER002", "존재하지 않는 공구 옵션입니다: %s"),
+	GROUPBUY_OPTION_MISMATCH(HttpStatus.BAD_REQUEST, "ORDER003", "공구 ID와 옵션의 공구가 일치하지 않습니다: %s"),
+	GROUPBUY_ENDED(HttpStatus.CONFLICT, "ORDER004", "종료된 공구입니다."),
+	STOCK_INSUFFICIENT(HttpStatus.CONFLICT, "ORDER005", "재고가 부족합니다. (요청: %d개, 사용가능: %d개)"),
+	PERSONAL_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "ORDER006", "개인 구매 제한을 초과했습니다. 최대 %d개까지 구매 가능합니다."),
+	ORDER_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "ORDER007", "이미 진행 중인 주문이 있습니다. 잠시 후 다시 시도해주세요."),
+	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
 
-	;
+	// --- 상품 ---
+	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다: %s"),
+
+	// --- 시스템 ---
+	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
+
 
 	private final HttpStatus status;
 	private final String code;
