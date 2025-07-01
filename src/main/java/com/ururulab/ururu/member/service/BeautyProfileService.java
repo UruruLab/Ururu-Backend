@@ -1,5 +1,6 @@
 package com.ururulab.ururu.member.service;
 
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.domain.dto.response.BeautyProfileCreateResponse;
@@ -35,10 +36,12 @@ public class BeautyProfileService {
 
         request.validateBusinessRules();
         SkinType skinType = parseSkinType(request.skinType());
+        SkinTone skinTone = parseSkinTone(request.skinTone());
 
         BeautyProfile beautyProfile = BeautyProfile.of(
                 member,
                 skinType,
+                skinTone,
                 request.concerns(),
                 request.hasAllergy(),
                 request.allergies(),
@@ -70,9 +73,11 @@ public class BeautyProfileService {
 
         request.validateBusinessRules();
         SkinType skinType = parseSkinType(request.skinType());
+        SkinTone skinTone = parseSkinTone(request.skinTone());
 
         beautyProfile.updateProfile(
                 skinType,
+                skinTone,
                 request.concerns(),
                 request.hasAllergy(),
                 request.allergies(),
@@ -106,6 +111,17 @@ public class BeautyProfileService {
             return SkinType.from(skinTypeString);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("올바른 피부 타입 값이 아닙니다: " + skinTypeString, e);
+        }
+    }
+
+    private SkinTone parseSkinTone(final String skinToneString) {
+        if (skinToneString == null) {
+            return null;
+        }
+        try {
+            return SkinTone.from(skinToneString);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("올바른 피부 톤 값이 아닙니다: " + skinToneString, e);
         }
     }
 }
