@@ -28,13 +28,6 @@ public class MemberService {
     private final ShippingAddressRepository shippingAddressRepository;
     private final MemberAgreementRepository memberAgreementRepository;
 
-
-    /**
-     * 소셜 회원 정보로 새 회원을 생성하거나 기존 회원을 조회합니다.
-     *
-     * @param socialMemberInfo 소셜 로그인에서 받은 회원 정보
-     * @return 생성되거나 조회된 회원
-     */
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
         return memberRepository.findBySocialProviderAndSocialId(
@@ -43,12 +36,6 @@ public class MemberService {
         ).orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
-    /**
-     * 회원 생성 요청으로 새 회원을 생성합니다.
-     *
-     * @param request 회원 생성 요청 정보
-     * @return 생성된 회원
-     */
     @Transactional
     public Member createMember(final MemberRequest request) {
         validateMemberCreation(request);
