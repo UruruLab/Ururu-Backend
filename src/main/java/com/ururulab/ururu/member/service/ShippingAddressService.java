@@ -16,7 +16,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ShippingAddressService {
     private final ShippingAddressRepository shippingAddressRepository;
     private final MemberRepository memberRepository;
@@ -51,6 +50,7 @@ public class ShippingAddressService {
         return savedAddress;
     }
 
+    @Transactional(readOnly = true)
     public List<ShippingAddress> getShippingAddresses(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -58,12 +58,14 @@ public class ShippingAddressService {
         return shippingAddressRepository.findByMemberId(memberId);
     }
 
+    @Transactional(readOnly = true)
     public ShippingAddress getShippingAddressById(Long memberId, Long addressId) {
         return shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId +", Member ID: " + memberId));
     }
 
+    @Transactional(readOnly = true)
     public ShippingAddress getDefaultShippingAddress(Long memberId) {
         return shippingAddressRepository.findByMemberIdAndIsDefaultTrue(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(

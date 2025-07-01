@@ -20,7 +20,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberPreferenceService {
     private final MemberPreferenceRepository memberPreferenceRepository;
     private final MemberRepository memberRepository;
@@ -59,6 +58,7 @@ public class MemberPreferenceService {
         return MemberPreferenceResponse.from(savedPreference);
     }
 
+    @Transactional(readOnly = true)
     public List<MemberPreferenceResponse> getMemberPreferences(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
             throw new EntityNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId);

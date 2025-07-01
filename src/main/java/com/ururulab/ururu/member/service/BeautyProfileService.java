@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class BeautyProfileService {
     private final BeautyProfileRepository beautyProfileRepository;
     private final MemberRepository memberRepository;
@@ -57,6 +56,7 @@ public class BeautyProfileService {
         return BeautyProfileCreateResponse.from(savedProfile);
     }
 
+    @Transactional(readOnly = true)
     public BeautyProfileGetResponse getBeautyProfile(Long memberId) {
         BeautyProfile beautyProfile =  beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(

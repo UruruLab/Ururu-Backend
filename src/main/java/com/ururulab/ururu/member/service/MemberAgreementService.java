@@ -17,7 +17,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberAgreementService {
     private final MemberAgreementRepository memberAgreementRepository;
     private final MemberRepository memberRepository;
