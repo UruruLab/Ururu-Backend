@@ -4,15 +4,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-/**
- * JWT 토큰을 안전한 쿠키로 설정하는 헬퍼 클래스.
- *
- * XSS 공격 방지를 위한 HttpOnly, HTTPS 통신을 위한 Secure,
- * CSRF 공격 방지를 위한 SameSite 속성을 적용합니다.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -22,18 +16,11 @@ public final class JwtCookieHelper {
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
     private static final String COOKIE_PATH = "/";
 
-    // 환경별 SameSite 정책 분리
-    private static final String SAME_SITE_DEV = "Lax";      // 개발환경: 관대한 정책
-    private static final String SAME_SITE_PROD = "None";    // 운영환경: 크로스 사이트 허용 (HTTPS 필수)
+    private static final String SAME_SITE_DEV = "Lax";
+    private static final String SAME_SITE_PROD = "None";
 
     private final JwtProperties jwtProperties;
-
-    @Value("${spring.profiles.active:prod}")
-    private String activeProfile;
-
-    // 도메인 설정을 위한 프로퍼티 (application.yml에서 설정)
-    @Value("${app.cookie.domain:}")
-    private String cookieDomain;
+    private final Environment environment;
 
     public void setAccessTokenCookie(final HttpServletResponse response, final String accessToken) {
         final long maxAgeSeconds = jwtProperties.getAccessTokenExpiry() / 1000;
@@ -67,7 +54,6 @@ public final class JwtCookieHelper {
         cookie.setPath(COOKIE_PATH);
         cookie.setMaxAge(maxAgeSeconds);
 
-        // 도메인 설정 (운영환경에서만)
         final String domain = getCookieDomain();
         if (domain != null && !domain.isEmpty()) {
             cookie.setDomain(domain);
@@ -75,7 +61,6 @@ public final class JwtCookieHelper {
 
         response.addCookie(cookie);
 
-        // Set-Cookie 헤더에 SameSite 속성 추가
         final String setCookieHeader = buildSetCookieHeader(name, value, maxAgeSeconds, domain);
         response.addHeader("Set-Cookie", setCookieHeader);
 
@@ -90,7 +75,6 @@ public final class JwtCookieHelper {
         cookie.setPath(COOKIE_PATH);
         cookie.setMaxAge(0);
 
-        // 도메인 설정 (쿠키 삭제 시에도 동일한 도메인 필요)
         final String domain = getCookieDomain();
         if (domain != null && !domain.isEmpty()) {
             cookie.setDomain(domain);
@@ -98,7 +82,6 @@ public final class JwtCookieHelper {
 
         response.addCookie(cookie);
 
-        // Set-Cookie 헤더에 SameSite 속성 추가
         final String setCookieHeader = buildClearCookieHeader(name, domain);
         response.addHeader("Set-Cookie", setCookieHeader);
     }
@@ -140,19 +123,37 @@ public final class JwtCookieHelper {
     }
 
     /**
-     * 환경별 도메인 설정 반환
+     * 안전한 프로파일 확인 (null-safe)
      */
-    private String getCookieDomain() {
-        if (isDevelopmentProfile()) {
-            return null; // 개발환경에서는 도메인 설정 없음 (localhost)
+    private boolean isDevelopmentProfile() {
+        try {
+            return environment.acceptsProfiles("dev");
+        } catch (Exception e) {
+            // 테스트 환경이나 프로파일이 설정되지 않은 경우 개발환경으로 간주
+            log.debug("Profile check failed, defaulting to development: {}", e.getMessage());
+            return true;
         }
-
-        // 운영환경에서는 설정값 사용하거나 기본값
-        return cookieDomain.isEmpty() ? ".o-r.kr" : cookieDomain;
     }
 
     /**
-     * 환경별 SameSite 정책 반환
+     * 환경별 도메인 설정 (null-safe)
+     */
+    private String getCookieDomain() {
+        if (isDevelopmentProfile()) {
+            return null; // 개발환경에서는 도메인 설정 없음
+        }
+
+        try {
+            // 운영환경에서는 프로퍼티에서 가져오거나 기본값
+            return environment.getProperty("app.cookie.domain", ".o-r.kr");
+        } catch (Exception e) {
+            log.debug("Cookie domain property access failed, using default: {}", e.getMessage());
+            return ".o-r.kr";
+        }
+    }
+
+    /**
+     * 환경별 SameSite 정책
      */
     private String getSameSitePolicy() {
         return isDevelopmentProfile() ? SAME_SITE_DEV : SAME_SITE_PROD;
@@ -160,16 +161,5 @@ public final class JwtCookieHelper {
 
     private boolean isSecureEnvironment() {
         return !isDevelopmentProfile();
-    }
-
-    private boolean isDevelopmentProfile() {
-        return "dev".equals(activeProfile);
-    }
-
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= 10) {
-            return "***";
-        }
-        return data.substring(0, 10) + "...";
     }
 }
