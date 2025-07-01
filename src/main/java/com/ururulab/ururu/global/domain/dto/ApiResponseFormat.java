@@ -50,15 +50,24 @@ public final class ApiResponseFormat<T> {
     }
 
     /**
-     * 실패 응답 생성 (코드 및 메시지 지정).
-     * @param code 상태/에러 코드
-     * @param message 실패 메시지
+     * 실패 응답 생성 (ErrorCode 기반).
+     *
+     * @param errorCode 에러 코드
+     * @return ErrorCode 기반 실패 응답
      */
-    public static <T> ApiResponseFormat<ErrorCode> fail(
-            ErrorCode code,
-            String message
-    ) {
-        return new ApiResponseFormat<>(false, message, code);
+    public static ApiResponseFormat<Void> fail(final ErrorCode errorCode) {
+        return new ApiResponseFormat<>(false, errorCode.getMessage(), null);
+    }
+
+    /**
+     * 실패 응답 생성 (코드 및 메시지 지정).
+     *
+     * @param code 에러 코드 문자열
+     * @param message 실패 메시지
+     * @return 코드와 메시지 기반 실패 응답
+     */
+    public static ApiResponseFormat<Void> fail(final String code, final String message) {
+        return new ApiResponseFormat<>(false, message, null);
     }
 
     /**

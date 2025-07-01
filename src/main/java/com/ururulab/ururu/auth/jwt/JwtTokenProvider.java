@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.jwt;
 
-import com.ururulab.ururu.auth.exception.InvalidJwtTokenException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public final class JwtTokenProvider {
         try {
             return Long.valueOf(claims.getSubject());
         } catch (NumberFormatException e) {
-            throw new InvalidJwtTokenException("Invalid member ID format in token", e);
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
         }
     }
 
@@ -81,7 +82,7 @@ public final class JwtTokenProvider {
             return true;
         } catch (final JwtException e) {
             log.debug("JWT parsing failed: {}", e.getMessage());
-            throw new InvalidJwtTokenException("Failed to parse JWT token", e);
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
         }
     }
 

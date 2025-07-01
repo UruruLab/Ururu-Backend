@@ -37,13 +37,13 @@ public record ProductRequest(
         ProductNoticeRequest productNotice
 ) {
     public Product toEntity(
-            //Seller seller
+            Seller seller
     ) {
         return Product.of(
-                //seller,
+                seller,
                 name,
                 description,
-                Status.ACTIVE
+                Status.INACTIVE
         );
     }
 }

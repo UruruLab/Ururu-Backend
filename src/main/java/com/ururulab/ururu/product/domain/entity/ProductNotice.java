@@ -86,4 +86,15 @@ public class ProductNotice extends BaseEntity {
         return productNotice;
     }
 
+    public void updateCapacity(String capacity) { this.capacity = capacity; }
+    public void updateSpec(String spec) { this.spec = spec; }
+    public void updateExpiry(String expiry) { this.expiry = expiry; }
+    public void updateUsage(String usage) { this.usage = usage; }
+    public void updateManufacturer(String manufacturer) { this.manufacturer = manufacturer; }
+    public void updateResponsibleSeller(String responsibleSeller) { this.responsibleSeller = responsibleSeller; }
+    public void updateCountryOfOrigin(String countryOfOrigin) { this.countryOfOrigin = countryOfOrigin; }
+    public void updateFunctionalCosmetics(Boolean functionalCosmetics) { this.functionalCosmetics = functionalCosmetics; }
+    public void updateCaution(String caution) { this.caution = caution; }
+    public void updateWarranty(String warranty) { this.warranty = warranty; }
+    public void updateCustomerServiceNumber(String customerServiceNumber) { this.customerServiceNumber = customerServiceNumber; }
 }

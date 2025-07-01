@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.service;
 
-import com.ururulab.ururu.auth.exception.UnsupportedSocialProviderException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -58,9 +59,7 @@ public final class SocialLoginServiceFactory {
 
         final SocialLoginService service = socialLoginServices.get(provider);
         if (service == null) {
-            throw new UnsupportedSocialProviderException(
-                    String.format("지원하지 않는 소셜 제공자입니다: %s", provider)
-            );
+            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
         }
 
         return service;
