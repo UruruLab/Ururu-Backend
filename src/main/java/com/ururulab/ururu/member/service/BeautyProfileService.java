@@ -49,7 +49,7 @@ public class BeautyProfileService {
         );
 
         BeautyProfile savedProfile = beautyProfileRepository.save(beautyProfile);
-        log.info("BeautyProfile created for member ID: {}", memberId);
+        log.debug("BeautyProfile created for member ID: {}", memberId);
 
         return BeautyProfileCreateResponse.from(savedProfile);
     }
@@ -83,7 +83,7 @@ public class BeautyProfileService {
         );
 
         BeautyProfile updatedProfile = beautyProfileRepository.save(beautyProfile);
-        log.info("BeautyProfile updated for member ID: {}", memberId);
+        log.debug("BeautyProfile updated for member ID: {}", memberId);
 
         return BeautyProfileUpdateResponse.from(updatedProfile);
     }
@@ -95,7 +95,7 @@ public class BeautyProfileService {
         }
 
         beautyProfileRepository.deleteByMemberId(memberId);
-        log.info("BeautyProfile deleted for member ID: {}", memberId);
+        log.debug("BeautyProfile deleted for member ID: {}", memberId);
     }
 
     private SkinType parseSkinType(final String skinTypeString) {

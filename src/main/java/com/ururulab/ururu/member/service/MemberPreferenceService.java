@@ -54,7 +54,7 @@ public class MemberPreferenceService {
         );
 
         MemberPreference savedPreference = memberPreferenceRepository.save(preference);
-        log.info("Member preference created for member ID: {}, seller ID: {}", memberId, request.sellerId());
+        log.debug("Member preference created for member ID: {}, seller ID: {}", memberId, request.sellerId());
 
         return MemberPreferenceResponse.from(savedPreference);
     }

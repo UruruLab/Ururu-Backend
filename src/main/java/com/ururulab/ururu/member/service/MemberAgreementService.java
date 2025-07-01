@@ -36,7 +36,7 @@ public class MemberAgreementService {
                 .toList();
 
         List<MemberAgreement> savedAgreements = memberAgreementRepository.saveAll(memberAgreements);
-        log.info("Member agreements created for member ID: {}", memberId);
+        log.debug("Member agreements created for member ID: {}", memberId);
         return MemberAgreementCreateResponse.of(memberId, savedAgreements);
     }
 }

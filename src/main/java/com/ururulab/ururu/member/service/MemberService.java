@@ -66,7 +66,7 @@ public class MemberService {
         );
 
         final Member savedMember = memberRepository.save(member);
-        log.info("New member created with ID: {}", savedMember.getId());
+        log.debug("New member created with ID: {}", savedMember.getId());
 
         return savedMember;
     }
@@ -107,7 +107,7 @@ public class MemberService {
         member.updateProfileImage(imageUrl);
         memberRepository.save(member);
 
-        log.info("Profile image uploaded for member ID: {}", memberId);
+        log.debug("Profile image uploaded for member ID: {}", memberId);
     }
 
     @Transactional
@@ -175,7 +175,7 @@ public class MemberService {
         updateMemberFields(member, request);
 
         final Member updatedMember = memberRepository.save(member);
-        log.info("Member profile updated for ID: {}", memberId);
+        log.debug("Member profile updated for ID: {}", memberId);
 
         return updatedMember;
     }
@@ -195,7 +195,7 @@ public class MemberService {
         );
 
         final Member savedMember = memberRepository.save(member);
-        log.info("New social member created with ID: {} for provider: {}",
+        log.debug("New social member created with ID: {} for provider: {}",
                 savedMember.getId(), socialMemberInfo.provider());
 
         return savedMember;
