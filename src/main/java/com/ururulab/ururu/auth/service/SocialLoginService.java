@@ -1,7 +1,6 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.exception.SocialLoginException;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 
@@ -28,7 +27,7 @@ public interface SocialLoginService {
      * @param code 소셜 제공자로부터 받은 인증 코드
      * @return 액세스 토큰
      * @throws IllegalArgumentException 인증 코드가 유효하지 않은 경우
-     * @throws SocialLoginException 토큰 교환 실패 시
+     * @throws com.ururulab.ururu.global.exception.BusinessException 토큰 교환 실패 시
      */
     String getAccessToken(String code);
 
@@ -38,7 +37,7 @@ public interface SocialLoginService {
      * @param accessToken 소셜 제공자의 액세스 토큰
      * @return 표준화된 사용자 정보
      * @throws IllegalArgumentException 액세스 토큰이 유효하지 않은 경우
-     * @throws SocialLoginException 사용자 정보 조회 실패 시
+     * @throws com.ururulab.ururu.global.exception.BusinessException 사용자 정보 조회 실패 시
      */
     SocialMemberInfo getMemberInfo(String accessToken);
 
@@ -47,7 +46,7 @@ public interface SocialLoginService {
      *
      * @param code 인증 코드
      * @return JWT 토큰이 포함된 로그인 응답
-     * @throws SocialLoginException 로그인 처리 실패 시
+     * @throws com.ururulab.ururu.global.exception.BusinessException 로그인 처리 실패 시
      */
     SocialLoginResponse processLogin(String code);
     /**

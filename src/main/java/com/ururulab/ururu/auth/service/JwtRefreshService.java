@@ -1,8 +1,8 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.exception.InvalidRefreshTokenException;
-import com.ururulab.ururu.auth.exception.MissingAuthorizationHeaderException;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -30,15 +30,15 @@ public final class JwtRefreshService {
 
     public SocialLoginResponse refreshAccessToken(final String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new InvalidRefreshTokenException("유효하지 않은 리프레시 토큰입니다.");
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
         if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
-            throw new InvalidRefreshTokenException("리프레시 토큰이 아닙니다.");
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
         if (isTokenBlacklisted(tokenId)) {
-            throw new InvalidRefreshTokenException("만료되었거나 철회된 토큰입니다.");
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         final Long memberId = jwtTokenProvider.getMemberId(refreshToken);
@@ -46,7 +46,7 @@ public final class JwtRefreshService {
         final String storedToken = redisTemplate.opsForValue().get(key);
 
         if (storedToken == null || !storedToken.equals(refreshToken)) {
-            throw new InvalidRefreshTokenException("이미 사용되었거나 유효하지 않은 토큰입니다.");
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         final String email = jwtTokenProvider.getEmail(refreshToken);
@@ -86,7 +86,7 @@ public final class JwtRefreshService {
 
     private String extractTokenFromBearer(final String bearerToken) {
         if (bearerToken == null || !bearerToken.startsWith(BEARER_PREFIX)) {
-            throw new MissingAuthorizationHeaderException("Authorization 헤더가 필요합니다.");
+            throw new BusinessException(ErrorCode.MISSING_AUTHORIZATION_HEADER);
         }
         return bearerToken.substring(BEARER_PREFIX.length());
     }
