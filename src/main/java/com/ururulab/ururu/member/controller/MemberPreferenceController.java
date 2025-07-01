@@ -12,12 +12,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/members/{memberId}/preferences")
+@RequestMapping("/api/members/preferences")
 @RequiredArgsConstructor
 @Tag(name = "회원 선호도 관리", description = "회원 선호도 관리 API")
 public class MemberPreferenceController {
@@ -33,7 +34,7 @@ public class MemberPreferenceController {
     })
     @PostMapping
     public ResponseEntity<ApiResponseFormat<MemberPreferenceResponse>> createMemberPreference(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @Valid @RequestBody final MemberPreferenceRequest request
     ) {
         final MemberPreferenceResponse response = memberPreferenceService.createPreference(memberId, request);
@@ -48,7 +49,7 @@ public class MemberPreferenceController {
     })
     @GetMapping()
     public ResponseEntity<ApiResponseFormat<List<MemberPreferenceResponse>>> getMemberPreference(
-            @PathVariable final Long memberId
+            @AuthenticationPrincipal final Long memberId
     ){
         final List<MemberPreferenceResponse> responses = memberPreferenceService.getMemberPreferences(memberId);
         return ResponseEntity.ok(

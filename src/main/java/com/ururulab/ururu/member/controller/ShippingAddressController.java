@@ -14,12 +14,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/members/{memberId}/shipping-addresses")
+@RequestMapping("/api/members/shipping-addresses")
 @RequiredArgsConstructor
 @Tag(name = "배송지 관리", description = "회원 배송지 관리 API")
 public class ShippingAddressController {
@@ -33,7 +34,7 @@ public class ShippingAddressController {
     })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<ShippingAddressListResponse>> getShippingAddress(
-            @PathVariable final Long memberId
+            @AuthenticationPrincipal final Long memberId
     ) {
         final List<ShippingAddressResponse> addresses = shippingAddressService.getShippingAddresses(memberId)
                 .stream()
@@ -55,7 +56,7 @@ public class ShippingAddressController {
     })
     @PostMapping
     public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> createShippingAddress(
-            @PathVariable Long memberId,
+            @AuthenticationPrincipal Long memberId,
             @Valid @RequestBody final ShippingAddressRequest request
     ) {
         final ShippingAddress shippingAddress = shippingAddressService.createShippingAddress(memberId, request);
@@ -72,7 +73,7 @@ public class ShippingAddressController {
     })
     @PutMapping("/{addressId}")
     public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> updateShippingAddress(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @PathVariable final Long addressId,
             @Valid @RequestBody final ShippingAddressRequest request
     ) {
@@ -91,7 +92,7 @@ public class ShippingAddressController {
     })
     @DeleteMapping("/{addressId}")
     public ResponseEntity<ApiResponseFormat<Void>> deleteShippingAddress(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @PathVariable final Long addressId
     ) {
         shippingAddressService.deleteShippingAddress(memberId, addressId);
@@ -107,7 +108,7 @@ public class ShippingAddressController {
     })
     @GetMapping("/{addressId}")
     public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> getShippingAddressById(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @PathVariable final Long addressId
     ) {
         final ShippingAddress shippingAddress = shippingAddressService.getShippingAddressById(memberId, addressId);
@@ -124,7 +125,7 @@ public class ShippingAddressController {
     })
     @PatchMapping("/{addressId}/default")
     public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> setDefaultShippingAddress(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @PathVariable final Long addressId
     ) {
         final ShippingAddress shippingAddress = shippingAddressService.setDefaultShippingAddress(memberId, addressId);
@@ -141,7 +142,7 @@ public class ShippingAddressController {
     })
     @GetMapping("/default")
     public ResponseEntity<ApiResponseFormat<ShippingAddressResponse>> getDefaultShippingAddress(
-            @PathVariable final Long memberId
+            @AuthenticationPrincipal final Long memberId
     ) {
         final ShippingAddress shippingAddress = shippingAddressService.getDefaultShippingAddress(memberId);
         final ShippingAddressResponse response = ShippingAddressResponse.from(shippingAddress);
