@@ -95,13 +95,13 @@ public final class GlobalExceptionHandler {
 	 * 이미지 크기 초과 예외 처리.
 	 */
 	@ExceptionHandler(MaxUploadSizeExceededException.class)
-	public ResponseEntity<ApiResponseFormat<ErrorCode>> handleMaxUploadSizeExceeded(
+	public ResponseEntity<ApiResponseFormat<Void>> handleMaxUploadSizeExceeded(
 			final MaxUploadSizeExceededException exception
 	) {
 		log.warn("File size exceeded: {}", exception.getMessage());
 		return ResponseEntity
 				.status(HttpStatus.PAYLOAD_TOO_LARGE)
-				.body(ApiResponseFormat.fail(ErrorCode.IMAGE_SIZE_EXCEEDED, ErrorCode.IMAGE_SIZE_EXCEEDED.getMessage()));
+				.body(ApiResponseFormat.fail("IMAGE_SIZE_EXCEEDED", "파일 크기가 제한을 초과했습니다."));
 	}
 	
 	/**
