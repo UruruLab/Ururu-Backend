@@ -62,6 +62,28 @@ public class ProductController {
                 .body(ApiResponseFormat.success("상품이 등록되었습니다.", response));
     }
 
+    @Operation(summary = "상품 수정", description = "판매자가 기존 상품 정보를 수정합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "상품 수정 성공"),
+            @ApiResponse(responseCode = "400", description = "존재하지 않는 상품"),
+            @ApiResponse(responseCode = "400", description = "지원하지 않는 파일 형식"),
+            @ApiResponse(responseCode = "413", description = "파일 크기 초과"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @PatchMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponseFormat<ProductResponse>> updateProduct(
+            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
+            @PathVariable Long productId,
+            @Valid @RequestPart("product") ProductRequest productRequest,
+            @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
+    ) {
+        // TODO: JWT 구현 후 주석 제거
+        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
+        ProductResponse response = productService.updateProduct(productId, productRequest, optionImages, sellerId);
+        return ResponseEntity.ok(ApiResponseFormat.success("상품이 수정되었습니다.", response));
+    }
+
     @Operation(summary = "판매자 상품 목록 조회", description = "판매자의 상품 목록을 페이지네이션 형태로 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "상품 목록 조회 성공"),
@@ -86,6 +108,7 @@ public class ProductController {
     @Operation(summary = "상품 상세 조회", description = "판매자의 특정 상품 상세 정보를 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "상품 상세 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "존재하지 않는 상품"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 상품 또는 판매자"),
             @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
@@ -100,30 +123,6 @@ public class ProductController {
 
         ProductResponse response = productService.getProduct(productId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 상세 조회가 성공했습니다.", response));
-    }
-
-    @Operation(summary = "상품 수정", description = "판매자가 기존 상품 정보를 수정합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "상품 수정 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
-            @ApiResponse(responseCode = "404", description = "존재하지 않는 상품"),
-            @ApiResponse(responseCode = "413", description = "파일 크기 초과"),
-            @ApiResponse(responseCode = "415", description = "지원하지 않는 파일 형식"),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
-    })
-    @PatchMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponseFormat<ProductResponse>> updateProduct(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
-            @PathVariable Long productId,
-            @Valid @RequestPart("product") ProductRequest productRequest,
-            @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
-    ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
-
-        ProductResponse response = productService.updateProduct(productId, productRequest, optionImages, sellerId);
-        return ResponseEntity.ok(ApiResponseFormat.success("상품이 수정되었습니다.", response));
     }
 
     @Operation(summary = "특정 상품의 옵션 조회", description = "판매자가 특정 상품의 옵션을 조회 합니다.")

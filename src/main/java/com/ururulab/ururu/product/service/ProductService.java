@@ -110,6 +110,10 @@ public class ProductService {
      */
     @Transactional(readOnly = true)
     public Page<ProductListResponse> getProducts(Pageable pageable, Long sellerId) {
+        sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SELLER_NOT_FOUND));
+
+
         StopWatch stopWatch = new StopWatch("ProductListRetrieval");
         stopWatch.start("productQuery");
 
