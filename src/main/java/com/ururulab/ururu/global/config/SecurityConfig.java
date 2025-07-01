@@ -67,9 +67,12 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("prod")
-    public SecurityFilterChain prodFilterChain(final HttpSecurity http) throws Exception {
+    public SecurityFilterChain prodFilterChain(
+            final HttpSecurity http,
+            final CorsConfigurationSource prodCorsConfigurationSource  // 운영용 CORS 주입
+    ) throws Exception {
         return http
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(prodCorsConfigurationSource))  // 운영용 CORS 적용
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()

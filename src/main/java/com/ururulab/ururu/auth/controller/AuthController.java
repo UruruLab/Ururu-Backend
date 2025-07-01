@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public final class AuthController {
 
@@ -168,32 +168,6 @@ public final class AuthController {
         }
 
         return redirectView;
-    }
-
-    @GetMapping("/status")
-    public ResponseEntity<ApiResponseFormat<AuthStatusResponse>> getAuthStatus(
-            @RequestHeader(value = "Authorization", required = false) final String authorization) {
-
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return ResponseEntity.ok(
-                    ApiResponseFormat.success("인증되지 않은 상태입니다.",
-                            AuthStatusResponse.unauthenticated())
-            );
-        }
-
-        final String token = authorization.substring(7);
-        final Long memberId = jwtTokenProvider.getMemberId(token);
-        final String email = jwtTokenProvider.getEmail(token);
-        final String role = jwtTokenProvider.getRole(token);
-
-        if (!jwtTokenProvider.validateToken(token)) {
-            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
-        }
-
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("인증된 상태입니다.",
-                        AuthStatusResponse.authenticated(memberId, email, role))
-        );
     }
 
     private String generateSecureState() {
