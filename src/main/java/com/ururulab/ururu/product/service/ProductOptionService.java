@@ -7,7 +7,9 @@ import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
+import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +21,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.ururulab.ururu.global.exception.error.ErrorCode.IMAGE_READ_FAILED;
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,7 @@ public class ProductOptionService {
     private final ProductOptionRepository productOptionRepository;
     private final ImageHashService imageHashService;
     private final ProductOptionImageService productOptionImageService;
+    private final ProductRepository productRepository;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public List<ProductOption> saveProductOptions(Product product, List<ProductOptionRequest> requests) {
@@ -82,17 +85,6 @@ public class ProductOptionService {
             }
         }
 
-        // 요청에 없는 기존 옵션들은 삭제 처리
-        List<ProductOption> optionsToDelete = existingOptions.stream()
-                .filter(option -> !processedOptionIds.contains(option.getId()))
-                .toList();
-
-        if (!optionsToDelete.isEmpty()) {
-            optionsToDelete.forEach(ProductOption::markAsDeleted);
-            changedOptions.addAll(optionsToDelete);
-            log.info("Marked {} options as deleted for product: {}", optionsToDelete.size(), product.getId());
-        }
-
         // 변경된 옵션들만 저장
         if (!changedOptions.isEmpty()) {
             productOptionRepository.saveAll(changedOptions);
@@ -113,6 +105,22 @@ public class ProductOptionService {
 
     @Transactional(readOnly = true)
     public List<ProductOptionResponse> getProductOptions(Long productId) {
+        return productOptionRepository.findByProductIdAndIsDeletedFalse(productId)
+                .stream()
+                .map(ProductOptionResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductOptionResponse> getProductOptions(Long productId, Long sellerId) {
+        // sellerId가 productId의 실제 소유자인지 확인
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
+
+        if (!product.getSeller().getId().equals(sellerId)) {
+            throw new BusinessException(ACCESS_DENIED);
+        }
+
         return productOptionRepository.findByProductIdAndIsDeletedFalse(productId)
                 .stream()
                 .map(ProductOptionResponse::from)
@@ -214,6 +222,30 @@ public class ProductOptionService {
         }
 
         return savedOption;
+    }
+
+    @Transactional
+    public void deleteProductOption(Long productId, Long optionId, Long sellerId) {
+        productRepository.findByIdAndSellerIdAndStatusIn(
+                productId, sellerId, Arrays.asList(Status.ACTIVE, Status.INACTIVE)
+        ).orElseThrow(() -> new BusinessException(ErrorCode.ACCESS_DENIED));
+
+        ProductOption option = productOptionRepository.findByIdAndIsDeletedFalse(optionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_FOUND, optionId));
+
+        if (!option.getProduct().getId().equals(productId)) {
+            throw new BusinessException(ErrorCode.PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT);
+        }
+
+        List<ProductOption> activeOptions = productOptionRepository.findByProductIdAndIsDeletedFalse(productId);
+
+        if (activeOptions.size() <= 1) {
+            throw new BusinessException(ErrorCode.CANNOT_DELETE_LAST_OPTION);
+        }
+
+        // 삭제 처리
+        option.markAsDeleted();
+        productOptionRepository.save(option);
     }
 
 }
