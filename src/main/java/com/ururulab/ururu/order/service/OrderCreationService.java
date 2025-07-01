@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -296,8 +297,8 @@ public class OrderCreationService {
      * @throws BusinessException 공구가 종료된 경우
      */
     private void validateGroupBuyStatus(GroupBuy groupBuy) {
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
-        ZonedDateTime endsAt = groupBuy.getEndsAt();
+        Instant now = Instant.now();
+        Instant endsAt = groupBuy.getEndsAt();
 
         if (endsAt.isBefore(now)) {
             throw new BusinessException(ErrorCode.GROUPBUY_ENDED);

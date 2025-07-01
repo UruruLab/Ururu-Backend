@@ -32,16 +32,4 @@ public record ProductOptionResponse(
                 productOption.getUpdatedAt()
         );
     }
-
-    public static ProductOptionResponse of(final ProductOption productOption) {
-        return new ProductOptionResponse(
-                productOption.getId(),
-                productOption.getName(),
-                productOption.getPrice(),
-                productOption.getImageUrl(),
-                productOption.getFullIngredients(),
-                productOption.getCreatedAt(),
-                productOption.getUpdatedAt()
-        );
-    }
 }
