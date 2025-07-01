@@ -51,13 +51,14 @@ public enum ErrorCode {
 	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "회원 정보를 가져올 수 없습니다."),
 	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH009", "소셜 로그인 처리 중 오류가 발생했습니다."),
 	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "일시적인 서버 오류입니다."),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH011", "접근 권한이 없습니다."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
 	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
 	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
 	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
-	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH001", "접근 권한이 없습니다."),
+
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
