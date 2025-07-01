@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
+import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
 
 @Component
 public class GroupBuyDiscountStageValidator {
