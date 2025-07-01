@@ -45,6 +45,9 @@ public class GroupBuy extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String thumbnailUrl; // 대표 이미지
 
+    @Column(nullable = true)
+    private String thumbnailHash;  // 이미지 해시값 저장 (SHA-256)
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON", nullable = false)
     private String discountStages; // 달성 인원에 따른 할인율
