@@ -1,6 +1,7 @@
 package com.ururulab.ururu.member.domain.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 
@@ -11,6 +12,7 @@ public record BeautyProfileUpdateResponse(
         Long id,
         @JsonProperty("member_id") Long memberId,
         @JsonProperty("skin_type") SkinType skinType,
+        @JsonProperty("skin_tone") SkinTone skinTone,
         List<String> concerns,
         @JsonProperty("has_allergy") Boolean hasAllergy,
         List<String> allergies,
@@ -25,6 +27,7 @@ public record BeautyProfileUpdateResponse(
                 beautyProfile.getId(),
                 beautyProfile.getMember().getId(),
                 beautyProfile.getSkinType(),
+                beautyProfile.getSkinTone(),
                 List.copyOf(beautyProfile.getConcerns()),
                 beautyProfile.getHasAllergy(),
                 beautyProfile.getAllergies() != null ? List.copyOf(beautyProfile.getAllergies()) : List.of(),
