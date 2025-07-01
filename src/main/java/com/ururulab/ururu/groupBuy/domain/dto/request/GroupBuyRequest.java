@@ -1,7 +1,9 @@
 package com.ururulab.ururu.groupBuy.domain.dto.request;
 
+import com.ururulab.ururu.groupBuy.domain.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
+import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.validation.Valid;
@@ -25,7 +27,8 @@ public record GroupBuyRequest(
         Long productId,
 
         @NotBlank(message = DISCOUNT_STAGES_REQUIRED)
-        String discountStages, // JSON 형태의 할인 단계 정보
+        @Valid
+        List<DiscountStageDto> discountStages, // JSON 형태의 할인 단계 정보
 
         @NotNull(message = LIMIT_QUANTITY_REQUIRED)
         @Min(value = LIMIT_QUANTITY_MIN, message = LIMIT_QUANTITY_MIN_MSG)
@@ -43,16 +46,17 @@ public record GroupBuyRequest(
         List<GroupBuyOptionRequest> options,
 
         @Valid
-        List<GroupBuyImageRequest> detailImages
+        List<GroupBuyImageRequest> images
 ) {
     public GroupBuy toEntity(Product product, Seller seller, String thumbnailUrl) {
+        String discountStagesJson = DiscountStageParser.toJsonString(discountStages);
         return GroupBuy.of(
                 product,
                 seller,
                 title,
                 description,
                 thumbnailUrl,
-                discountStages,
+                discountStagesJson,
                 limitQuantityPerMember,
                 GroupBuyStatus.DRAFT, // 기본값 - 작성 중 상태
                 startAt,
