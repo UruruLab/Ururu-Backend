@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.member.domain.dto.request.MemberAgreementRequest;
-import com.ururulab.ururu.member.domain.dto.response.CreateMemberAgreementResponse;
+import com.ururulab.ururu.member.domain.dto.response.MemberAgreementCreateResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberAgreement;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
@@ -23,7 +23,7 @@ public class MemberAgreementService {
     private final MemberRepository memberRepository;
 
     @Transactional
-    public CreateMemberAgreementResponse createAgreements(Long memberId, MemberAgreementRequest request) {
+    public MemberAgreementCreateResponse createAgreements(Long memberId, MemberAgreementRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
@@ -36,7 +36,7 @@ public class MemberAgreementService {
                 .toList();
 
         List<MemberAgreement> savedAgreements = memberAgreementRepository.saveAll(memberAgreements);
-        log.info("Member agreements created for member ID: {}", memberId);
-        return CreateMemberAgreementResponse.of(memberId, savedAgreements);
+        log.debug("Member agreements created for member ID: {}", memberId);
+        return MemberAgreementCreateResponse.of(memberId, savedAgreements);
     }
 }

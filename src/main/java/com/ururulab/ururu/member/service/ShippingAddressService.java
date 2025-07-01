@@ -47,7 +47,7 @@ public class ShippingAddressService {
         );
 
         ShippingAddress savedAddress = shippingAddressRepository.save(shippingAddress);
-        log.info("ShippingAddress created for member ID: {}", memberId);
+        log.debug("ShippingAddress created for member ID: {}", memberId);
         return savedAddress;
     }
 
@@ -62,6 +62,12 @@ public class ShippingAddressService {
         return shippingAddressRepository.findByIdAndMemberId(addressId, memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "배송지를 찾을 수 없습니다. Address ID: " + addressId +", Member ID: " + memberId));
+    }
+
+    public ShippingAddress getDefaultShippingAddress(Long memberId) {
+        return shippingAddressRepository.findByMemberIdAndIsDefaultTrue(memberId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "기본 배송지를 찾을 수 없습니다. Member ID: " + memberId));
     }
 
     @Transactional
@@ -92,7 +98,7 @@ public class ShippingAddressService {
         );
 
         ShippingAddress updatedAddress = shippingAddressRepository.save(shippingAddress);
-        log.info("ShippingAddress updated for member ID: {}, address ID: {}", memberId, addressId);
+        log.debug("ShippingAddress updated for member ID: {}, address ID: {}", memberId, addressId);
 
         return updatedAddress;
     }
@@ -105,7 +111,7 @@ public class ShippingAddressService {
         }
 
         shippingAddressRepository.deleteByIdAndMemberId(addressId, memberId);
-        log.info("ShippingAddress deleted for member ID: {}, address ID: {}", memberId, addressId);
+        log.debug("ShippingAddress deleted for member ID: {}, address ID: {}", memberId, addressId);
     }
 
     @Transactional
@@ -122,7 +128,7 @@ public class ShippingAddressService {
         shippingAddress.setAsDefault();
 
         ShippingAddress updatedAddress = shippingAddressRepository.save(shippingAddress);
-        log.info("Default shipping address set for member ID: {}, address ID: {}", memberId, addressId);
+        log.debug("Default shipping address set for member ID: {}, address ID: {}", memberId, addressId);
 
         return updatedAddress;
     }

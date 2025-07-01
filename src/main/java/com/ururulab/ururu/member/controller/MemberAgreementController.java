@@ -2,7 +2,7 @@ package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.domain.dto.request.MemberAgreementRequest;
-import com.ururulab.ururu.member.domain.dto.response.CreateMemberAgreementResponse;
+import com.ururulab.ururu.member.domain.dto.response.MemberAgreementCreateResponse;
 import com.ururulab.ururu.member.service.MemberAgreementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,11 +29,11 @@ public class MemberAgreementController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @PostMapping("/{memberId}/agreements")
-    public ResponseEntity<ApiResponseFormat<CreateMemberAgreementResponse>> createMemberAgreement(
+    public ResponseEntity<ApiResponseFormat<MemberAgreementCreateResponse>> createMemberAgreement(
             @PathVariable final Long memberId,
             @Valid @RequestBody final MemberAgreementRequest request
     ){
-        final CreateMemberAgreementResponse response = memberAgreementService.createAgreements(memberId, request);
+        final MemberAgreementCreateResponse response = memberAgreementService.createAgreements(memberId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponseFormat.success("회원 약관 동의가 생성되었습니다.", response));
     }
