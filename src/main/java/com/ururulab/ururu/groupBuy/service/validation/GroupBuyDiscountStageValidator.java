@@ -1,13 +1,12 @@
 package com.ururulab.ururu.groupBuy.service.validation;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.domain.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.controller.dto.common.DiscountStageDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
-import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationConstants.*;
 
 @Component
 public class GroupBuyDiscountStageValidator {

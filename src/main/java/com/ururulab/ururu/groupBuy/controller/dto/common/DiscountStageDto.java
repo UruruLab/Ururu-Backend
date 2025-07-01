@@ -1,10 +1,10 @@
-package com.ururulab.ururu.groupBuy.domain.dto.common;
+package com.ururulab.ururu.groupBuy.controller.dto.common;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
-import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationConstants.*;
+import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
 
 public record DiscountStageDto(
         @NotNull(message = MIN_QUANTITY_REQUIRED_MSG)

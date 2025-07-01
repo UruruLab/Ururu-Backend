@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ururulab.ururu.groupBuy.domain.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.controller.dto.common.DiscountStageDto;
 import com.ururulab.ururu.global.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 

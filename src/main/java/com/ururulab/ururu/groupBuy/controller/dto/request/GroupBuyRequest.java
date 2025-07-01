@@ -1,6 +1,6 @@
-package com.ururulab.ururu.groupBuy.domain.dto.request;
+package com.ururulab.ururu.groupBuy.controller.dto.request;
 
-import com.ururulab.ururu.groupBuy.domain.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.controller.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
@@ -12,8 +12,8 @@ import jakarta.validation.constraints.*;
 import java.time.Instant;
 import java.util.List;
 
-import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationConstants.*;
-import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationMessages.*;
+import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
+import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationMessages.*;
 
 public record GroupBuyRequest(
         @NotBlank(message = GROUP_BUY_TITLE_REQUIRED)

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.PRODUCT_NAME_MAX;
+import static com.ururulab.ururu.product.controller.dto.validation.ProductValidationConstants.PRODUCT_NAME_MAX;
 
 @Entity
 @Getter

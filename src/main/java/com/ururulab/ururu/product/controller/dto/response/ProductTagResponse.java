@@ -1,8 +1,6 @@
-package com.ururulab.ururu.product.domain.dto.response;
+package com.ururulab.ururu.product.controller.dto.response;
 
 import com.ururulab.ururu.product.domain.entity.ProductTag;
-
-import java.time.ZonedDateTime;
 
 public record ProductTagResponse(
         Long id,

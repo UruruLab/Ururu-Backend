@@ -1,6 +1,6 @@
-package com.ururulab.ururu.groupBuy.domain.dto.response;
+package com.ururulab.ururu.groupBuy.controller.dto.response;
 
-import com.ururulab.ururu.groupBuy.domain.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.controller.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;

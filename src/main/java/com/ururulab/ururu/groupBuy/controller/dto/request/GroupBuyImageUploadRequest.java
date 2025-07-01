@@ -1,4 +1,4 @@
-package com.ururulab.ururu.groupBuy.domain.dto.request;
+package com.ururulab.ururu.groupBuy.controller.dto.request;
 
 public record GroupBuyImageUploadRequest (
         Long groupBuyId,

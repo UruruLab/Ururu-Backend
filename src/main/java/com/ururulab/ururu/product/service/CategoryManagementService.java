@@ -10,8 +10,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationMessages.*;
-
 @Service
 @RequiredArgsConstructor
 @Transactional

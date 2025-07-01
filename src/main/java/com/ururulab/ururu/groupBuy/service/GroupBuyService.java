@@ -1,8 +1,8 @@
 package com.ururulab.ururu.groupBuy.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.domain.dto.request.GroupBuyRequest;
-import com.ururulab.ururu.groupBuy.domain.dto.response.GroupBuyCreateResponse;
+import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyRequest;
+import com.ururulab.ururu.groupBuy.controller.dto.response.GroupBuyCreateResponse;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
@@ -10,10 +10,8 @@ import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

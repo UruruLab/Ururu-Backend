@@ -1,8 +1,8 @@
-package com.ururulab.ururu.groupBuy.domain.dto.validation;
+package com.ururulab.ururu.groupBuy.controller.dto.validation;
 
 import lombok.experimental.UtilityClass;
 
-import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationConstants.*;
+import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
 
 @UtilityClass
 public class GroupBuyValidationMessages {
