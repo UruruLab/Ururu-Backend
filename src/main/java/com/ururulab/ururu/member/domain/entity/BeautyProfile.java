@@ -1,6 +1,7 @@
 package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationConstants;
 import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationMessages;
@@ -31,6 +32,10 @@ public class BeautyProfile extends BaseEntity {
     @Column(nullable = false)
     private SkinType skinType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SkinTone skinTone;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON", nullable = false)
     private List<String> concerns;
@@ -58,6 +63,7 @@ public class BeautyProfile extends BaseEntity {
     public static BeautyProfile of(
             Member member,
             SkinType skinType,
+            SkinTone skinTone,
             List<String> concerns,
             Boolean hasAllergy,
             List<String> allergies,
@@ -66,12 +72,13 @@ public class BeautyProfile extends BaseEntity {
             Integer maxPrice,
             String additionalInfo
     ) {
-        validateCreationParameters(skinType, concerns, hasAllergy, allergies,
+        validateCreationParameters(skinType, skinTone, concerns, hasAllergy, allergies,
                 interestCategories, minPrice, maxPrice, additionalInfo);
 
         BeautyProfile beautyProfile = new BeautyProfile();
         beautyProfile.member = member;
         beautyProfile.skinType = skinType;
+        beautyProfile.skinTone = skinTone;
         beautyProfile.concerns = concerns != null ? new ArrayList<>(concerns) : new ArrayList<>();
         beautyProfile.hasAllergy = hasAllergy;
         beautyProfile.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
@@ -84,6 +91,7 @@ public class BeautyProfile extends BaseEntity {
 
     public void updateProfile(
             SkinType skinType,
+            SkinTone skinTone,
             List<String> concerns,
             Boolean hasAllergy,
             List<String> allergies,
@@ -92,10 +100,11 @@ public class BeautyProfile extends BaseEntity {
             Integer maxPrice,
             String additionalInfo
     ) {
-        validateCreationParameters(skinType, concerns, hasAllergy, allergies,
+        validateCreationParameters(skinType, skinTone, concerns, hasAllergy, allergies,
                 interestCategories, minPrice, maxPrice, additionalInfo);
 
         this.skinType = skinType;
+        this.skinTone = skinTone;
         this.concerns = concerns != null ? new ArrayList<>(concerns) : new ArrayList<>();
         this.hasAllergy = hasAllergy;
         this.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
@@ -107,6 +116,7 @@ public class BeautyProfile extends BaseEntity {
 
     private static void validateCreationParameters(
             SkinType skinType,
+            SkinTone skinTone,
             List<String> concerns,
             Boolean hasAllergy,
             List<String> allergies,
@@ -116,6 +126,7 @@ public class BeautyProfile extends BaseEntity {
             String additionalInfo
     ) {
         validateSkinType(skinType);
+        validateSkinTone(skinTone);
         validateConcerns(concerns);
         validateAllergyConsistency(hasAllergy, allergies);
         validateInterestCategories(interestCategories);
@@ -126,6 +137,12 @@ public class BeautyProfile extends BaseEntity {
     private static void validateSkinType(SkinType skinType) {
         if (skinType == null) {
             throw new IllegalArgumentException(BeautyProfileValidationMessages.SKIN_TYPE_REQUIRED);
+        }
+    }
+
+    private static void validateSkinTone(SkinTone skinTone) {
+        if (skinTone == null) {
+            throw new IllegalArgumentException(BeautyProfileValidationMessages.SKIN_TONE_REQUIRED);
         }
     }
 

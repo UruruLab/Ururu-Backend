@@ -7,6 +7,9 @@ public class BeautyProfileValidationMessages {
     public static final String SKIN_TYPE_REQUIRED = "피부 타입은 필수입니다.";
     public static final String SKIN_TYPE_INVALID = "유효하지 않은 피부 타입입니다.";
 
+    public static final String SKIN_TONE_REQUIRED = "피부 톤은 필수입니다.";
+    public static final String SKIN_TONE_INVALID = "유효하지 않은 피부 톤입니다.";
+
     public static final String SKIN_CONCERNS_SIZE = "피부 고민은 최대 " +
             BeautyProfileValidationConstants.MAX_CONCERNS_COUNT + "개까지 선택 가능합니다.";
     public static final String SKIN_CONCERN_ITEM_SIZE = "피부 고민 항목은 " +
