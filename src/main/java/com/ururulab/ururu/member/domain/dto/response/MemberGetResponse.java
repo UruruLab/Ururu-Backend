@@ -3,40 +3,39 @@ package com.ururulab.ururu.member.domain.dto.response;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.member.domain.entity.Member;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
-public record MemberResponse(
+public record MemberGetResponse(
         Long id,
-        String nickname,
         String email,
+        String nickname,
         String gender,
         LocalDate birth,
         String phone,
         @JsonProperty("profile_image") String profileImage,
+        @JsonProperty("social_provider") String socialProvider,
+        String role,
         int point,
-        @JsonProperty("is_available") Boolean isAvailable,
-        String message
+        @JsonProperty("is_deleted") boolean isDeleted,
+        @JsonProperty("created_at") Instant createdAt,
+        @JsonProperty("updated_at") Instant updatedAt
 ) {
-    public static MemberResponse of(final Member member) {
-        if (member == null) {
-            throw new IllegalArgumentException("Member는 필수입니다.");
-        }
-
-        return new MemberResponse(
+    public static MemberGetResponse from(final Member member) {
+        return new MemberGetResponse(
                 member.getId(),
-                member.getNickname(),
                 member.getEmail(),
+                member.getNickname(),
                 member.getGender() != null ? member.getGender().name() : null,
                 member.getBirth(),
                 member.getPhone(),
                 member.getProfileImage(),
+                member.getSocialProvider().name(),
+                member.getRole().name(),
                 member.getPoint(),
-                null,
-                null
+                member.isDeleted(),
+                member.getCreatedAt(),
+                member.getUpdatedAt()
         );
-    }
-
-    public static MemberResponse ofAvailabilityCheck(boolean isAvailable) {
-        return new MemberResponse(null, null, null, null, null, null, null, 0, isAvailable, null);
     }
 }

@@ -47,7 +47,9 @@ public class CorsConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*",
-                "https://*.vercel.app"
+                "https://*.vercel.app",
+                "https://ururu.o-r.kr",           // 운영 도메인 추가
+                "http://ururu.o-r.kr"             // HTTP도 임시로 추가 (나중에 HTTPS로 리다이렉트)
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -73,6 +75,42 @@ public class CorsConfig {
         configuration.setMaxAge(PREFLIGHT_CACHE_SECONDS);
 
         return configuration;
+    }
+
+    @Bean
+    @Profile("prod")  // 운영환경용 추가
+    public CorsConfigurationSource prodCorsConfigurationSource() {
+        log.info("Configuring CORS for production environment");
+
+        final CorsConfiguration configuration = new CorsConfiguration();
+
+        // 운영환경에서는 특정 도메인만 허용
+        configuration.setAllowedOrigins(List.of(
+                "https://ururu.o-r.kr"  // HTTPS만 허용
+        ));
+
+        configuration.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+        ));
+
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "X-Requested-With",
+                "Accept", "Origin", "Cache-Control"
+        ));
+
+        configuration.setExposedHeaders(List.of(
+                "Authorization", "Content-Length", "X-Total-Count"
+        ));
+
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/auth/**", configuration);
+        source.registerCorsConfiguration("/health/**", configuration);
+
+        return source;
     }
 
     private CorsConfiguration createPermissiveCorsConfiguration() {

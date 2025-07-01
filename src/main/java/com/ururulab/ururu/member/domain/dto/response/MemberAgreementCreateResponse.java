@@ -8,12 +8,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record CreateMemberAgreementResponse(
+public record MemberAgreementCreateResponse(
         @JsonProperty("member_id") Long memberId,
         List<AgreementItem> agreements,
         @JsonProperty("created_at") Instant createdAt
 ) {
-    public static CreateMemberAgreementResponse of(final Long memberId, final List<MemberAgreement> memberAgreements) {
+    public static MemberAgreementCreateResponse of(final Long memberId, final List<MemberAgreement> memberAgreements) {
         final List<AgreementItem> agreements = memberAgreements.stream()
                 .map(AgreementItem::from)
                 .toList();
@@ -23,7 +23,7 @@ public record CreateMemberAgreementResponse(
                 .map(MemberAgreement::getCreatedAt)
                 .orElse(Instant.now());
 
-        return new CreateMemberAgreementResponse(memberId, agreements, createdAt);
+        return new MemberAgreementCreateResponse(memberId, agreements, createdAt);
     }
 
     public record AgreementItem(

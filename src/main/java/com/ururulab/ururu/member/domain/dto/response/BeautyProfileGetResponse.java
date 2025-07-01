@@ -7,7 +7,7 @@ import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import java.time.Instant;
 import java.util.List;
 
-public record GetBeautyProfileResponse(
+public record BeautyProfileGetResponse(
         Long id,
         @JsonProperty("member_id") Long memberId,
         @JsonProperty("skin_type") SkinType skinType,
@@ -21,8 +21,8 @@ public record GetBeautyProfileResponse(
         @JsonProperty("created_at") Instant createdAt,
         @JsonProperty("updated_at") Instant updatedAt
 ) {
-    public static GetBeautyProfileResponse from(final BeautyProfile beautyProfile) {
-        return new GetBeautyProfileResponse(
+    public static BeautyProfileGetResponse from(final BeautyProfile beautyProfile) {
+        return new BeautyProfileGetResponse(
                 beautyProfile.getId(),
                 beautyProfile.getMember().getId(),
                 beautyProfile.getSkinType(),
