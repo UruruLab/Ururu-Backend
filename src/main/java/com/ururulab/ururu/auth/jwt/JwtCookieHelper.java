@@ -1,12 +1,22 @@
 package com.ururulab.ururu.auth.jwt;
 
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+/**
+ * JWT 토큰을 안전한 쿠키로 설정하는 헬퍼 클래스.
+ *
+ * 환경별 도메인 설정:
+ * - 개발환경: 도메인 설정 없음 (localhost 호환)
+ * - 운영환경: app.cookie.domain 프로퍼티 값 사용 (기본값: .o-r.kr)
+ *
+ * SameSite 정책:
+ * - 개발환경: Lax (관대한 정책)
+ * - 운영환경: None (크로스 사이트 허용, HTTPS 필수)
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -47,20 +57,9 @@ public final class JwtCookieHelper {
 
     private void setCookie(final HttpServletResponse response, final String name,
                            final String value, final int maxAgeSeconds) {
-        final Cookie cookie = new Cookie(name, value);
-
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureEnvironment());
-        cookie.setPath(COOKIE_PATH);
-        cookie.setMaxAge(maxAgeSeconds);
-
         final String domain = getCookieDomain();
-        if (domain != null && !domain.isEmpty()) {
-            cookie.setDomain(domain);
-        }
 
-        response.addCookie(cookie);
-
+        // Set-Cookie 헤더만 사용 (중복 방지)
         final String setCookieHeader = buildSetCookieHeader(name, value, maxAgeSeconds, domain);
         response.addHeader("Set-Cookie", setCookieHeader);
 
@@ -69,23 +68,16 @@ public final class JwtCookieHelper {
     }
 
     private void clearCookie(final HttpServletResponse response, final String name) {
-        final Cookie cookie = new Cookie(name, "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureEnvironment());
-        cookie.setPath(COOKIE_PATH);
-        cookie.setMaxAge(0);
-
         final String domain = getCookieDomain();
-        if (domain != null && !domain.isEmpty()) {
-            cookie.setDomain(domain);
-        }
 
-        response.addCookie(cookie);
-
+        // Set-Cookie 헤더만 사용 (중복 방지)
         final String setCookieHeader = buildClearCookieHeader(name, domain);
         response.addHeader("Set-Cookie", setCookieHeader);
     }
 
+    /**
+     * Set-Cookie 헤더 생성 (쿠키 설정용)
+     */
     private String buildSetCookieHeader(final String name, final String value,
                                         final int maxAgeSeconds, final String domain) {
         final StringBuilder builder = new StringBuilder();
@@ -105,6 +97,9 @@ public final class JwtCookieHelper {
         return builder.toString();
     }
 
+    /**
+     * Set-Cookie 헤더 생성 (쿠키 삭제용)
+     */
     private String buildClearCookieHeader(final String name, final String domain) {
         final StringBuilder builder = new StringBuilder();
         builder.append(String.format("%s=; Path=%s; Max-Age=0; HttpOnly", name, COOKIE_PATH));
@@ -129,14 +124,15 @@ public final class JwtCookieHelper {
         try {
             return environment.acceptsProfiles("dev");
         } catch (Exception e) {
-            // 테스트 환경이나 프로파일이 설정되지 않은 경우 개발환경으로 간주
             log.debug("Profile check failed, defaulting to development: {}", e.getMessage());
             return true;
         }
     }
 
     /**
-     * 환경별 도메인 설정 (null-safe)
+     * 환경별 도메인 설정
+     *
+     * @return 개발환경: null, 운영환경: app.cookie.domain 프로퍼티 값 (기본값: .o-r.kr)
      */
     private String getCookieDomain() {
         if (isDevelopmentProfile()) {
