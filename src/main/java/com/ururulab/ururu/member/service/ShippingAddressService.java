@@ -1,6 +1,6 @@
 package com.ururulab.ururu.member.service;
 
-import com.ururulab.ururu.member.domain.dto.request.ShippingAddressRequest;
+import com.ururulab.ururu.member.controller.dto.request.ShippingAddressRequest;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.ShippingAddress;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;

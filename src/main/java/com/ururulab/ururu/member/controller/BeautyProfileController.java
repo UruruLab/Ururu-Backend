@@ -1,10 +1,10 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
-import com.ururulab.ururu.member.domain.dto.response.BeautyProfileCreateResponse;
-import com.ururulab.ururu.member.domain.dto.response.BeautyProfileGetResponse;
-import com.ururulab.ururu.member.domain.dto.response.BeautyProfileUpdateResponse;
+import com.ururulab.ururu.member.controller.dto.request.BeautyProfileRequest;
+import com.ururulab.ururu.member.controller.dto.response.BeautyProfileCreateResponse;
+import com.ururulab.ururu.member.controller.dto.response.BeautyProfileGetResponse;
+import com.ururulab.ururu.member.controller.dto.response.BeautyProfileUpdateResponse;
 import com.ururulab.ururu.member.service.BeautyProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

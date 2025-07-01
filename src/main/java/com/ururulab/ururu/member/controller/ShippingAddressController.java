@@ -1,9 +1,9 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.member.domain.dto.request.ShippingAddressRequest;
-import com.ururulab.ururu.member.domain.dto.response.ShippingAddressListResponse;
-import com.ururulab.ururu.member.domain.dto.response.ShippingAddressResponse;
+import com.ururulab.ururu.member.controller.dto.request.ShippingAddressRequest;
+import com.ururulab.ururu.member.controller.dto.response.ShippingAddressListResponse;
+import com.ururulab.ururu.member.controller.dto.response.ShippingAddressResponse;
 import com.ururulab.ururu.member.domain.entity.ShippingAddress;
 import com.ururulab.ururu.member.service.ShippingAddressService;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
-import com.ururulab.ururu.member.domain.dto.validation.ShippingAddressValidationConstants;
+import com.ururulab.ururu.member.controller.dto.validation.ShippingAddressValidationConstants;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

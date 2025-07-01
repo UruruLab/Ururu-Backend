@@ -1,8 +1,8 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.member.domain.dto.request.MemberPreferenceRequest;
-import com.ururulab.ururu.member.domain.dto.response.MemberPreferenceResponse;
+import com.ururulab.ururu.member.controller.dto.request.MemberPreferenceRequest;
+import com.ururulab.ururu.member.controller.dto.response.MemberPreferenceResponse;
 import com.ururulab.ururu.member.service.MemberPreferenceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

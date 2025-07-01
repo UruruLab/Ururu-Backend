@@ -1,8 +1,8 @@
 package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.global.domain.entity.enumerated.EnumParser;
-import com.ururulab.ururu.member.domain.dto.request.MemberPreferenceRequest;
-import com.ururulab.ururu.member.domain.dto.response.MemberPreferenceResponse;
+import com.ururulab.ururu.member.controller.dto.request.MemberPreferenceRequest;
+import com.ururulab.ururu.member.controller.dto.response.MemberPreferenceResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberPreference;
 import com.ururulab.ururu.member.domain.entity.enumerated.PurchaseFrequency;
