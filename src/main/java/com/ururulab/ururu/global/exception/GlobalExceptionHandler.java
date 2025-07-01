@@ -22,6 +22,7 @@ import com.ururulab.ururu.global.exception.error.ErrorCode;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 전역 예외 처리기.
@@ -123,6 +124,19 @@ public final class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(HttpStatus.CONFLICT)
 				.body(ApiResponseFormat.fail("이미 사용 중인 정보입니다."));
+	}
+
+	/**
+	 * 이미지 크기 초과 예외 처리.
+	 */
+	@ExceptionHandler(MaxUploadSizeExceededException.class)
+	public ResponseEntity<ApiResponseFormat<ErrorCode>> handleMaxUploadSizeExceeded(
+			final MaxUploadSizeExceededException exception
+	) {
+		log.warn("File size exceeded: {}", exception.getMessage());
+		return ResponseEntity
+				.status(HttpStatus.PAYLOAD_TOO_LARGE)
+				.body(ApiResponseFormat.fail(ErrorCode.IMAGE_SIZE_EXCEEDED, ErrorCode.IMAGE_SIZE_EXCEEDED.getMessage()));
 	}
 	
 	/**

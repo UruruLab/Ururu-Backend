@@ -41,11 +41,11 @@ public class ProductController {
 
     @Operation(summary = "상품 등록", description = "판매자가 새로운 상품을 등록합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "상품 등록 성공"),
+            @ApiResponse(responseCode = "201", description = "상품이 등록되었습니다."),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
-            @ApiResponse(responseCode = "413", description = "파일 크기 초과"),
-            @ApiResponse(responseCode = "415", description = "지원하지 않는 파일 형식"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 판매자입니다."),
+            @ApiResponse(responseCode = "413", description = "파일 크기가 제한을 초과했습니다."),
+            @ApiResponse(responseCode = "415", description = "옵션 n번째 이미지가 유효하지 않습니다: 지원하지 않는 확장자: pdf"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
