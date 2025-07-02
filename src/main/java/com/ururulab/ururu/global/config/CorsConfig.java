@@ -2,6 +2,8 @@ package com.ururulab.ururu.global.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -19,13 +21,15 @@ import java.util.List;
  */
 @Slf4j
 @Configuration
+@Profile("!test")
+@ConditionalOnProperty(name = "app.cors.enabled", havingValue = "true", matchIfMissing = true)
 public class CorsConfig {
 
     private static final long PREFLIGHT_CACHE_SECONDS = 3600L;
 
     private final Environment environment;
 
-    @Value("${app.cors.allowed-origins:#{null}}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000}")
     private List<String> allowedOrigins;
 
     public CorsConfig(final Environment environment) {
@@ -36,27 +40,18 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         final boolean isDev = isDevelopmentProfile();
         
-        // allowedOrigins가 null이거나 비어있는 경우 기본값 설정
-        List<String> origins = allowedOrigins;
-        if (origins == null || origins.isEmpty()) {
-            log.warn("CORS allowed-origins not configured, using default values");
-            origins = isDev ? 
-                List.of("http://localhost:*", "http://127.0.0.1:*") : 
-                List.of("https://ururu.shop");
-        }
-        
         log.info("Configuring CORS for {} environment with origins: {}", 
-                isDev ? "development" : "production", origins);
+                isDev ? "development" : "production", allowedOrigins);
 
         final CorsConfiguration configuration = new CorsConfiguration();
 
         // 환경에 따른 Origin 설정
         if (isDev) {
             // 개발환경: 패턴 매칭 허용 (와일드카드 지원)
-            configuration.setAllowedOriginPatterns(origins);
+            configuration.setAllowedOriginPatterns(allowedOrigins);
         } else {
             // 운영환경: 정확한 도메인만 허용 (보안 강화)
-            configuration.setAllowedOrigins(origins);
+            configuration.setAllowedOrigins(allowedOrigins);
         }
 
         configuration.setAllowedMethods(List.of(
