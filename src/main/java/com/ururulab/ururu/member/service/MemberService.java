@@ -66,31 +66,31 @@ public class MemberService {
         );
 
         final Member savedMember = memberRepository.save(member);
-        log.info("New member created with ID: {}", savedMember.getId());
+        log.debug("New member created with ID: {}", savedMember.getId());
 
         return savedMember;
     }
 
-    public GetMemberResponse getMemberProfile(final Long memberId) {
+    public MemberGetResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        return GetMemberResponse.from(member);
+        return MemberGetResponse.from(member);
     }
 
-    public GetMyProfileResponse getMyProfile(final Long memberId) {
+    public MemberGetResponse getMyProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        return GetMyProfileResponse.from(member);
+        return MemberGetResponse.from(member);
     }
 
     @Transactional
-    public UpdateMemberResponse updateMemberProfile(final Long memberId, final MemberRequest request) {
+    public MemberUpdateResponse updateMemberProfile(final Long memberId, final MemberRequest request) {
         final Member updatedMember = updateProfile(memberId, request);
-        return UpdateMemberResponse.from(updatedMember);
+        return MemberUpdateResponse.from(updatedMember);
     }
 
     @Transactional
-    public UpdateMyProfileResponse updateMyProfile(final Long memberId, final MemberRequest request) {
+    public MemberUpdateResponse updateMyProfile(final Long memberId, final MemberRequest request) {
         final Member updatedMember = updateProfile(memberId, request);
-        return UpdateMyProfileResponse.from(updatedMember);
+        return MemberUpdateResponse.from(updatedMember);
     }
 
     @Transactional
@@ -107,7 +107,7 @@ public class MemberService {
         member.updateProfileImage(imageUrl);
         memberRepository.save(member);
 
-        log.info("Profile image uploaded for member ID: {}", memberId);
+        log.debug("Profile image uploaded for member ID: {}", memberId);
     }
 
     @Transactional
@@ -122,18 +122,18 @@ public class MemberService {
         return memberRepository.existsByNickname(nickname);
     }
 
-    public GetNicknameAvailabilityResponse getNicknameAvailability(final String nickname) {
+    public NicknameAvailabilityResponse getNicknameAvailability(final String nickname) {
         final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
-        return GetNicknameAvailabilityResponse.of(isAvailable);
+        return NicknameAvailabilityResponse.from(isAvailable);
     }
 
     public boolean checkEmailExists(final String email) {
         return memberRepository.existsByEmail(email);
     }
 
-    public GetEmailAvailabilityResponse getEmailAvailability(final String email) {
+    public EmailAvailabilityResponse getEmailAvailability(final String email) {
         final boolean isAvailable = memberRepository.isEmailAvailable(email);
-        return GetEmailAvailabilityResponse.of(isAvailable);
+        return EmailAvailabilityResponse.from(isAvailable);
     }
 
     @Transactional
@@ -146,19 +146,19 @@ public class MemberService {
         memberRepository.save(member);
     }
 
-    public GetWithdrawalPreviewResponse getWithdrawalPreview(final Long memberId) {
+    public WithdrawalPreviewResponse getWithdrawalPreview(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
 
-        final GetWithdrawalPreviewResponse.MemberInfo memberInfo =
-                GetWithdrawalPreviewResponse.MemberInfo.of(
+        final WithdrawalPreviewResponse.MemberInfo memberInfo =
+                WithdrawalPreviewResponse.MemberInfo.of(
                         member.getNickname(),
                         member.getEmail(),
                         member.getCreatedAt(),
                         member.getProfileImage()
                 );
 
-        final GetWithdrawalPreviewResponse.LossInfo lossInfo = calculateLossInfo(memberId, member);
-        return GetWithdrawalPreviewResponse.of(memberInfo, lossInfo);
+        final WithdrawalPreviewResponse.LossInfo lossInfo = calculateLossInfo(memberId, member);
+        return WithdrawalPreviewResponse.of(memberInfo, lossInfo);
     }
 
 
@@ -175,7 +175,7 @@ public class MemberService {
         updateMemberFields(member, request);
 
         final Member updatedMember = memberRepository.save(member);
-        log.info("Member profile updated for ID: {}", memberId);
+        log.debug("Member profile updated for ID: {}", memberId);
 
         return updatedMember;
     }
@@ -195,7 +195,7 @@ public class MemberService {
         );
 
         final Member savedMember = memberRepository.save(member);
-        log.info("New social member created with ID: {} for provider: {}",
+        log.debug("New social member created with ID: {} for provider: {}",
                 savedMember.getId(), socialMemberInfo.provider());
 
         return savedMember;
@@ -306,7 +306,7 @@ public class MemberService {
     }
 
 
-    private GetWithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
+    private WithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
         // TODO: 실제 Repository들이 구현되면 아래 주석을 해제하고 실제 데이터 조회
 
         // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
@@ -325,7 +325,7 @@ public class MemberService {
         // int pointTransactionsCount = pointTransactionRepository.countByMemberId(memberId);
         int pointTransactionsCount = 0; // 임시
 
-        return GetWithdrawalPreviewResponse.LossInfo.of(
+        return WithdrawalPreviewResponse.LossInfo.of(
                 member.getPoint(),
                 activeOrders,
                 reviewCount,

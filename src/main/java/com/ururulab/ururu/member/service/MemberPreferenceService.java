@@ -1,10 +1,14 @@
 package com.ururulab.ururu.member.service;
 
+import com.ururulab.ururu.global.domain.entity.enumerated.EnumParser;
+import com.ururulab.ururu.member.domain.dto.request.MemberPreferenceRequest;
+import com.ururulab.ururu.member.domain.dto.response.MemberPreferenceResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberPreference;
 import com.ururulab.ururu.member.domain.entity.enumerated.PurchaseFrequency;
 import com.ururulab.ururu.member.domain.repository.MemberPreferenceRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,44 +24,66 @@ import java.util.List;
 public class MemberPreferenceService {
     private final MemberPreferenceRepository memberPreferenceRepository;
     private final MemberRepository memberRepository;
+    private final SellerRepository sellerRepository;
 
     @Transactional
-    public MemberPreference createPreference(
-            Long memberId,
-            Long sellerId,
-            int preferenceLevel,
-            int monthlyBudget,
-            String preferredPriceRange,
-            PurchaseFrequency purchaseFrequency
-    ) {
+    public MemberPreferenceResponse createPreference(Long memberId, final MemberPreferenceRequest request) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "회원을 찾을 수 없습니다. ID: " + memberId));
 
-        if (sellerId == null || sellerId <= 0) {
-            throw new IllegalArgumentException("유효하지 않은 판매자 ID입니다. ID: " +sellerId);
+        if (request.sellerId() == null || request.sellerId() <= 0) {
+            throw new IllegalArgumentException("유효하지 않은 판매자 ID입니다. ID: " +request.sellerId());
         }
 
-        if (preferenceLevel < 1 || preferenceLevel > 5) {
-            throw new IllegalArgumentException("선호도 레벨은 1-5사이의 값이어야 합니다. 입력값: " +preferenceLevel);
+        validateSellerExists(request.sellerId());
+
+        final boolean exists = memberPreferenceRepository.existsByMemberIdAndSellerId(memberId, request.sellerId());
+        if (exists) {
+            throw new IllegalStateException("해당 판매자에 대한 선호도가 이미 존재합니다.");
         }
 
-        if (monthlyBudget < 0) {
-            throw new IllegalArgumentException("월 예산은 0 이상이어야 합니다. 입력값: " +monthlyBudget);
-        }
+        final PurchaseFrequency purchaseFrequency = parsePurchaseFrequency(request.purchaseFrequency());
 
         MemberPreference preference = MemberPreference.of(
-                member, sellerId, preferenceLevel, monthlyBudget,
+                member,
+                request.sellerId(),
+                request.preferenceLevel(),
+                request.monthlyBudget(),
                 purchaseFrequency
         );
 
         MemberPreference savedPreference = memberPreferenceRepository.save(preference);
-        log.info("Member preference created for member ID: {}, seller ID: {}", memberId, sellerId);
+        log.debug("Member preference created for member ID: {}, seller ID: {}", memberId, request.sellerId());
 
-        return savedPreference;
+        return MemberPreferenceResponse.from(savedPreference);
     }
 
-    public List<MemberPreference> getMemberPreferences(Long memberId) {
-        return memberPreferenceRepository.findByMemberId(memberId);
+    public List<MemberPreferenceResponse> getMemberPreferences(Long memberId) {
+        if (!memberRepository.existsById(memberId)) {
+            throw new EntityNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId);
+        }
+
+        final List<MemberPreference> preferences = memberPreferenceRepository.findByMemberId(memberId);
+        return preferences.stream()
+                .map(MemberPreferenceResponse::from)
+                .toList();
+    }
+
+    private void validateSellerExists(final Long sellerId) {
+        if (!sellerRepository.existsByIdAndIsDeletedFalse(sellerId)) {
+            throw new EntityNotFoundException("판매자를 찾을 수 없습니다. ID :" + sellerId);
+        }
+    }
+
+    private PurchaseFrequency parsePurchaseFrequency(final String purchaseFrequencyString) {
+        if (purchaseFrequencyString == null) {
+            throw new IllegalArgumentException("구매 빈도는 필수입니다.");
+        }
+        try {
+            return EnumParser.fromString(PurchaseFrequency.class, purchaseFrequencyString, "PurchaseFrequency");
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("올바른 구매 빈도 값이 아닙니다: " + purchaseFrequencyString, e);
+        }
     }
 }

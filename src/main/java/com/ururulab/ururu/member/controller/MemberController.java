@@ -10,14 +10,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
@@ -32,10 +30,10 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @GetMapping("/{memberId}")
-    public ResponseEntity<ApiResponseFormat<GetMemberResponse>> getMemberProfile(
+    public ResponseEntity<ApiResponseFormat<MemberGetResponse>> getMemberProfile(
         @PathVariable final Long memberId
     ) {
-        final GetMemberResponse response = memberService.getMemberProfile(memberId);
+        final MemberGetResponse response = memberService.getMemberProfile(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("회원 정보를 조회했습니다.", response)
         );
@@ -48,11 +46,11 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @PatchMapping("/{memberId}")
-    public ResponseEntity<ApiResponseFormat<UpdateMemberResponse>> updateMember(
+    public ResponseEntity<ApiResponseFormat<MemberUpdateResponse>> updateMember(
             @PathVariable final Long memberId,
             @Valid @RequestBody final MemberRequest request
     ) {
-        final UpdateMemberResponse response = memberService.updateMemberProfile(memberId, request);
+        final MemberUpdateResponse response = memberService.updateMemberProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("회원 정보를 수정했습니다.", response)
         );
@@ -64,10 +62,10 @@ public class MemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @GetMapping("/me")
-    public ResponseEntity<ApiResponseFormat<GetMyProfileResponse>> getMyProfile(
+    public ResponseEntity<ApiResponseFormat<MemberGetResponse>> getMyProfile(
     ) {
         final Long memberId = getCurrentMemberId();
-        final GetMyProfileResponse response = memberService.getMyProfile(memberId);
+        final MemberGetResponse response = memberService.getMyProfile(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("내 정보를 조회했습니다", response)
         );
@@ -80,11 +78,11 @@ public class MemberController {
             @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     })
     @PatchMapping("/me")
-    public ResponseEntity<ApiResponseFormat<UpdateMyProfileResponse>> updateMyProfile(
+    public ResponseEntity<ApiResponseFormat<MemberUpdateResponse>> updateMyProfile(
             @Valid @RequestBody final MemberRequest request
     ) {
         final Long memberId = getCurrentMemberId(); // 임시
-        final UpdateMyProfileResponse response = memberService.updateMyProfile(memberId, request);
+        final MemberUpdateResponse response = memberService.updateMyProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("내 정보를 수정했습니다.", response)
         );
@@ -141,10 +139,10 @@ public class MemberController {
             @ApiResponse(responseCode = "400", description = "잘못된 닉네임 형식")
     })
     @GetMapping("/nicknames/{nickname}/availability")
-    public ResponseEntity<ApiResponseFormat<GetNicknameAvailabilityResponse>> getNicknameAvailability(
+    public ResponseEntity<ApiResponseFormat<NicknameAvailabilityResponse>> getNicknameAvailability(
             @PathVariable final String nickname
     ) {
-        final GetNicknameAvailabilityResponse response = memberService.getNicknameAvailability(nickname);
+        final NicknameAvailabilityResponse response = memberService.getNicknameAvailability(nickname);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("닉네임 사용 가능 여부를 조회했습니다.", response)
         );
@@ -169,10 +167,10 @@ public class MemberController {
             @ApiResponse(responseCode = "400", description = "잘못된 이메일 형식")
     })
     @GetMapping("/emails/{email}/availability")
-    public ResponseEntity<ApiResponseFormat<GetEmailAvailabilityResponse>> getEmailAvailability(
+    public ResponseEntity<ApiResponseFormat<EmailAvailabilityResponse>> getEmailAvailability(
             @PathVariable final String email
     ) {
-        final GetEmailAvailabilityResponse response = memberService.getEmailAvailability(email);
+        final EmailAvailabilityResponse response = memberService.getEmailAvailability(email);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("이메일 사용 가능 여부를 조회했습니다.", response)
         );
@@ -222,9 +220,9 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @GetMapping("/me/withdrawal/preview")
-    public ResponseEntity<ApiResponseFormat<GetWithdrawalPreviewResponse>> getWithdrawalPreview() {
+    public ResponseEntity<ApiResponseFormat<WithdrawalPreviewResponse>> getWithdrawalPreview() {
         final Long memberId = getCurrentMemberId();
-        final GetWithdrawalPreviewResponse response = memberService.getWithdrawalPreview(memberId);
+        final WithdrawalPreviewResponse response = memberService.getWithdrawalPreview(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("탈퇴 시 손실 정보를 조회했습니다.", response)
         );

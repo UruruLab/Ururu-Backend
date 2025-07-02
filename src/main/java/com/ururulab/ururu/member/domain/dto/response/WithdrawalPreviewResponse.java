@@ -4,15 +4,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 
-public record GetWithdrawalPreviewResponse(
+public record WithdrawalPreviewResponse(
         @JsonProperty("member_info") MemberInfo memberInfo,
         @JsonProperty("loss_info") LossInfo lossInfo
 ) {
-    public static GetWithdrawalPreviewResponse of(
+    public static WithdrawalPreviewResponse of(
             final MemberInfo memberInfo,
             final LossInfo lossInfo
     ) {
-        return new GetWithdrawalPreviewResponse(memberInfo, lossInfo);
+        return new WithdrawalPreviewResponse(memberInfo, lossInfo);
     }
 
     public record MemberInfo(

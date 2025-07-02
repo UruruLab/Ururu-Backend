@@ -6,7 +6,7 @@ import com.ururulab.ururu.member.domain.entity.Member;
 import java.time.Instant;
 import java.time.LocalDate;
 
-public record GetMemberResponse(
+public record MemberUpdateResponse(
         Long id,
         String email,
         String nickname,
@@ -14,15 +14,10 @@ public record GetMemberResponse(
         LocalDate birth,
         String phone,
         @JsonProperty("profile_image") String profileImage,
-        @JsonProperty("social_provider") String socialProvider,
-        String role,
-        int point,
-        @JsonProperty("is_deleted") boolean isDeleted,
-        @JsonProperty("created_at") Instant createdAt,
         @JsonProperty("updated_at") Instant updatedAt
 ) {
-    public static GetMemberResponse from(final Member member) {
-        return new GetMemberResponse(
+    public static MemberUpdateResponse from (final Member member){
+        return new MemberUpdateResponse(
                 member.getId(),
                 member.getEmail(),
                 member.getNickname(),
@@ -30,11 +25,6 @@ public record GetMemberResponse(
                 member.getBirth(),
                 member.getPhone(),
                 member.getProfileImage(),
-                member.getSocialProvider().name(),
-                member.getRole().name(),
-                member.getPoint(),
-                member.isDeleted(),
-                member.getCreatedAt(),
                 member.getUpdatedAt()
         );
     }

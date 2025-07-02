@@ -1,5 +1,7 @@
 package com.ururulab.ururu.global.config;
 
+import com.ururulab.ururu.auth.filter.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -10,19 +12,20 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    /**
-     * 비밀번호 암호화를 위한 PasswordEncoder 빈
-     */
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
     /**
      * 개발 환경용 Security 설정
      * - 모든 요청 허용 (개발 편의성 우선)
@@ -31,23 +34,32 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("dev")
-    public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
+    public SecurityFilterChain devFilterChain(
+            final HttpSecurity http, 
+            final CorsConfigurationSource corsConfigurationSource
+    ) throws Exception {
+        return http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/health", "/actuator/health").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .csrf(AbstractHttpConfigurer::disable
-                )
+                .csrf(AbstractHttpConfigurer::disable)
                 .headers(headers -> headers
-                        .frameOptions(frameOptions -> frameOptions.disable()) // H2 콘솔의 iframe 허용
+                        .frameOptions(frameOptions -> frameOptions.disable())
                         .contentTypeOptions(contentType -> contentType.disable())
                         .httpStrictTransportSecurity(hstsConfig -> hstsConfig.disable())
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-        return http.build();
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
-
     /**
      * 운영 환경용 Security 설정
      * - 필요한 API만 허용
@@ -55,18 +67,23 @@ public class SecurityConfig {
      */
     @Bean
     @Profile("prod")
-    public SecurityFilterChain prodFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/health").permitAll()
+    public SecurityFilterChain prodFilterChain(
+            final HttpSecurity http,
+            final CorsConfigurationSource prodCorsConfigurationSource  // 운영용 CORS 주입
+    ) throws Exception {
+        return http
+                .cors(cors -> cors.configurationSource(prodCorsConfigurationSource))  // 운영용 CORS 적용
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/health", "/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/**")
-                        .disable()
-                )
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        return http.build();
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 }
