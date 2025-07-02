@@ -1,7 +1,5 @@
 package com.ururulab.ururu.order.controller.dto.response;
 
-import com.ururulab.ururu.order.domain.entity.CartItem;
-
 import java.time.Instant;
 
 /**

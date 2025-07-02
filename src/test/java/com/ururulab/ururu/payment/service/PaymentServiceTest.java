@@ -28,7 +28,6 @@ import com.ururulab.ururu.payment.domain.entity.enumerated.PaymentStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
-import com.ururulab.ururu.product.domain.entity.Product;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
