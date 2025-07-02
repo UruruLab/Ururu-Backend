@@ -5,8 +5,10 @@ import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import com.ururulab.ururu.order.domain.entity.Cart;
 import com.ururulab.ururu.order.domain.entity.Order;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
+import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.order.service.StockReservationService;
 import com.ururulab.ururu.payment.domain.dto.request.PaymentConfirmRequestDto;
@@ -34,6 +36,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -52,6 +55,7 @@ public class PaymentService {
     private final MemberRepository memberRepository;
     private final StockReservationService stockReservationService;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
+    private final CartRepository cartRepository;
     private final RestClient restClient;
 
     @Value("${toss.payments.secret-key}")
@@ -242,6 +246,8 @@ public class PaymentService {
             stockReservationService.releaseReservation(optionId, payment.getMember().getId());
         });
 
+        removeOrderedItemsFromCart(payment);
+
         log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
                 payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());
     }
@@ -342,4 +348,34 @@ public class PaymentService {
         }
         return firstProductName + " 외 " + (totalItems - 1) + "건";
     }
+    /**
+     * 결제 완료된 옵션들을 장바구니에서 제거
+     */
+    private void removeOrderedItemsFromCart(Payment payment) {
+        Long memberId = payment.getMember().getId();
+
+        Optional<Cart> cartOpt = cartRepository.findByMemberIdWithCartItems(memberId);
+
+        if (cartOpt.isEmpty()) {
+            log.debug("장바구니가 없음 - 회원ID: {}", memberId);
+            return;
+        }
+
+        Cart cart = cartOpt.get();
+
+        payment.getOrder().getOrderItems().forEach(orderItem -> {
+            Long optionId = orderItem.getGroupBuyOption().getId();
+
+            cart.getCartItems().stream()
+                    .filter(cartItem -> cartItem.getGroupBuyOption().getId().equals(optionId))
+                    .findFirst()
+                    .ifPresent(cartItem -> {
+                        Long cartItemId = cartItem.getId();
+                        cart.removeItem(cartItemId);
+                        log.debug("장바구니에서 제거 - 회원ID: {}, 옵션ID: {}, 아이템ID: {}",
+                                memberId, optionId, cartItemId);
+                    });
+        });
+    }
+
 }
