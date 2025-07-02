@@ -20,11 +20,7 @@ public record GroupBuyOptionRequest(
 
         @NotNull(message = PRICE_OVERRIDE_REQUIRED)
         @Min(value = 0, message = PRICE_OVERRIDE_MIN)
-        Integer priceOverride,
-
-        @NotNull(message = SALE_PRICE_REQUIRED)
-        @Min(value = 0, message = SALE_PRICE_MIN)
-        Integer salePrice
+        Integer priceOverride
 ) {
     public GroupBuyOption toEntity(GroupBuy groupBuy, ProductOption productOption) {
         return GroupBuyOption.of(
@@ -32,7 +28,7 @@ public record GroupBuyOptionRequest(
                 productOption,
                 stock,
                 priceOverride,
-                salePrice
+                priceOverride
         );
     }
 }

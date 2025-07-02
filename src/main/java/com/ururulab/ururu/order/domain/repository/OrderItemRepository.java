@@ -20,4 +20,23 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("memberId") Long memberId,
             @Param("groupBuyOptionId") Long groupBuyOptionId
     );
+
+
+    /**
+     * 특정 공동구매의 유효 주문 수량 조회
+     * - 공동구매 종료(CLOSED) 시, 최종 할인율 적용을 위한 기준 수량 계산에 사용
+     * - 'ORDERED' 상태의 주문만 포함하며, 취소된 주문은 제외
+     *
+     * 예시:
+     * 할인 조건:
+     *   - 10개 이상 주문 시 10% 할인
+     *   - 30개 이상 주문 시 20% 할인
+     * → 실제 주문 수량이 35개인 경우, 20% 할인율 적용
+     */
+    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi " +
+            "JOIN oi.order o " +
+            "WHERE oi.groupBuyOption.groupBuy.id = :groupBuyId " +
+            "AND o.status = 'ORDERED'")
+    Integer getTotalQuantityByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
+
 }

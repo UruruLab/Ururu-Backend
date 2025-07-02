@@ -28,8 +28,6 @@ public class GroupBuyValidationMessages {
     public static final String STOCK_MIN = "재고는 0 이상이어야 합니다";
     public static final String PRICE_OVERRIDE_REQUIRED = "공구 시작가는 필수입니다";
     public static final String PRICE_OVERRIDE_MIN = "공구 시작가는 0 이상이어야 합니다";
-    public static final String SALE_PRICE_REQUIRED = "실제 판매가는 필수입니다";
-    public static final String SALE_PRICE_MIN = "실제 판매가는 0 이상이어야 합니다";
 
     // 이미지 관련 메시지
     public static final String GROUP_BUY_THUMBNAIL_IMAGES_TOO_MANY = "공동구매 썸네일 이미지는 최대 " + MAX_GROUP_BUY_THUMBNAIL_IMAGES + "개까지 등록 가능합니다";

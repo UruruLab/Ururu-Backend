@@ -14,7 +14,7 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long> {
     SELECT COUNT(g) > 0
     FROM GroupBuy g
     WHERE g.product.id = :productId
-      AND g.status <> 'CANCELLED'
+      AND g.status <> 'CLOSED'
     """)
     boolean existsGroupBuyByProduct(Long productId);
 }

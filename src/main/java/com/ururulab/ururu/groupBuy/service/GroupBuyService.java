@@ -4,8 +4,10 @@ import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyRequest;
 import com.ururulab.ururu.groupBuy.controller.dto.response.GroupBuyCreateResponse;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
+import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
+import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import com.ururulab.ururu.seller.domain.entity.Seller;
@@ -26,6 +28,8 @@ public class GroupBuyService {
     private final ProductRepository productRepository;
     private final SellerRepository sellerRepository;
     private final GroupBuyValidator groupBuyValidator;
+    private final GroupBuyOptionService groupBuyOptionService;
+
 
     @Transactional
     public GroupBuyCreateResponse createGroupBuy(GroupBuyRequest request, Long sellerId) {
@@ -39,7 +43,9 @@ public class GroupBuyService {
 
         groupBuyValidator.validateCritical(request);
 
-        GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, null));
+        //GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, null));
+        GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, "https://example.com/default-thumbnail.png"));
+        groupBuyOptionService.createGroupBuyOptions(savedGroupBuy, request.options());
 
         log.info("Group buy created successfully with ID: {} for seller: {}",
                 savedGroupBuy.getId(), sellerId);

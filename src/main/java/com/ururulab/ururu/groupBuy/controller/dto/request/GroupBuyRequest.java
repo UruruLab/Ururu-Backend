@@ -26,7 +26,7 @@ public record GroupBuyRequest(
         @NotNull(message = PRODUCT_ID_REQUIRED)
         Long productId,
 
-        @NotBlank(message = DISCOUNT_STAGES_REQUIRED)
+        @NotEmpty(message = DISCOUNT_STAGES_REQUIRED)
         @Valid
         List<DiscountStageDto> discountStages, // JSON 형태의 할인 단계 정보
 
