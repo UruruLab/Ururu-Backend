@@ -147,7 +147,7 @@ public final class JwtCookieHelper {
             }
             return cookieDomain.trim();
         } catch (Exception e) {
-            log.debug("Cookie domain property access failed: {}", e.getMessage());
+            log.error("Cookie domain property access failed: {}", e.getMessage());
             throw new IllegalStateException("운영환경에서 app.cookie.domain 프로퍼티 접근 실패", e);
         }
     }
