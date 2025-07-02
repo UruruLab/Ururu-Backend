@@ -50,8 +50,8 @@ public class CartService {
                 .findByIdWithDetails(request.groupbuyOptionId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 공구 옵션입니다."));
 
-        ZonedDateTime endsAt = toZonedDateTime(groupBuyOption.getGroupBuy().getEndsAt());
-        if (endsAt.isBefore(ZonedDateTime.now(ZoneId.of("Asia/Seoul")))) {
+        Instant endsAt = groupBuyOption.getGroupBuy().getEndsAt();
+        if (endsAt.isBefore(Instant.now())) {
             throw new IllegalStateException("종료된 공구입니다.");
         }
 
@@ -163,8 +163,8 @@ public class CartService {
     }
 
     private boolean isNotExpired(CartItem cartItem) {
-        ZonedDateTime endsAt = toZonedDateTime(cartItem.getGroupBuyOption().getGroupBuy().getEndsAt());
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+        Instant endsAt = cartItem.getGroupBuyOption().getGroupBuy().getEndsAt();
+        Instant now = Instant.now();
         return endsAt.isAfter(now);
     }
 
@@ -179,30 +179,8 @@ public class CartService {
                 option.getProductOption().getName(),
                 option.getProductOption().getImageUrl(),
                 option.getSalePrice(),
-                toZonedDateTime(option.getGroupBuy().getEndsAt()).toInstant()
+                option.getGroupBuy().getEndsAt()
         );
-    }
-
-    /**
-     * LocalDateTime 등 다양한 시간 객체를 ZonedDateTime으로 변환
-     * LocalDateTime이면 Asia/Seoul 기준으로, Zoned/OffsetDateTime이면 그대로
-     * 시간 객체 타입이 ZonedDateTime으로 확정 시 메서드 삭제 예정
-     */
-    private ZonedDateTime toZonedDateTime(Object time) {
-        ZoneId zoneId = ZoneId.of("Asia/Seoul");
-
-        if (time instanceof ZonedDateTime zdt) {
-            return zdt;
-        } else if (time instanceof OffsetDateTime odt) {
-            return odt.toZonedDateTime();
-        } else if (time instanceof LocalDateTime ldt) {
-            return ldt.atZone(zoneId);
-        } else if (time instanceof Instant instant) {
-            return instant.atZone(zoneId);
-        } else {
-            throw new IllegalArgumentException("지원하지 않는 시간 타입입니다: " +
-                    (time != null ? time.getClass().getName() : "null"));
-        }
     }
 
     /**

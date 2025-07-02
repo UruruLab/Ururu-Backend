@@ -32,8 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
@@ -158,7 +157,7 @@ public class PaymentService {
         );
 
         PayMethod payMethod = PayMethod.from(tossResponse.method(), tossResponse.easyPayProvider());
-        ZonedDateTime approvedAt = ZonedDateTime.parse(tossResponse.approvedAt());
+        Instant approvedAt = Instant.parse(tossResponse.approvedAt());
 
         payment.updatePaymentInfo(request.paymentKey(), payMethod, request.amount());
         payment.markAsPaid(approvedAt);
@@ -166,7 +165,7 @@ public class PaymentService {
 
         completePaymentProcessing(payment);
 
-        return new PaymentConfirmResponseDto(paymentId, PaymentStatus.PAID, approvedAt.toInstant());
+        return new PaymentConfirmResponseDto(paymentId, PaymentStatus.PAID, approvedAt);
     }
 
     /**
@@ -188,7 +187,7 @@ public class PaymentService {
         }
 
         if (DONE.equals(webhook.data().status())) {
-            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
+            Instant now = Instant.now();
             payment.markAsPaid(now);
             payment.getOrder().changeStatus(OrderStatus.ORDERED, "웹훅을 통한 결제 상태 동기화");
 
@@ -217,7 +216,7 @@ public class PaymentService {
         return new PaymentConfirmResponseDto(
                 payment.getId(),
                 payment.getStatus(),
-                payment.getPaidAt() != null ? payment.getPaidAt().toInstant() : null
+                payment.getPaidAt() != null ? payment.getPaidAt() : null
         );
     }
 
