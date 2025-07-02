@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.domain.dto.response;
+package com.ururulab.ururu.product.controller.dto.response;
 
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 
@@ -27,18 +27,6 @@ public record ProductOptionResponse(
                 productOption.getName(),
                 productOption.getPrice(),
                 imageUrl,
-                productOption.getFullIngredients(),
-                productOption.getCreatedAt(),
-                productOption.getUpdatedAt()
-        );
-    }
-
-    public static ProductOptionResponse of(final ProductOption productOption) {
-        return new ProductOptionResponse(
-                productOption.getId(),
-                productOption.getName(),
-                productOption.getPrice(),
-                productOption.getImageUrl(),
                 productOption.getFullIngredients(),
                 productOption.getCreatedAt(),
                 productOption.getUpdatedAt()

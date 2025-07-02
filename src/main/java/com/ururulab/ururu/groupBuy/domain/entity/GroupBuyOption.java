@@ -36,7 +36,7 @@ public class GroupBuyOption extends BaseEntity {
 
     @Column(nullable = false)
     @Min(0)
-    private Integer salePrice; // 실제 판매가
+    private Integer salePrice; // 실제 판매가 GroupBuy의 discount_stages의 n번째 중 최종으로 ‘rate’가 적용된 가격
 
     @Version
     private Long version;
@@ -55,5 +55,9 @@ public class GroupBuyOption extends BaseEntity {
         groupBuyOption.priceOverride = priceOverride;
         groupBuyOption.salePrice = salePrice;
         return groupBuyOption;
+    }
+
+    public void updateSalePrice(int salePrice) {
+        this.salePrice = salePrice;
     }
 }

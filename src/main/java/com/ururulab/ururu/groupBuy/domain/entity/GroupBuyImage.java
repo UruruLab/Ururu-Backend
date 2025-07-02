@@ -23,6 +23,9 @@ public class GroupBuyImage extends BaseEntity {
     @Column(nullable = false)
     private String imageUrl; // 상세 페이지 이미지
 
+    @Column(nullable = true)
+    private String detailImageHash;  // 이미지 해시값 저장 (SHA-256)
+
     @Column(nullable = false)
     private Integer displayOrder; // 이미지 순서
 

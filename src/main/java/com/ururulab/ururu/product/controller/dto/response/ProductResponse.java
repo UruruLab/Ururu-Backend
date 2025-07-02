@@ -1,12 +1,10 @@
-package com.ururulab.ururu.product.domain.dto.response;
+package com.ururulab.ururu.product.controller.dto.response;
 
 import com.ururulab.ururu.product.domain.entity.Product;
-import com.ururulab.ururu.product.domain.entity.ProductTag;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public record ProductResponse(
         Long id,

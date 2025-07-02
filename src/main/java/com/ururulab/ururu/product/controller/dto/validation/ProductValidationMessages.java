@@ -1,8 +1,8 @@
-package com.ururulab.ururu.product.domain.dto.validation;
+package com.ururulab.ururu.product.controller.dto.validation;
 
 import lombok.experimental.UtilityClass;
 
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.*;
+import static com.ururulab.ururu.product.controller.dto.validation.ProductValidationConstants.*;
 
 @UtilityClass
 public class ProductValidationMessages {
