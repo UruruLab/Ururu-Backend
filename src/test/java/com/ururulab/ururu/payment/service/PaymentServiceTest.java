@@ -277,6 +277,7 @@ class PaymentServiceTest {
             Member member = createMember();
             Order order = createOrder(member);
             Payment payment = createPayment(member, order);
+            payment.markAsPaid(Instant.now());
 
             // Payment 엔티티의 상태를 확인하여 이미 결제된 상태로 설정하는 것이 맞는지 확인
             // 실제 서비스 로직에서 어떤 검증을 하는지에 따라 결정
@@ -287,7 +288,7 @@ class PaymentServiceTest {
             assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request))
                     .isInstanceOf(BusinessException.class)
                     .extracting(ex -> ((BusinessException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.TOSS_API_CALL_FAILED);
+                    .isEqualTo(ErrorCode.PAYMENT_NOT_PENDING);
         }
     }
 
