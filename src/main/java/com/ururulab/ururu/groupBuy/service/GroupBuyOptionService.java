@@ -12,7 +12,9 @@ import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
@@ -36,6 +38,7 @@ public class GroupBuyOptionService {
         }
     }
 
+    @Transactional
     public void calculateAndSetSalePrices(GroupBuy groupBuy) {
         // 1. 주문 총 수량 계산
         Integer totalQuantity = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuy.getId());
@@ -43,6 +46,8 @@ public class GroupBuyOptionService {
 
         // 2. 할인 단계 추출
         List<DiscountStageDto> stages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
+        // 최소 수량 기준으로 정렬
+        stages.sort(Comparator.comparing(DiscountStageDto::minQuantity));
 
         int appliedRate = 0;
         for (DiscountStageDto stage : stages) {
