@@ -1,10 +1,9 @@
 package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.global.exception.GlobalExceptionHandler;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.service.ImageService;
-import com.ururulab.ururu.product.domain.dto.request.ProductImageUploadRequest;
+import com.ururulab.ururu.product.controller.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import com.ururulab.ururu.product.event.ProductImageDeleteEvent;

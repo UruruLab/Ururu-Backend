@@ -5,7 +5,7 @@ import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
-import com.ururulab.ururu.product.domain.dto.request.ProductOptionRequest;
+import com.ururulab.ururu.product.controller.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.service.CategoryCacheService;
 import lombok.RequiredArgsConstructor;

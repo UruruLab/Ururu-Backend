@@ -3,6 +3,7 @@ package com.ururulab.ururu.groupBuy.domain.entity;
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.product.domain.entity.Product;
+import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,11 +11,11 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ururulab.ururu.groupBuy.domain.dto.validation.GroupBuyValidationConstants.*;
+import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
 
 @Entity
 @Getter
@@ -30,10 +31,9 @@ public class GroupBuy extends BaseEntity {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    //TODO 판매자 JOIN
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "seller_id", nullable = false)
-//    private Seller seller;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private Seller seller;
 
     @Column(nullable = false, length = GROUP_BUY_TITLE_MAX)
     private String title; // 공동구매 타이틀
@@ -43,6 +43,9 @@ public class GroupBuy extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String thumbnailUrl; // 대표 이미지
+
+    @Column(nullable = true)
+    private String thumbnailHash;  // 이미지 해시값 저장 (SHA-256)
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON", nullable = false)
@@ -56,29 +59,29 @@ public class GroupBuy extends BaseEntity {
     private GroupBuyStatus status; // 공동구매 상태
 
     @Column(nullable = false)
-    private ZonedDateTime startAt; // 공동구매 시작일
+    private Instant startAt; // 공동구매 시작일
 
     @Column(nullable = false)
-    private ZonedDateTime endsAt; // 공동구매 종료일
+    private Instant endsAt; // 공동구매 종료일
 
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupBuyImage> groupBuyImages = new ArrayList<>();
 
     public static GroupBuy of(
             Product product,
-            //Seller seller,
+            Seller seller,
             String title,
             String description,
             String thumbnailUrl,
             String discountStages,
             Integer limitQuantityPerMember,
             GroupBuyStatus status,
-            ZonedDateTime startAt,
-            ZonedDateTime endsAt
+            Instant startAt,
+            Instant endsAt
     ) {
         GroupBuy groupBuy = new GroupBuy();
         groupBuy.product = product;
-        //groupBuy.seller = seller;
+        groupBuy.seller = seller;
         groupBuy.title = title;
         groupBuy.description = description;
         groupBuy.thumbnailUrl = thumbnailUrl;

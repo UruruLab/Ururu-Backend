@@ -1,11 +1,13 @@
 package com.ururulab.ururu.groupBuy.domain.repository;
 
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, Long> {
@@ -36,4 +38,6 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
     @Query("UPDATE GroupBuyOption gbo SET gbo.stock = gbo.stock - :quantity " +
             "WHERE gbo.id = :optionId AND gbo.stock >= :quantity")
     int decreaseStock(@Param("optionId") Long optionId, @Param("quantity") Integer quantity);
+
+    List<GroupBuyOption> findAllByGroupBuy(GroupBuy groupBuy);
 }

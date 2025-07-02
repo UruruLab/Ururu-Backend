@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.service;
 
-import com.ururulab.ururu.member.domain.dto.request.MemberAgreementRequest;
-import com.ururulab.ururu.member.domain.dto.response.MemberAgreementCreateResponse;
+import com.ururulab.ururu.member.controller.dto.request.MemberAgreementRequest;
+import com.ururulab.ururu.member.controller.dto.response.MemberAgreementCreateResponse;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberAgreement;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
@@ -17,7 +17,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberAgreementService {
     private final MemberAgreementRepository memberAgreementRepository;
     private final MemberRepository memberRepository;

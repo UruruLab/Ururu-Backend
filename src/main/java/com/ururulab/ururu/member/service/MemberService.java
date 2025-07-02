@@ -2,8 +2,8 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
-import com.ururulab.ururu.member.domain.dto.request.MemberRequest;
-import com.ururulab.ururu.member.domain.dto.response.*;
+import com.ururulab.ururu.member.controller.dto.request.MemberRequest;
+import com.ururulab.ururu.member.controller.dto.response.*;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
@@ -17,10 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MemberService {
 
     private final MemberRepository memberRepository;
@@ -28,13 +29,6 @@ public class MemberService {
     private final ShippingAddressRepository shippingAddressRepository;
     private final MemberAgreementRepository memberAgreementRepository;
 
-
-    /**
-     * 소셜 회원 정보로 새 회원을 생성하거나 기존 회원을 조회합니다.
-     *
-     * @param socialMemberInfo 소셜 로그인에서 받은 회원 정보
-     * @return 생성되거나 조회된 회원
-     */
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
         return memberRepository.findBySocialProviderAndSocialId(
@@ -43,12 +37,6 @@ public class MemberService {
         ).orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
-    /**
-     * 회원 생성 요청으로 새 회원을 생성합니다.
-     *
-     * @param request 회원 생성 요청 정보
-     * @return 생성된 회원
-     */
     @Transactional
     public Member createMember(final MemberRequest request) {
         validateMemberCreation(request);
@@ -71,11 +59,13 @@ public class MemberService {
         return savedMember;
     }
 
+    @Transactional(readOnly = true)
     public MemberGetResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
         return MemberGetResponse.from(member);
     }
 
+    @Transactional(readOnly = true)
     public MemberGetResponse getMyProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
         return MemberGetResponse.from(member);
@@ -118,19 +108,23 @@ public class MemberService {
         memberRepository.save(member);
     }
 
+    @Transactional(readOnly = true)
     public boolean checkNicknameExists(final String nickname) {
         return memberRepository.existsByNickname(nickname);
     }
 
+    @Transactional(readOnly = true)
     public NicknameAvailabilityResponse getNicknameAvailability(final String nickname) {
         final boolean isAvailable = memberRepository.isNicknameAvailable(nickname);
         return NicknameAvailabilityResponse.from(isAvailable);
     }
 
+    @Transactional(readOnly = true)
     public boolean checkEmailExists(final String email) {
         return memberRepository.existsByEmail(email);
     }
 
+    @Transactional(readOnly = true)
     public EmailAvailabilityResponse getEmailAvailability(final String email) {
         final boolean isAvailable = memberRepository.isEmailAvailable(email);
         return EmailAvailabilityResponse.from(isAvailable);
@@ -146,6 +140,7 @@ public class MemberService {
         memberRepository.save(member);
     }
 
+    @Transactional(readOnly = true)
     public WithdrawalPreviewResponse getWithdrawalPreview(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
 
@@ -182,13 +177,15 @@ public class MemberService {
 
 
     private Member createNewMember(final SocialMemberInfo socialMemberInfo) {
+        final Instant defaultBirthDate = Instant.parse("1990-01-01T00:00:00Z");
+
         final Member member = Member.of(
                 socialMemberInfo.nickname(),
                 socialMemberInfo.email(),
                 socialMemberInfo.provider(),
                 socialMemberInfo.socialId(),
-                null,
-                null,
+                Gender.FEMALE,
+                defaultBirthDate,
                 null,
                 socialMemberInfo.profileImage(),
                 Role.NORMAL

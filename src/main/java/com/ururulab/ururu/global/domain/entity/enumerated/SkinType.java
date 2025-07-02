@@ -5,7 +5,7 @@ public enum SkinType {
 	DRY,
 	SENSITIVE,
 	COMBINATION,
-	DRY_LIGHT,
+	VERY_DRY,
 	TROUBLE,
 	NEUTRAL;
 
