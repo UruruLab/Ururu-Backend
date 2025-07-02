@@ -11,6 +11,7 @@ import com.ururulab.ururu.groupBuy.event.GroupBuyThumbnailUploadEvent;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
 import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.image.validation.ImageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,6 +39,7 @@ public class GroupBuyDetailImageService {
     private final ApplicationEventPublisher eventPublisher;
     private final ImageHashService imageHashService;
     private final GroupBuyValidator groupBuyValidator;
+    private final ImageValidator imageValidator;
 
     /**
      * 상세이미지 업로드 이벤트 발행
@@ -53,7 +55,7 @@ public class GroupBuyDetailImageService {
             throw new BusinessException(GROUPBUY_DETAIL_IMAGES_TOO_MANY);
         }
 
-        groupBuyValidator.validateAllImages(detailImageFiles);
+        imageValidator.validateAllImages(detailImageFiles);
 
         List<GroupBuyImageUploadRequest> imageRequests = createDetailImageRequests(detailImageFiles);
 

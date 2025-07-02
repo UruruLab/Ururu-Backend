@@ -7,6 +7,7 @@ import com.ururulab.ururu.groupBuy.event.GroupBuyThumbnailUploadEvent;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
 import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.image.validation.ImageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,7 +29,7 @@ public class GroupBuyThumbnailService {
     private final GroupBuyRepository groupBuyRepository;
     private final ImageHashService imageHashService;
     private final ApplicationEventPublisher eventPublisher;
-    private final GroupBuyValidator groupBuyValidator;
+    private final ImageValidator imageValidator;
 
     /**
      * 썸네일 업로드 이벤트 발행 (비동기 처리용)
@@ -40,7 +41,7 @@ public class GroupBuyThumbnailService {
         }
 
         try {
-            groupBuyValidator.validateImage(thumbnailFile);
+            imageValidator.validateImage(thumbnailFile);
 
             byte[] imageData = thumbnailFile.getBytes();
             String imageHash = imageHashService.calculateImageHashFromBytes(imageData);

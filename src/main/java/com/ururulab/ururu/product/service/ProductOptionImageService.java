@@ -4,6 +4,7 @@ import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.image.validation.ImageValidator;
 import com.ururulab.ururu.product.controller.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
@@ -35,6 +36,7 @@ public class ProductOptionImageService {
     private final ImageHashService imageHashService;
     private final ApplicationEventPublisher eventPublisher;
     private final ProductValidator productValidator;
+    private final ImageValidator imageValidator;
 
 
     /**
@@ -42,7 +44,7 @@ public class ProductOptionImageService {
      */
     public String uploadProductOptionImage(MultipartFile file) {
         try {
-            productValidator.validateImage(file);
+            imageValidator.validateImage(file);
             String filename = Optional.ofNullable(file.getOriginalFilename())
                     .orElseThrow(() -> new BusinessException(INVALID_IMAGE_FILENAME));
 
