@@ -2,9 +2,9 @@ package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
-import com.ururulab.ururu.member.controller.dto.validation.MemberValidationConstants;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
+import com.ururulab.ururu.member.domain.policy.MemberPolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,17 +24,17 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = MemberValidationConstants.NICKNAME_MAX_LENGTH, nullable = false)
+    @Column(length = MemberPolicy.NICKNAME_MAX_LENGTH, nullable = false)
     private String nickname;
 
-    @Column(length = MemberValidationConstants.EMAIL_MAX_LENGTH, unique = true, nullable = false)
+    @Column(length = MemberPolicy.EMAIL_MAX_LENGTH, unique = true, nullable = false)
     private String email;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SocialProvider socialProvider;
 
-    @Column(length = MemberValidationConstants.SOCIAL_ID_MAX_LENGTH, nullable = false)
+    @Column(length = MemberPolicy.SOCIAL_ID_MAX_LENGTH, nullable = false)
     private String socialId;
 
     @Enumerated(EnumType.STRING)
@@ -43,7 +43,7 @@ public class Member extends BaseEntity {
 
     private Instant birth;
 
-    @Column(length = MemberValidationConstants.PHONE_STRING_MAX_LENGTH)
+    @Column(length = MemberPolicy.PHONE_STRING_MAX_LENGTH)
     private String phone;
 
     private String profileImage;
