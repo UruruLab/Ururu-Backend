@@ -1,5 +1,6 @@
 package com.ururulab.ururu.payment.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
@@ -25,14 +26,20 @@ import com.ururulab.ururu.payment.domain.entity.enumerated.PaymentStatus;
 import com.ururulab.ururu.payment.domain.entity.enumerated.PointSource;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
@@ -56,6 +63,7 @@ public class PaymentService {
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final CartRepository cartRepository;
     private final RestClient restClient;
+    private final ObjectMapper objectMapper;
 
     @Value("${toss.payments.secret-key}")
     private String tossSecretKey;
@@ -106,6 +114,7 @@ public class PaymentService {
      * @param orderId 주문 ID
      * @param amount 결제 금액
      */
+    @SuppressWarnings("unused")
     public void handlePaymentSuccess(final String paymentKey, final String orderId, final Integer amount) {
         // 단순히 성공 안내만 함, 실제 처리는 결제 승인에서
         log.debug("결제 성공 리다이렉트 처리 - paymentKey: {}, orderId: {}", paymentKey, orderId);
@@ -137,7 +146,6 @@ public class PaymentService {
 
     /**
      * 토스 결제 승인
-     *
      * 1. 포인트 차감
      * 2. 재고 확정
      * 3. 예약 해제
@@ -157,7 +165,7 @@ public class PaymentService {
         );
 
         PayMethod payMethod = PayMethod.from(tossResponse.method(), tossResponse.easyPayProvider());
-        Instant approvedAt = Instant.parse(tossResponse.approvedAt());
+        Instant approvedAt = ZonedDateTime.parse(tossResponse.approvedAt()).toInstant();
 
         payment.updatePaymentInfo(request.paymentKey(), payMethod, request.amount());
         payment.markAsPaid(approvedAt);
@@ -166,6 +174,46 @@ public class PaymentService {
         completePaymentProcessing(payment);
 
         return new PaymentConfirmResponseDto(paymentId, PaymentStatus.PAID, approvedAt);
+    }
+
+    /**
+     * 토스 웹훅 검증 및 처리 (컨트롤러에서 호출)
+     *
+     * @param request HTTP 요청 (Raw body 읽기용)
+     * @param signature Toss-Signature 헤더값
+     */
+    public void handleTossWebhookWithValidation(HttpServletRequest request, String signature) {
+        try {
+            String rawBody = IOUtils.toString(request.getInputStream(), StandardCharsets.UTF_8);
+
+            if (rawBody == null || rawBody.trim().isEmpty()) {
+                throw new BusinessException(ErrorCode.INVALID_JSON, "웹훅 본문이 비어있습니다");
+            }
+
+            if (signature == null || signature.trim().isEmpty()) {
+                throw new BusinessException(ErrorCode.INVALID_SIGNATURE);
+            }
+
+            Mac hmac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKey = new SecretKeySpec(tossSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            hmac.init(secretKey);
+
+            byte[] hash = hmac.doFinal(rawBody.getBytes(StandardCharsets.UTF_8));
+            String expectedSignature = Base64.getEncoder().encodeToString(hash);
+
+            if (!expectedSignature.equals(signature.trim())) {
+                throw new BusinessException(ErrorCode.INVALID_SIGNATURE);
+            }
+
+            TossWebhookDto webhook = objectMapper.readValue(rawBody, TossWebhookDto.class);
+
+            handleTossWebhook(webhook);
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.WEBHOOK_PROCESSING_FAILED);
+        }
     }
 
     /**

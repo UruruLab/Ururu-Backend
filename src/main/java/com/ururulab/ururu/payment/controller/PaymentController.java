@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,16 +123,12 @@ public class PaymentController {
     })
     @PostMapping("/webhooks/toss")
     public ResponseEntity<ApiResponseFormat<Void>> handleTossWebhook(
-            @RequestBody TossWebhookDto webhook
+            HttpServletRequest request,
+            @RequestHeader(value = "Toss-Signature", required = false) String signature
     ) {
-        log.debug("토스 웹훅 수신 - eventType: {}, paymentKey: {}",
-                webhook.eventType(), webhook.data().paymentKey());
 
-        paymentService.handleTossWebhook(webhook);
-
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("웹훅 처리가 완료되었습니다")
-        );
+        paymentService.handleTossWebhookWithValidation(request, signature);
+        return ResponseEntity.ok(ApiResponseFormat.success("웹훅 처리 완료"));
     }
 
     @Operation(summary = "결제 상태 조회", description = "paymentKey로 결제 진행 상태를 조회합니다. confirm 실패 시 프론트에서 폴링용으로 사용됩니다.")

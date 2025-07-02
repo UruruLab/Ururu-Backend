@@ -50,6 +50,11 @@ public enum ErrorCode {
 	INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "PAYMENT007", "보유 포인트가 부족합니다."),
 	TOSS_API_CALL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PAYMENT008", "토스 API 호출에 실패했습니다."),
 
+	// --- 웹훅 관련 ---
+	INVALID_SIGNATURE(HttpStatus.FORBIDDEN, "WEBHOOK001", "웹훅 서명이 유효하지 않습니다"),
+	INVALID_JSON(HttpStatus.BAD_REQUEST, "WEBHOOK002", "웹훅 데이터 형식이 올바르지 않습니다"),
+	WEBHOOK_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WEBHOOK003", "웹훅 처리 중 오류가 발생했습니다"),
+
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
