@@ -31,5 +31,5 @@ public class GroupBuyValidationMessages {
 
     // 이미지 관련 메시지
     public static final String GROUP_BUY_THUMBNAIL_IMAGES_TOO_MANY = "공동구매 썸네일 이미지는 최대 " + MAX_GROUP_BUY_THUMBNAIL_IMAGES + "개까지 등록 가능합니다";
-    public static final String GROUP_BUY_DETAIL_IMAGES_TOO_MANY = "공동구매 썸네일 이미지는 최대 " + MAX_GROUP_BUY_DETAIL_IMAGES + "개까지 등록 가능합니다";
+    public static final String GROUP_BUY_DETAIL_IMAGES_TOO_MANY = "공동구매 상세 이미지는 최대 " + MAX_GROUP_BUY_DETAIL_IMAGES + "개까지 등록 가능합니다";
 }
