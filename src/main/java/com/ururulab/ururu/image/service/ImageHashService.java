@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.service;
+package com.ururulab.ururu.image.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
 import org.springframework.stereotype.Service;

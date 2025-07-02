@@ -19,7 +19,7 @@ import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyVali
 
 @Entity
 @Getter
-@Table(name = "GroupBuys")
+@Table(name = "groupbuys")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupBuy extends BaseEntity {
 
@@ -41,7 +41,7 @@ public class GroupBuy extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description; // 공동구매 상세설명
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String thumbnailUrl; // 대표 이미지
 
     @Column(nullable = true)
@@ -91,5 +91,10 @@ public class GroupBuy extends BaseEntity {
         groupBuy.startAt = startAt;
         groupBuy.endsAt = endsAt;
         return groupBuy;
+    }
+
+    public void updateThumbnailInfo(String thumbnailUrl, String thumbnailHash) {
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailHash = thumbnailHash;
     }
 }

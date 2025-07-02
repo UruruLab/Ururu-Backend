@@ -2,6 +2,7 @@ package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.product.controller.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;

@@ -81,6 +81,8 @@ public enum ErrorCode {
 	DUPLICATE_DISCOUNT_STAGE(HttpStatus.BAD_REQUEST, "GROUPBUY019", "동일한 최소 수량의 할인 단계가 중복됩니다."),
 	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
+	GROUPBUY_NOT_FOUND(HttpStatus.BAD_REQUEST, "GROUPBUY022", "해당 공동구매를 찾을 없습니다."),
+	GROUPBUY_DETAIL_IMAGES_TOO_MANY(HttpStatus.BAD_REQUEST, "GROUPBUY023", "상세 페이지 이미지 개수를 초과하였습니다."),
 
 
 	// --- 판매자 ---

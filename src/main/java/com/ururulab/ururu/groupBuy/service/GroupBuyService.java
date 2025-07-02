@@ -16,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
@@ -29,10 +32,13 @@ public class GroupBuyService {
     private final SellerRepository sellerRepository;
     private final GroupBuyValidator groupBuyValidator;
     private final GroupBuyOptionService groupBuyOptionService;
+    private final GroupBuyThumbnailService groupBuyThumbnailService;
+    private final GroupBuyDetailImageService groupBuyDetailImageService;
 
 
     @Transactional
-    public GroupBuyCreateResponse createGroupBuy(GroupBuyRequest request, Long sellerId) {
+    public GroupBuyCreateResponse createGroupBuy(GroupBuyRequest request, Long sellerId, MultipartFile thumbnail,
+                                                 List<MultipartFile> detailImages) {
         log.info("Creating group buy for seller: {}, productId: {}", sellerId, request.productId());
 
         Seller seller = sellerRepository.findById(sellerId)
@@ -43,9 +49,16 @@ public class GroupBuyService {
 
         groupBuyValidator.validateCritical(request);
 
-        //GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, null));
-        GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, "https://example.com/default-thumbnail.png"));
+        GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, null));
         groupBuyOptionService.createGroupBuyOptions(savedGroupBuy, request.options());
+
+        // 2. 이미지 업로드 (비동기)
+        if (thumbnail != null) {
+            groupBuyThumbnailService.uploadThumbnail(savedGroupBuy.getId(), thumbnail);
+        }
+        if (detailImages != null && !detailImages.isEmpty()) {
+            groupBuyDetailImageService.uploadDetailImages(savedGroupBuy.getId(), detailImages);
+        }
 
         log.info("Group buy created successfully with ID: {} for seller: {}",
                 savedGroupBuy.getId(), sellerId);
