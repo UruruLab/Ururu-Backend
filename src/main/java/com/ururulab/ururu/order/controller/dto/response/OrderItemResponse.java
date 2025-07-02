@@ -1,4 +1,4 @@
-package com.ururulab.ururu.order.domain.dto.response;
+package com.ururulab.ururu.order.controller.dto.response;
 
 /**
  * 주문 아이템 정보 응답 DTO

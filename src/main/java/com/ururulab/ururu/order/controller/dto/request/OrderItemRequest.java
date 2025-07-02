@@ -1,10 +1,8 @@
-package com.ururulab.ururu.order.domain.dto.request;
+package com.ururulab.ururu.order.controller.dto.request;
 
-import com.ururulab.ururu.order.domain.dto.validation.OrderValidationConstants;
-import com.ururulab.ururu.order.domain.dto.validation.OrderValidationMessages;
+import com.ururulab.ururu.order.controller.dto.validation.OrderValidationConstants;
+import com.ururulab.ururu.order.controller.dto.validation.OrderValidationMessages;
 import jakarta.validation.constraints.*;
-
-import java.util.List;
 
 /**
  * 주문 아이템 요청 DTO (공구 내 개별 옵션)
