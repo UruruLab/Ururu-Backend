@@ -2,6 +2,7 @@ package com.ururulab.ururu.payment.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.order.domain.entity.Order;
@@ -45,6 +46,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final MemberRepository memberRepository;
     private final StockReservationService stockReservationService;
+    private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final RestClient restClient;
 
     @Value("${toss.payments.secret-key}")
@@ -77,8 +79,6 @@ public class PaymentService {
 
         Payment payment = Payment.create(member, order, totalAmount, paymentAmount, request.usePoints());
         Payment savedPayment = paymentRepository.save(payment);
-
-        processPointUsage(member, request.usePoints());
 
         String orderName = generateOrderName(order);
 
@@ -124,13 +124,15 @@ public class PaymentService {
             stockReservationService.releaseReservation(optionId, order.getMember().getId());
         });
 
-        restorePointsIfUsed(payment);
-
         return new PaymentFailResponseDto(code, message, orderId);
     }
 
     /**
      * 토스 결제 승인
+     *
+     * 1. 포인트 차감
+     * 2. 재고 확정
+     * 3. 예약 해제
      *
      * @param paymentId 결제 ID
      * @param request 결제 승인 요청
@@ -153,9 +155,17 @@ public class PaymentService {
         payment.markAsPaid(approvedAt);
 
         payment.getOrder().changeStatus(OrderStatus.ORDERED, "결제 승인 완료");
+        processPointUsage(payment.getMember(), payment.getPoint());
 
         payment.getOrder().getOrderItems().forEach(item -> {
             Long optionId = item.getGroupBuyOption().getId();
+            Integer quantity = item.getQuantity();
+
+            int updatedRows = groupBuyOptionRepository.decreaseStock(optionId, quantity);
+            if (updatedRows == 0) {
+                throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT);
+            }
+
             stockReservationService.releaseReservation(optionId, payment.getMember().getId());
         });
 
@@ -185,6 +195,31 @@ public class PaymentService {
             payment.markAsPaid(now);
             payment.getOrder().changeStatus(OrderStatus.ORDERED, "웹훅을 통한 결제 상태 동기화");
         }
+    }
+
+    /**
+     * paymentKey로 결제 상태 조회 (프론트 폴링용)
+     *
+     * @param paymentKey 토스페이먼츠 결제 키
+     * @param memberId 회원 ID (권한 검증용)
+     * @return 결제 상태 정보
+     */
+    @Transactional(readOnly = true)
+    public PaymentConfirmResponseDto getPaymentStatusByKey(String paymentKey, Long memberId) {
+        Payment payment = paymentRepository.findByPaymentKeyWithDetails(paymentKey)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        if (!payment.getMember().getId().equals(memberId)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        log.debug("결제 상태 조회 - paymentKey: {}, status: {}", paymentKey, payment.getStatus());
+
+        return new PaymentConfirmResponseDto(
+                payment.getId(),
+                payment.getStatus(),
+                payment.getPaidAt() != null ? payment.getPaidAt().toInstant() : null
+        );
     }
 
     private void validateDuplicatePayment(String orderId) {

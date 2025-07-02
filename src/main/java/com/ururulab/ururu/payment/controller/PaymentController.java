@@ -133,4 +133,26 @@ public class PaymentController {
                 ApiResponseFormat.success("웹훅 처리가 완료되었습니다")
         );
     }
+
+    @Operation(summary = "결제 상태 조회", description = "paymentKey로 결제 진행 상태를 조회합니다. confirm 실패 시 프론트에서 폴링용으로 사용됩니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (다른 사용자의 결제)"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 결제")
+    })
+    @GetMapping("/{paymentKey}/status")
+    public ResponseEntity<ApiResponseFormat<PaymentConfirmResponseDto>> getPaymentStatus(
+            @PathVariable String paymentKey,
+            @AuthenticationPrincipal Long memberId
+    ) {
+        log.debug("결제 상태 조회 - paymentKey: {}, memberId: {}", paymentKey, memberId);
+
+        PaymentConfirmResponseDto response = paymentService.getPaymentStatusByKey(paymentKey, memberId);
+
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("결제 상태 조회 성공", response)
+        );
+    }
+
 }
