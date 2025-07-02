@@ -33,7 +33,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
      *   - 30개 이상 주문 시 20% 할인
      * → 실제 주문 수량이 35개인 경우, 20% 할인율 적용
      */
-    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi " +
+    @Query("SELECT COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi " +
             "JOIN oi.order o " +
             "WHERE oi.groupBuyOption.groupBuy.id = :groupBuyId " +
             "AND o.status = 'ORDERED'")
