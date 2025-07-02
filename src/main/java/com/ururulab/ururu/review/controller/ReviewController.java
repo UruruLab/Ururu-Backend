@@ -1,8 +1,13 @@
 package com.ururulab.ururu.review.controller;
 
-import java.time.LocalDate;
-import java.util.List;
-
+import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
+import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.member.domain.entity.enumerated.Role;
+import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
+import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
+import com.ururulab.ururu.review.service.ReviewService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,15 +17,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
-import com.ururulab.ururu.member.domain.entity.Member;
-import com.ururulab.ururu.member.domain.entity.enumerated.Role;
-import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
-import com.ururulab.ururu.review.service.ReviewService;
-
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -34,7 +32,7 @@ public class ReviewController {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			LocalDate.now(),
+			Instant.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL
