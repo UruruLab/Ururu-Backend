@@ -1,4 +1,4 @@
-package com.ururulab.ururu.payment.domain.dto.response;
+package com.ururulab.ururu.payment.controller.dto.response;
 
 public record TossPaymentResponseDto(
         String paymentKey,

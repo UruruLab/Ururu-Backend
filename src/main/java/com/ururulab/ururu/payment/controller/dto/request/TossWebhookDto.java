@@ -1,4 +1,4 @@
-package com.ururulab.ururu.payment.domain.dto.request;
+package com.ururulab.ururu.payment.controller.dto.request;
 
 public record TossWebhookDto(
         String eventType,

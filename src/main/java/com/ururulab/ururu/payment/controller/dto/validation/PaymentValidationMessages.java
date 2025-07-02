@@ -1,4 +1,4 @@
-package com.ururulab.ururu.payment.domain.dto.validation;
+package com.ururulab.ururu.payment.controller.dto.validation;
 
 import lombok.experimental.UtilityClass;
 

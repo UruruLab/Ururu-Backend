@@ -1,7 +1,7 @@
-package com.ururulab.ururu.payment.domain.dto.request;
+package com.ururulab.ururu.payment.controller.dto.request;
 
-import com.ururulab.ururu.payment.domain.dto.validation.PaymentValidationConstants;
-import com.ururulab.ururu.payment.domain.dto.validation.PaymentValidationMessages;
+import com.ururulab.ururu.payment.controller.dto.validation.PaymentValidationConstants;
+import com.ururulab.ururu.payment.controller.dto.validation.PaymentValidationMessages;
 import jakarta.validation.constraints.*;
 
 public record PaymentRequestDto(
