@@ -9,7 +9,7 @@ import com.ururulab.ururu.member.controller.dto.validation.MemberValidationPatte
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.validation.constraints.*;
 
-import java.time.LocalDate;
+import java.time.Instant;
 
 
 public record MemberRequest(
@@ -40,7 +40,7 @@ public record MemberRequest(
         @NotNull(message = MemberValidationMessages.BIRTH_REQUIRED)
         @Past(message = MemberValidationMessages.BIRTH_INVALID)
         @JsonFormat(pattern = "yyyy-MM-dd")
-        LocalDate birth,
+        Instant birth,
 
         @Size(max = MemberValidationConstants.PHONE_STRING_MAX_LENGTH,
                 message = MemberValidationMessages.PHONE_SIZE)

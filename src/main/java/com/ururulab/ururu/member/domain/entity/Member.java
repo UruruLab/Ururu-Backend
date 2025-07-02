@@ -10,7 +10,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,8 +41,7 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private Gender gender;
 
-    @Column(nullable = false)
-    private LocalDate birth;
+    private Instant birth;
 
     @Column(length = MemberValidationConstants.PHONE_STRING_MAX_LENGTH)
     private String phone;
@@ -78,7 +77,7 @@ public class Member extends BaseEntity {
             SocialProvider socialProvider,
             String socialId,
             Gender gender,
-            LocalDate birth,
+            Instant birth,
             String phone,
             String profileImage,
             Role role
@@ -107,7 +106,7 @@ public class Member extends BaseEntity {
         this.gender = gender;
     }
 
-    public void updateBirth(final LocalDate birth) {
+    public void updateBirth(final Instant birth) {
         this.birth = birth;
     }
 
