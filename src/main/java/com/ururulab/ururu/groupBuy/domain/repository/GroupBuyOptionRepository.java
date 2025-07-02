@@ -2,6 +2,7 @@ package com.ururulab.ururu.groupBuy.domain.repository;
 
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,4 +24,16 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
             "LEFT JOIN FETCH gbo.productOption po " +
             "WHERE gbo.id = :optionId")
     Optional<GroupBuyOption> findByIdWithDetails(@Param("optionId") Long optionId);
+
+    /**
+     * 공구 옵션 재고 차감
+     * Payment 도메인에서 결제 완료 시 사용:
+     * - 결제 승인 완료 후 실제 재고 차감
+     * - 동시성 안전을 위한 낙관적 업데이트 (재고가 충분할 때만 차감)
+     * - 차감 실패 시 0 반환하여 재고 부족 상황 감지
+     */
+    @Modifying
+    @Query("UPDATE GroupBuyOption gbo SET gbo.stock = gbo.stock - :quantity " +
+            "WHERE gbo.id = :optionId AND gbo.stock >= :quantity")
+    int decreaseStock(@Param("optionId") Long optionId, @Param("quantity") Integer quantity);
 }
