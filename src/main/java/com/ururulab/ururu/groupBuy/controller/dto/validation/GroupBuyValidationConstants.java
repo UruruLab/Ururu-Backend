@@ -17,7 +17,7 @@ public class GroupBuyValidationConstants {
     public static final int LIMIT_RATE_MAX = 100;
 
     // 이미지 관련
-    public static final int MAX_GROUP_BUY_THUMBNAIL_IMAGES = 3;
+    public static final int MAX_GROUP_BUY_THUMBNAIL_IMAGES = 1;
     public static final int MAX_GROUP_BUY_DETAIL_IMAGES = 10;
 
     // 할인율 등록
