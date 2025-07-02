@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  *
  * 환경별 도메인 설정:
  * - 개발환경: 도메인 설정 없음 (localhost 호환)
- * - 운영환경: app.cookie.domain 프로퍼티 값 사용 (기본값: .o-r.kr)
+ * - 운영환경: app.cookie.domain 프로퍼티 값 사용
  *
  * SameSite 정책:
  * - 개발환경: Lax (관대한 정책)
@@ -132,7 +132,7 @@ public final class JwtCookieHelper {
     /**
      * 환경별 도메인 설정
      *
-     * @return 개발환경: null, 운영환경: app.cookie.domain 프로퍼티 값 (기본값: .o-r.kr)
+     * @return 개발환경: null, 운영환경: app.cookie.domain 프로퍼티 값
      */
     private String getCookieDomain() {
         if (isDevelopmentProfile()) {
@@ -140,11 +140,15 @@ public final class JwtCookieHelper {
         }
 
         try {
-            // 운영환경에서는 프로퍼티에서 가져오거나 기본값
-            return environment.getProperty("app.cookie.domain", ".o-r.kr");
+            // 운영환경에서는 프로퍼티에서 가져옴 (필수값)
+            final String cookieDomain = environment.getProperty("app.cookie.domain");
+            if (cookieDomain == null || cookieDomain.trim().isEmpty()) {
+                throw new IllegalStateException("운영환경에서 app.cookie.domain 프로퍼티는 필수입니다");
+            }
+            return cookieDomain.trim();
         } catch (Exception e) {
-            log.debug("Cookie domain property access failed, using default: {}", e.getMessage());
-            return ".o-r.kr";
+            log.debug("Cookie domain property access failed: {}", e.getMessage());
+            throw new IllegalStateException("운영환경에서 app.cookie.domain 프로퍼티 접근 실패", e);
         }
     }
 
