@@ -48,8 +48,8 @@ public class CorsConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "https://*.vercel.app",
-                "https://ururu.o-r.kr",           // 운영 도메인 추가
-                "http://ururu.o-r.kr"             // HTTP도 임시로 추가 (나중에 HTTPS로 리다이렉트)
+                "https://www.ururu.shop",
+                "https://ururu.shop"
         ));
 
         configuration.setAllowedMethods(List.of(
@@ -86,7 +86,9 @@ public class CorsConfig {
 
         // 운영환경에서는 특정 도메인만 허용
         configuration.setAllowedOrigins(List.of(
-                "https://ururu.o-r.kr"  // HTTPS만 허용
+                "https://www.ururu.shop",        // 새 메인 프론트엔드 도메인
+                "https://ururu.shop",            // 루트 도메인
+                "https://ururu-beauty.vercel.app" // 임시
         ));
 
         configuration.setAllowedMethods(List.of(
