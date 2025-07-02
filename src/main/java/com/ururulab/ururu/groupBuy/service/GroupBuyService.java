@@ -9,6 +9,7 @@ import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
 import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.ProductRepository;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
@@ -48,6 +49,11 @@ public class GroupBuyService {
                 .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
 
         groupBuyValidator.validateCritical(request);
+
+        if (product.getStatus() == Status.INACTIVE) {
+            product.updateStatus(Status.ACTIVE);
+            log.info("Product {} activated for GroupBuy", product.getId());
+        }
 
         GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, null));
         groupBuyOptionService.createGroupBuyOptions(savedGroupBuy, request.options());
