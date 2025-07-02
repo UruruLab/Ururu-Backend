@@ -41,6 +41,11 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class PaymentService {
 
+    private static final Integer SHIPPING_FEE = 3000; // 배송비 고정
+    private static final String TOSS_PAYMENT_STATUS_CHANGED = "PAYMENT_STATUS_CHANGED"; // 토스 웹훅 이벤트 타입
+    private static final String DONE = "DONE"; // Toss 결제 상태가 완료인 경우
+
+
     private final PaymentRepository paymentRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final OrderRepository orderRepository;
@@ -153,21 +158,9 @@ public class PaymentService {
 
         payment.updatePaymentInfo(request.paymentKey(), payMethod, request.amount());
         payment.markAsPaid(approvedAt);
-
         payment.getOrder().changeStatus(OrderStatus.ORDERED, "결제 승인 완료");
-        processPointUsage(payment.getMember(), payment.getPoint());
 
-        payment.getOrder().getOrderItems().forEach(item -> {
-            Long optionId = item.getGroupBuyOption().getId();
-            Integer quantity = item.getQuantity();
-
-            int updatedRows = groupBuyOptionRepository.decreaseStock(optionId, quantity);
-            if (updatedRows == 0) {
-                throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT);
-            }
-
-            stockReservationService.releaseReservation(optionId, payment.getMember().getId());
-        });
+        completePaymentProcessing(payment);
 
         return new PaymentConfirmResponseDto(paymentId, PaymentStatus.PAID, approvedAt.toInstant());
     }
@@ -179,7 +172,7 @@ public class PaymentService {
      */
     @Transactional
     public void handleTossWebhook(TossWebhookDto webhook) {
-        if (!"PAYMENT_STATUS_CHANGED".equals(webhook.eventType())) {
+        if (!TOSS_PAYMENT_STATUS_CHANGED.equals(webhook.eventType())) {
             return;
         }
 
@@ -190,10 +183,12 @@ public class PaymentService {
             return;
         }
 
-        if ("DONE".equals(webhook.data().status())) {
+        if (DONE.equals(webhook.data().status())) {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Seoul"));
             payment.markAsPaid(now);
             payment.getOrder().changeStatus(OrderStatus.ORDERED, "웹훅을 통한 결제 상태 동기화");
+
+            completePaymentProcessing(payment);
         }
     }
 
@@ -221,6 +216,36 @@ public class PaymentService {
                 payment.getPaidAt() != null ? payment.getPaidAt().toInstant() : null
         );
     }
+
+    /**
+     * 결제 완료 후 처리 (포인트 차감 + 재고 확정 + 예약 해제)
+     * confirmPayment와 웹훅에서 공통 사용
+     *
+     * @param payment 결제 정보
+     */
+    private void completePaymentProcessing(Payment payment) {
+        // 포인트 차감
+        processPointUsage(payment.getMember(), payment.getPoint());
+
+        // 재고 차감 + 예약 해제
+        payment.getOrder().getOrderItems().forEach(item -> {
+            Long optionId = item.getGroupBuyOption().getId();
+            Integer quantity = item.getQuantity();
+
+            // 실재고 차감
+            int updatedRows = groupBuyOptionRepository.decreaseStock(optionId, quantity);
+            if (updatedRows == 0) {
+                throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT);
+            }
+
+            // 예약 해제
+            stockReservationService.releaseReservation(optionId, payment.getMember().getId());
+        });
+
+        log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
+                payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());
+    }
+
 
     private void validateDuplicatePayment(String orderId) {
         if (paymentRepository.findByOrderId(orderId).isPresent()) {
@@ -290,7 +315,7 @@ public class PaymentService {
     private Integer calculateTotalAmount(Order order) {
         return order.getOrderItems().stream()
                 .mapToInt(item -> item.getGroupBuyOption().getSalePrice() * item.getQuantity())
-                .sum() + 3000; // 배송비 고정
+                .sum() + SHIPPING_FEE; // 배송비 고정
     }
 
     private void processPointUsage(Member member, Integer usePoints) {
@@ -302,17 +327,6 @@ public class PaymentService {
 
             PointTransaction pointTransaction = PointTransaction.createUsed(
                     member, PointSource.GROUPBUY, usePoints, "공동구매 결제"
-            );
-            pointTransactionRepository.save(pointTransaction);
-        }
-    }
-
-    private void restorePointsIfUsed(Payment payment) {
-        if (payment.getPoint() > 0) {
-            memberRepository.increasePoints(payment.getMember().getId(), payment.getPoint());
-
-            PointTransaction pointTransaction = PointTransaction.createEarned(
-                    payment.getMember(), PointSource.REFUND, payment.getPoint(), "결제 실패로 인한 포인트 복구"
             );
             pointTransactionRepository.save(pointTransaction);
         }
