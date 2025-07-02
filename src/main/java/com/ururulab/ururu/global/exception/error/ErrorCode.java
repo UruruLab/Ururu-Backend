@@ -59,12 +59,36 @@ public enum ErrorCode {
 	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
 	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
 
+	// --- 공동 구매 ---
+	DISCOUNT_STAGES_PARSING_FAILED(HttpStatus.BAD_REQUEST, "GROUPBUY001", "할인 단계 정보를 파싱하는 데 실패했습니다."),
+	INVALID_START_TIME(HttpStatus.BAD_REQUEST, "GROUPBUY002", "공동구매 시작일이 현재 시간보다 이전입니다."),
+	INVALID_END_TIME(HttpStatus.BAD_REQUEST, "GROUPBUY003", "공동구매 종료일이 시작일보다 이전이거나 같습니다."),
+	GROUP_BUY_DURATION_TOO_SHORT(HttpStatus.BAD_REQUEST, "GROUPBUY004", "공동구매 기간이 너무 짧습니다. 최소 1시간 이상이어야 합니다."),
+	GROUP_BUY_DURATION_TOO_LONG(HttpStatus.BAD_REQUEST, "GROUPBUY005", "공동구매 기간이 너무 깁니다. 최대 7일까지 가능합니다."),
+	ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUPBUY006", "요청된 엔티티를 찾을 수 없습니다."),
+	PRODUCT_SELLER_MISMATCH(HttpStatus.FORBIDDEN, "GROUPBUY007", "상품의 판매자와 공동구매 등록자가 일치하지 않습니다."),
+	PRODUCT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "GROUPBUY008", "판매 불가능한 상품입니다."),
+	OVERLAPPING_GROUP_BUY_EXISTS(HttpStatus.CONFLICT, "GROUPBUY009", "해당 상품의 공동구매가 이미 존재합니다."),
+	INVALID_DISCOUNT_STAGES(HttpStatus.BAD_REQUEST, "GROUPBUY010", "할인 단계 정보가 올바르지 않습니다."),
+	INVALID_DISCOUNT_STAGES_FOR_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY011", "재고량 대비 할인 단계 설정이 올바르지 않습니다."),
+	GROUP_BUY_OPTION_OUT_OF_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY012", "공동구매 옵션의 재고가 부족합니다."),
+	DATABASE_CONSTRAINT_VIOLATION(HttpStatus.INTERNAL_SERVER_ERROR, "GROUPBUY013", "데이터베이스 제약조건을 위반했습니다."),
+	GROUP_BUY_INVALID_DATE_RANGE(HttpStatus.BAD_REQUEST, "GROUPBUY014", "공동구매 시작일은 종료일보다 이전이어야 합니다."),
+	DISCOUNT_RATE_REQUIRED(HttpStatus.BAD_REQUEST, "GROUPBUY015", "할인율은 필수입니다."),
+	MIN_QUANTITY_REQUIRED(HttpStatus.BAD_REQUEST, "GROUPBUY016", "최소 달성 수량은 필수입니다."),
+	DISCOUNT_RATE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "GROUPBUY017", "할인율은 0~100% 사이여야 합니다."),
+	MIN_QUANTITY_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "GROUPBUY018", "최소 달성 수량은 1 이상 10,000 이하여야 합니다."),
+	DUPLICATE_DISCOUNT_STAGE(HttpStatus.BAD_REQUEST, "GROUPBUY019", "동일한 최소 수량의 할인 단계가 중복됩니다."),
+	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
+	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
+
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
+
 
 
 	private final HttpStatus status;

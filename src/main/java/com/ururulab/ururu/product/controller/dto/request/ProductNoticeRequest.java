@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.domain.dto.request;
+package com.ururulab.ururu.product.controller.dto.request;
 
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductNotice;
@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationConstants.*;
-import static com.ururulab.ururu.product.domain.dto.validation.ProductValidationMessages.*;
+import static com.ururulab.ururu.product.controller.dto.validation.ProductValidationConstants.*;
+import static com.ururulab.ururu.product.controller.dto.validation.ProductValidationMessages.*;
 
 public record ProductNoticeRequest(
         @NotBlank(message = CAPACITY_REQUIRED)

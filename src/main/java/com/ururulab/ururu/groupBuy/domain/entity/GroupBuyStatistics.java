@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,7 +38,7 @@ public class GroupBuyStatistics extends BaseEntity {
     private FinalStatus finalStatus; // 최종 상태
 
     @Column(nullable = true)
-    private LocalDateTime confirmedAt; // 확정 시각
+    private Instant confirmedAt; // 확정 시각
 
     public static GroupBuyStatistics of(
             GroupBuy groupBuy,
@@ -45,7 +46,7 @@ public class GroupBuyStatistics extends BaseEntity {
             Integer totalQuantity,
             Integer finalDiscountRate,
             FinalStatus finalStatus,
-            LocalDateTime confirmedAt
+            Instant confirmedAt
     ) {
         GroupBuyStatistics statistics = new GroupBuyStatistics();
         statistics.groupBuy = groupBuy;

@@ -1,10 +1,12 @@
 package com.ururulab.ururu.groupBuy.domain.repository;
 
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, Long> {
@@ -23,4 +25,6 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
             "LEFT JOIN FETCH gbo.productOption po " +
             "WHERE gbo.id = :optionId")
     Optional<GroupBuyOption> findByIdWithDetails(@Param("optionId") Long optionId);
+
+    List<GroupBuyOption> findAllByGroupBuy(GroupBuy groupBuy);
 }

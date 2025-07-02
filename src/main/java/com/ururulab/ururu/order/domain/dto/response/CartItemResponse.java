@@ -18,16 +18,4 @@ public record CartItemResponse(
         Integer price,
         Instant endsAt
 ) {
-    public static CartItemResponse from(final CartItem cartItem) {
-        return new CartItemResponse(
-                cartItem.getId(),
-                cartItem.getGroupBuyOption().getId(),
-                cartItem.getQuantity(),
-                cartItem.getGroupBuyOption().getProductOption().getProduct().getName(),
-                cartItem.getGroupBuyOption().getProductOption().getName(),
-                cartItem.getGroupBuyOption().getProductOption().getImageUrl(),
-                cartItem.getGroupBuyOption().getProductOption().getPrice(),
-                cartItem.getGroupBuyOption().getGroupBuy().getEndsAt().toInstant()
-        );
-    }
 }

@@ -1,6 +1,6 @@
 package com.ururulab.ururu.product.service;
 
-import com.ururulab.ururu.product.domain.dto.response.CategoryResponse;
+import com.ururulab.ururu.product.controller.dto.response.CategoryResponse;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductCategory;
