@@ -36,6 +36,16 @@ public enum ErrorCode {
 	ORDER_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "ORDER007", "이미 진행 중인 주문이 있습니다. 잠시 후 다시 시도해주세요."),
 	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
 
+	// --- 결제 ---
+	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT001", "존재하지 않는 결제입니다."),
+	PAYMENT_NOT_PENDING(HttpStatus.CONFLICT, "PAYMENT002", "결제 대기 상태가 아닙니다."),
+	PAYMENT_APPROVAL_FAILED(HttpStatus.BAD_REQUEST, "PAYMENT003", "결제 승인에 실패했습니다."),
+	PAYMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "PAYMENT004", "이미 결제가 진행 중입니다."),
+	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT005", "존재하지 않는 주문입니다."),
+	ORDER_NOT_PENDING(HttpStatus.CONFLICT, "PAYMENT006", "주문이 결제 대기 상태가 아닙니다."),
+	INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "PAYMENT007", "보유 포인트가 부족합니다."),
+	TOSS_API_CALL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PAYMENT008", "토스 API 호출에 실패했습니다."),
+
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
