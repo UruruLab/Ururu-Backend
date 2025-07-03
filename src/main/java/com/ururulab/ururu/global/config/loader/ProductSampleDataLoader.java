@@ -44,13 +44,7 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
         // 스킨케어
         CATEGORY_MAPPING.put("스킨-더모코스메틱", 2L);
-        CATEGORY_MAPPING.put("스킨케어-에센스", 3L);
         CATEGORY_MAPPING.put("스킨-크림", 5L);
-        CATEGORY_MAPPING.put("스킨케어-로션", 7L);
-
-        // 바디케어
-        CATEGORY_MAPPING.put("바디-데오드란트", 86L);
-        CATEGORY_MAPPING.put("바디-로션", 86L);
 
         // 선케어
         CATEGORY_MAPPING.put("선케어-선크림", 44L);
