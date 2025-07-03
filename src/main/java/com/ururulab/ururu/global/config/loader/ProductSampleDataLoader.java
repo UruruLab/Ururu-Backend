@@ -15,10 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Slf4j
@@ -97,7 +96,7 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
         for (String filePath : jsonFiles) {
             try {
-                log.info("📂 Processing file: {}", filePath);
+                log.debug("📂 Processing file: {}", filePath);
 
                 InputStream inputStream = getClass().getResourceAsStream(filePath);
                 if (inputStream == null) {
@@ -112,42 +111,102 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
                 log.debug("Found {} proudcts in sample data file", productDataList.size());
 
-                int successCount = 0;
-                int errorCount = 0;
+                int fileSuccessCount = 0;
+                int fileErrorCount = 0;
+                int fileOptionCreated = 0;
 
                 for (int i = 0; i < productDataList.size(); i++) {
                     Map<String, Object> productData = productDataList.get(i);
                     try {
-                        proceessProductData(productData, seller);
-                        successCount++;
+                        int optionCreated = processProductData(productData, seller);
+                        fileOptionCreated += optionCreated;
+                        fileSuccessCount++;
+                        totalProductsProcessed++;
 
                         if ((i + 1) % 10 == 0) {
                             log.debug("Progress: {}/{} products processd", i + 1, productDataList.size());
                         }
                     } catch (Exception e) {
-                        errorCount++;
+                        fileErrorCount++;
                         log.error("Failed to process product: {} - Error: {}", productData.get("prd_name"), e.getMessage());
                     }
                 }
-                log.info("🎉 Data loading completed! Success: {}, Errors: {}, Total: {}",
-                        successCount, errorCount, productDataList.size());
+
+                totalSuccessCount += fileSuccessCount;
+                totalErrorCount += fileErrorCount;
+                totalOptionsCreated += fileOptionCreated;
+
+                log.info("Data loading completed! Success: {}, Errors: {}, Total: {}",
+                        fileSuccessCount, fileErrorCount, productDataList.size());
             } catch (Exception e) {
                 throw new RuntimeException("Sample Data Loading failed", e);
             }
         }
     }
 
-    private void proceessProductData(Map<String, Object>data, Seller seller) {
+    private int processProductData(Map<String, Object>data, Seller seller) {
         Product product = createProduct(data, seller);
         Product savedProduct = productRepository.save(product);
 
         ProductNotice productNotice = createProductNotice(data, savedProduct);
         productNoticeRepository.save(productNotice);
 
-        ProductOption productOption = createProductOption(data, savedProduct);
-        productOptionRepository.save(productOption);
+        List<ProductOptionInfo> optionInfos = parseProductOptions(data);
+        List<ProductOption> savedOptions = new ArrayList<>();
+
+        for (ProductOptionInfo optionInfo : optionInfos) {
+            ProductOption productOption = createProductOption(data, savedProduct, optionInfo);
+            savedOptions.add(productOptionRepository.save(productOption));
+        }
 
         linkProductCategory(data, savedProduct);
+        return savedOptions.size();
+    }
+
+    private List<ProductOptionInfo> parseProductOptions(Map<String, Object> data) {
+        String ingredients = (String) data.get("ingredients");
+        if (ingredients == null || ingredients.trim().isEmpty()) {
+            return Collections.singletonList(new ProductOptionInfo("기본 옵션", "성분 정보가 제공되지 않습니다."));
+        }
+
+        List<ProductOptionInfo> options = new ArrayList<>();
+
+        if (ingredients.contains("[") && ingredients.contains("]")) {
+            Pattern optionPattern = Pattern.compile("\\[([^\\]]+)\\]([^\\[]+?)(?=\\[|$)");
+            Matcher matcher = optionPattern.matcher(ingredients);
+
+            while (matcher.find()) {
+                String optionName = matcher.group(1).trim();
+                String optionIngredients = matcher.group(2).trim();
+
+                // 성분 정리
+                optionIngredients = cleanIngredients(optionIngredients);
+
+                if (!optionName.isEmpty() && !optionIngredients.isEmpty()) {
+                    options.add(new ProductOptionInfo(optionName, optionIngredients));
+                    log.debug("Parsed option: [{}] - ingredients length: {}", optionName, optionIngredients.length());
+                }
+            }
+        }
+
+        if (options.isEmpty()) {
+            String cleanedIngredients = cleanIngredients(ingredients);
+            options.add(new ProductOptionInfo("단일 옵션", cleanedIngredients));
+            log.debug("No options parsed, created single option with full ingredients");
+        }
+
+        return options;
+
+    }
+
+    private String cleanIngredients(String ingredients) {
+        if (ingredients == null) return "";
+
+        return ingredients
+                .replaceAll("\\s+", " ")
+                .replaceAll("^[,\\s]+", "")
+                .replaceAll("[,\\s]+$", "")
+                .trim();
     }
 
     private Product createProduct(Map<String, Object> data, Seller seller) {
@@ -182,18 +241,16 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         );
     }
 
-    private ProductOption createProductOption(Map<String, Object> data, Product product) {
-        String optionName = cleanProductName((String) data.get("prd_name"));
+    private ProductOption createProductOption(Map<String, Object> data, Product product, ProductOptionInfo optionInfo) {
         Integer price = parsePrice(data.get("price"));
         String imageUrl = (String) data.get("img_url");
-        String ingredients = cleanText((String) data.getOrDefault("ingredients", "성분 정보가 제공되지 않습니다."));
 
         return ProductOption.of(
                 product,
-                optionName,
+                optionInfo.getOptionName(),
                 price,
                 imageUrl,
-                ingredients
+                optionInfo.getIngredients()
         );
     }
 
@@ -253,4 +310,23 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         // 불필요한 공백 및 개행 정리
         return text.replaceAll("\\s+", " ").trim();
     }
+
+    private static class ProductOptionInfo {
+        private final String optionName;
+        private final String ingredients;
+
+        public ProductOptionInfo(String optionName, String ingredients) {
+            this.optionName = optionName;
+            this.ingredients = ingredients;
+        }
+
+        public String getOptionName() {
+            return optionName;
+        }
+
+        public String getIngredients() {
+            return ingredients;
+        }
+    }
+
 }
