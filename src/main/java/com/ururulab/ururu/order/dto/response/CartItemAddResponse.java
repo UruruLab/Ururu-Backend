@@ -1,4 +1,4 @@
-package com.ururulab.ururu.order.domain.dto.response;
+package com.ururulab.ururu.order.dto.response;
 
 /**
  * 장바구니 아이템 추가 응답 DTO

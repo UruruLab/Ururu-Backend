@@ -1,7 +1,7 @@
-package com.ururulab.ururu.order.domain.dto.request;
+package com.ururulab.ururu.order.dto.request;
 
-import com.ururulab.ururu.order.domain.dto.validation.CartValidationConstants;
-import com.ururulab.ururu.order.domain.dto.validation.CartValidationMessages;
+import com.ururulab.ururu.order.dto.validation.CartValidationConstants;
+import com.ururulab.ururu.order.dto.validation.CartValidationMessages;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

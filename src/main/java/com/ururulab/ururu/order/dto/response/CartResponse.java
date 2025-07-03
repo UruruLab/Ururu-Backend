@@ -1,4 +1,4 @@
-package com.ururulab.ururu.order.domain.dto.response;
+package com.ururulab.ururu.order.dto.response;
 
 import java.util.List;
 

@@ -55,6 +55,8 @@ dependencies {
 
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    // 웹훅 처리용 의존성 추가
+    implementation 'commons-io:commons-io:2.17.0'
 }
 
 tasks.named('test') {

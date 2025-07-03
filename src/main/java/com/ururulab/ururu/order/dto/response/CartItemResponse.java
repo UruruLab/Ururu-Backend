@@ -1,6 +1,4 @@
-package com.ururulab.ururu.order.domain.dto.response;
-
-import com.ururulab.ururu.order.domain.entity.CartItem;
+package com.ururulab.ururu.order.dto.response;
 
 import java.time.Instant;
 

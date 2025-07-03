@@ -8,7 +8,6 @@ public class PaymentPolicy {
     // 정책 상수
     public static final int MIN_AMOUNT = 0;
     public static final int MAX_AMOUNT = 100_000_000;
-    public static final int MIN_POINT = 0;
     public static final int PAYMENT_KEY_MAX_LENGTH = 200;
 
     // 에러 메시지
@@ -22,6 +21,7 @@ public class PaymentPolicy {
     public static final String AMOUNT_MAX = "결제 금액은 1억 이하만 가능합니다.";
     public static final String POINT_REQUIRED = "포인트는 필수입니다.";
     public static final String POINT_MIN = "포인트는 0 이상이어야 합니다.";
+    public static final String POINT_MAX = "포인트는 1억 이하만 가능합니다.";
     public static final String AMOUNT_MISMATCH = "총 금액은 결제금액 + 포인트와 일치해야 합니다.";
     public static final String PAYMENT_KEY_REQUIRED = "결제 키는 필수입니다.";
     public static final String PAY_METHOD_REQUIRED = "결제 수단은 필수입니다.";
