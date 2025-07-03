@@ -1,6 +1,6 @@
 package com.ururulab.ururu.product.event;
 
-import com.ururulab.ururu.product.controller.dto.request.ProductImageUploadRequest;
+import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
 
 import java.util.List;
 

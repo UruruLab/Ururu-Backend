@@ -1,10 +1,10 @@
 package com.ururulab.ururu.product.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.product.controller.dto.request.ProductRequest;
-import com.ururulab.ururu.product.controller.dto.response.ProductListResponse;
-import com.ururulab.ururu.product.controller.dto.response.ProductOptionResponse;
-import com.ururulab.ururu.product.controller.dto.response.ProductResponse;
+import com.ururulab.ururu.product.dto.request.ProductRequest;
+import com.ururulab.ururu.product.dto.response.ProductListResponse;
+import com.ururulab.ururu.product.dto.response.ProductOptionResponse;
+import com.ururulab.ururu.product.dto.response.ProductResponse;
 import com.ururulab.ururu.product.service.ProductOptionService;
 import com.ururulab.ururu.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;

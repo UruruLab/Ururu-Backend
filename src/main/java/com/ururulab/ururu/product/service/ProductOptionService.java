@@ -2,9 +2,10 @@ package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
-import com.ururulab.ururu.product.controller.dto.request.ProductImageUploadRequest;
-import com.ururulab.ururu.product.controller.dto.request.ProductOptionRequest;
-import com.ururulab.ururu.product.controller.dto.response.ProductOptionResponse;
+import com.ururulab.ururu.image.service.ImageHashService;
+import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
+import com.ururulab.ururu.product.dto.request.ProductOptionRequest;
+import com.ururulab.ururu.product.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;

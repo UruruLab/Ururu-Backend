@@ -1,8 +1,8 @@
 package com.ururulab.ururu.groupBuy.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyRequest;
-import com.ururulab.ururu.groupBuy.controller.dto.response.GroupBuyCreateResponse;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
+import com.ururulab.ururu.groupBuy.dto.response.GroupBuyCreateResponse;
 import com.ururulab.ururu.groupBuy.service.GroupBuyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,8 +11,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Tag(name = "공동구매", description = "공동구매 관리 API")
 @RestController
@@ -38,16 +42,18 @@ public class GroupBuyController {
             @ApiResponse(responseCode = "409", description = "중복된 공동구매가 존재합니다."),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponseFormat<GroupBuyCreateResponse>> createGroupBuy(
             @PathVariable Long sellerId,
             // @AuthenticationPrincipal CustomUserDetails userDetails, // JWT 인증 구현 후 주석 제거
-            @Valid @RequestBody GroupBuyRequest request
+            @Valid @RequestPart("request") GroupBuyRequest groupBuyRequest,
+            @RequestPart(value = "thumbnail", required = false) MultipartFile thumbnail,
+            @RequestPart(value = "detailImages", required = false) List<MultipartFile> detailImages
     ) {
         // JWT 인증 구현 후 sellerId 추출 로직
         // Long sellerId = userDetails.getSellerId();
 
-        GroupBuyCreateResponse response = groupBuyService.createGroupBuy(request, sellerId);
+        GroupBuyCreateResponse response = groupBuyService.createGroupBuy(groupBuyRequest, sellerId, thumbnail, detailImages);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponseFormat.success("공동구매가 성공적으로 등록되었습니다.", response));
     }

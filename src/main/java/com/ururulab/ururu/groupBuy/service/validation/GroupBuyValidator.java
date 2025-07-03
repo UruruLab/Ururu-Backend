@@ -1,8 +1,9 @@
 package com.ururulab.ururu.groupBuy.service.validation;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyOptionRequest;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyRequest;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyOptionRequest;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
+import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,8 @@ public class GroupBuyValidator {
 
         discountStageValidator.validateMinQuantityAgainstStock(request.discountStages(), totalStock);
 
-        if (groupBuyRepository.existsGroupBuyByProduct(request.productId())) {
+        //if (groupBuyRepository.existsGroupBuyByProduct(request.productId())) {
+        if (groupBuyRepository.existsByProductIdAndStatusNot(request.productId(), GroupBuyStatus.CLOSED)) {
             throw new BusinessException(OVERLAPPING_GROUP_BUY_EXISTS);
         }
 
@@ -68,4 +70,5 @@ public class GroupBuyValidator {
         }
 
     }
+
 }

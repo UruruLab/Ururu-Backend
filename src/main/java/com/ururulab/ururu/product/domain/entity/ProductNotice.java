@@ -6,7 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import static com.ururulab.ururu.product.controller.dto.validation.ProductValidationConstants.*;
+import static com.ururulab.ururu.product.dto.validation.ProductValidationConstants.*;
 
 @Entity
 @Getter
