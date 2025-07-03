@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,49 +76,67 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
     @Transactional
     public void loadSampleData() {
-        try {
-            String filePath = "/data/makeupLip.json";
-            InputStream inputStream = getClass().getResourceAsStream(filePath);
-            if (inputStream == null) {
-                log.error("Sample data file not found: {}", filePath);
-                return;
-            }
+        List<String> jsonFiles = Arrays.asList(
+                "/data/makeupLip.json",
+                "/data/makeupBase.json",
+                "/data/makeupEye.json",
+                "/data/skincareCream.json",
+                "/data/skincareSkin.json"
+        );
 
-            List<Map<String, Object>> productDataList = objectMapper.readValue(
-                    inputStream, new TypeReference<List<Map<String, Object>>>() {}
-            );
+        Seller seller = getDefaultSeller();
+        if (seller == null) {
+            log.error("셀러 기본값이 없습니다. 셀러 데이터를 먼저 생성해주세요.");
+            return;
+        }
 
-            log.debug("Found {} proudcts in sample data file", productDataList.size());
+        int totalSuccessCount = 0;
+        int totalErrorCount = 0;
+        int totalOptionsCreated = 0;
+        int totalProductsProcessed = 0;
 
-            Seller seller = getDefaultSeller();
-            if (seller == null) {
-                log.error("셀러 기본값이 없습니다. 셀러 데이터를 먼저 생성해주세요.");
-                return;
-            }
+        for (String filePath : jsonFiles) {
+            try {
+                log.info("📂 Processing file: {}", filePath);
 
-            int successCount = 0;
-            int errorCount = 0;
-
-            for (int i = 0; i < productDataList.size(); i++) {
-                Map<String, Object> productData = productDataList.get(i);
-                try {
-                    proceessProductData(productData, seller);
-                    successCount++;
-
-                    if ((i+1) % 10 == 0) {
-                        log.debug("Progress: {}/{} products processd", i+1, productDataList.size());
-                    }
-                }catch(Exception e) {
-                    errorCount++;
-                    log.error("Failed to process product: {} - Error: {}", productData.get("prd_name"), e.getMessage());
+                InputStream inputStream = getClass().getResourceAsStream(filePath);
+                if (inputStream == null) {
+                    log.error("Sample data file not found: {}", filePath);
+                    continue;
                 }
+
+                List<Map<String, Object>> productDataList = objectMapper.readValue(
+                        inputStream, new TypeReference<List<Map<String, Object>>>() {
+                        }
+                );
+
+                log.debug("Found {} proudcts in sample data file", productDataList.size());
+
+                int successCount = 0;
+                int errorCount = 0;
+
+                for (int i = 0; i < productDataList.size(); i++) {
+                    Map<String, Object> productData = productDataList.get(i);
+                    try {
+                        proceessProductData(productData, seller);
+                        successCount++;
+
+                        if ((i + 1) % 10 == 0) {
+                            log.debug("Progress: {}/{} products processd", i + 1, productDataList.size());
+                        }
+                    } catch (Exception e) {
+                        errorCount++;
+                        log.error("Failed to process product: {} - Error: {}", productData.get("prd_name"), e.getMessage());
+                    }
+                }
+                log.info("🎉 Data loading completed! Success: {}, Errors: {}, Total: {}",
+                        successCount, errorCount, productDataList.size());
+            } catch (Exception e) {
+                throw new RuntimeException("Sample Data Loading failed", e);
             }
-            log.info("🎉 Data loading completed! Success: {}, Errors: {}, Total: {}",
-                    successCount, errorCount, productDataList.size());
-        }catch (Exception e) {
-            throw new RuntimeException("Sample Data Loading failed", e);
         }
     }
+
     private void proceessProductData(Map<String, Object>data, Seller seller) {
         Product product = createProduct(data, seller);
         Product savedProduct = productRepository.save(product);
