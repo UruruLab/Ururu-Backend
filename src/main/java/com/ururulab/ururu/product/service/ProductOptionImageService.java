@@ -5,7 +5,7 @@ import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.image.validation.ImageValidator;
-import com.ururulab.ururu.product.controller.dto.request.ProductImageUploadRequest;
+import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import com.ururulab.ururu.product.event.ProductImageDeleteEvent;

@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.controller.dto.request;
+package com.ururulab.ururu.product.dto.request;
 
 public record ProductImageUploadRequest(
         Long productOptionId,

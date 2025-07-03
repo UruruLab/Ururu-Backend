@@ -3,10 +3,8 @@ package com.ururulab.ururu.product.service.validation;
 import com.ururulab.ururu.global.domain.entity.TagCategory;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
-import com.ururulab.ururu.image.domain.ImageFormat;
-import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.validation.ImageValidator;
-import com.ururulab.ururu.product.controller.dto.request.ProductOptionRequest;
+import com.ururulab.ururu.product.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.service.CategoryCacheService;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor

@@ -1,4 +1,4 @@
-package com.ururulab.ururu.product.controller.dto.response;
+package com.ururulab.ururu.product.dto.response;
 
 import com.ururulab.ururu.product.domain.entity.ProductTag;
 
