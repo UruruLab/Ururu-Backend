@@ -5,7 +5,9 @@ import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyStatusUpdateRequest;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyCreateResponse;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyDetailResponse;
+import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.service.GroupBuyDetailService;
+import com.ururulab.ururu.groupBuy.service.GroupBuyListService;
 import com.ururulab.ururu.groupBuy.service.GroupBuyService;
 import com.ururulab.ururu.groupBuy.service.UpdateGroupBuyStatusService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +34,7 @@ public class GroupBuyController {
     private final GroupBuyService groupBuyService;
     private final GroupBuyDetailService groupBuyDetailService;
     private final UpdateGroupBuyStatusService updateGroupBuyStatusService;
+    private final GroupBuyListService groupBuyListService;
 
     @Operation(summary = "공동구매 등록", description = "판매자가 새로운 공동구매를 등록합니다.")
     @ApiResponses({
@@ -85,8 +88,6 @@ public class GroupBuyController {
         return ResponseEntity.ok(ApiResponseFormat.success("공동구매 상세 정보를 성공적으로 조회했습니다.", response));
     }
 
-    // SellerGroupBuyController에 추가할 메서드
-
     @Operation(
             summary = "공동구매 상태 업데이트 (DRAFT → OPEN)",
             description = "판매자가 DRAFT 상태의 공동구매를 OPEN 상태로 변경합니다. 시작일, 종료일, 재고 등의 조건을 검증합니다."
@@ -127,4 +128,14 @@ public class GroupBuyController {
         ));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponseFormat<List<GroupBuyListResponse>>> getGroupBuyList(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "20") int limit) {
+
+        List<GroupBuyListResponse> responses =
+                groupBuyListService.getGroupBuyListOrderByOrderCount(categoryId, limit);
+
+        return ResponseEntity.ok(ApiResponseFormat.success("공동 구매 목록 조회에 성공하였습니다.", responses));
+    }
 }

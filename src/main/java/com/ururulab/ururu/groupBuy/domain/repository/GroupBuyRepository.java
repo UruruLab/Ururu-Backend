@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -51,14 +52,17 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long> {
     /**
      * 공동구매 상세 조회 (DRAFT 제외) - 구매자용
      */
-    @Query("""
-    SELECT g FROM GroupBuy g
-    LEFT JOIN FETCH g.product p
-    LEFT JOIN FETCH p.productCategories pc
-    LEFT JOIN FETCH pc.category c
-    LEFT JOIN FETCH g.seller s
-    WHERE g.id = :groupBuyId AND g.status IN ('OPEN', 'CLOSED')
-    """)
+    @Query("SELECT gb FROM GroupBuy gb WHERE gb.id = :groupBuyId AND gb.status IN ('OPEN', 'CLOSED')")
     Optional<GroupBuy> findPublicGroupBuyWithDetails(@Param("groupBuyId") Long groupBuyId);
 
+    // 카테고리별 공동구매 조회
+    @Query("SELECT gb FROM GroupBuy gb " +
+            "JOIN gb.product p " +
+            "JOIN p.productCategories pc " +
+            "WHERE pc.category.id = :categoryId AND gb.status IN ('OPEN', 'CLOSED')")
+    List<GroupBuy> findByProductCategoryId(@Param("categoryId") Long categoryId);
+
+    // 전체 공동구매 조회 (DRAFT 제외)
+    @Query("SELECT gb FROM GroupBuy gb WHERE gb.status IN ('OPEN', 'CLOSED')")
+    List<GroupBuy> findAllPublic();
 }
