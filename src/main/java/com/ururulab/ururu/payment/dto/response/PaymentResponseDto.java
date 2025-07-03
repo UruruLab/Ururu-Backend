@@ -1,4 +1,4 @@
-package com.ururulab.ururu.payment.controller.dto.response;
+package com.ururulab.ururu.payment.dto.response;
 
 public record PaymentResponseDto(
         Long paymentId,

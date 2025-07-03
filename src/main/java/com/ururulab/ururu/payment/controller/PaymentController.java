@@ -1,11 +1,11 @@
 package com.ururulab.ururu.payment.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.payment.controller.dto.request.PaymentConfirmRequestDto;
-import com.ururulab.ururu.payment.controller.dto.request.PaymentRequestDto;
-import com.ururulab.ururu.payment.controller.dto.response.PaymentConfirmResponseDto;
-import com.ururulab.ururu.payment.controller.dto.response.PaymentFailResponseDto;
-import com.ururulab.ururu.payment.controller.dto.response.PaymentResponseDto;
+import com.ururulab.ururu.payment.dto.request.PaymentConfirmRequestDto;
+import com.ururulab.ururu.payment.dto.request.PaymentRequestDto;
+import com.ururulab.ururu.payment.dto.response.PaymentConfirmResponseDto;
+import com.ururulab.ururu.payment.dto.response.PaymentFailResponseDto;
+import com.ururulab.ururu.payment.dto.response.PaymentResponseDto;
 import com.ururulab.ururu.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
