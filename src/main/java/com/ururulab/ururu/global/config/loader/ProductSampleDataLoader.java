@@ -2,19 +2,24 @@ package com.ururulab.ururu.global.config.loader;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.product.domain.entity.*;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.*;
+import com.ururulab.ururu.product.service.ImageHashService;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,6 +38,9 @@ public class ProductSampleDataLoader implements CommandLineRunner{
     private final CategoryRepository categoryRepository;
     private final SellerRepository sellerRepository;
     private final ObjectMapper objectMapper;
+    private final Environment environment;
+    private final ImageService imageService;
+    private final ImageHashService imageHashService;
 
     private static final Map<String, Long> CATEGORY_MAPPING = new HashMap<>();
 
@@ -73,7 +81,8 @@ public class ProductSampleDataLoader implements CommandLineRunner{
                 "/data/makeupBase.json",
                 "/data/makeupEye.json",
                 "/data/skincareCream.json",
-                "/data/skincareSkin.json"
+                "/data/skincareSkin.json",
+                "/data/suncareSuncream.json"
         );
 
         Seller seller = getDefaultSeller();
@@ -137,6 +146,73 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         }
     }
 
+    @Async("imageUploadExecutor")
+    public void downloadAndUploadImages(Long productId, List<ProductOption> options, String imageUrl) {
+        try {
+            byte[] imageData = downloadImageFromUrl(imageUrl);
+            if (imageData == null || imageData.length == 0) {
+                log.debug("Failed to download image from URL: {}", imageUrl);
+                return;
+            }
+
+            String imageHash = imageHashService.calculateImageHashFromBytes(imageData);
+            String fileName = extractFileNameFromUrl(imageUrl);
+            String uploadImageUrl = imageService.uploadImage(
+                    "products/",
+                    fileName,
+                    imageData
+            );
+
+            for (ProductOption option: options) {
+                option.updateImageInfo(uploadImageUrl, imageHash);
+                productOptionRepository.save(option);
+            }
+        } catch (Exception e){
+            log.error("Failed to download and upload image for product: {}, URL: {}, Error: {}",
+                    productId, imageUrl, e.getMessage(), e);
+        }
+    }
+
+    private byte[] downloadImageFromUrl(String imageUrl) {
+        try {
+            URL url = new URL(imageUrl);
+
+            try(InputStream inputStream = url.openStream()) {
+                byte[] imageData = inputStream.readAllBytes();
+                log.debug("Downloaded {} bytes from URL: {}", imageData.length, imageUrl);
+                return imageData;
+            }
+        } catch (Exception e) {
+            log.error("Failed to download image from URL: {}, Error: {}", imageUrl, e.getMessage());
+            return null;
+        }
+    }
+
+    private String extractFileNameFromUrl(String imageUrl) {
+        try {
+            String fileName = imageUrl.substring(imageUrl.lastIndexOf('/') + 1);
+
+            if (fileName.contains("?")) {
+                fileName = fileName.substring(0, fileName.indexOf("?"));
+            }
+
+            if (!fileName.contains(".")) {
+                fileName += ".jpg";
+            }
+
+            String nameWithoutExt = fileName.substring(0, fileName.lastIndexOf('.'));
+            String extension = fileName.substring(fileName.lastIndexOf('.'));
+            fileName = nameWithoutExt + "_" + System.currentTimeMillis() + extension;
+
+            log.debug("Extracted filename: {} from URL: {}", fileName, imageUrl);
+            return fileName;
+
+        } catch (Exception e) {
+            log.warn("Failed to extract filename from URL: {}, using default", imageUrl);
+            return "product_image_" + System.currentTimeMillis() + ".jpg";
+        }
+    }
+
     private int processProductData(Map<String, Object>data, Seller seller) {
         Product product = createProduct(data, seller);
         Product savedProduct = productRepository.save(product);
@@ -153,6 +229,11 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         }
 
         linkProductCategory(data, savedProduct);
+
+        String imageUrl = (String) data.get("img_url");
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            downloadAndUploadImages(savedProduct.getId(), savedOptions, imageUrl);
+        }
         return savedOptions.size();
     }
 
