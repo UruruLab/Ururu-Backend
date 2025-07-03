@@ -6,6 +6,7 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
+import com.ururulab.ururu.groupBuy.util.TimeCalculator;
 import com.ururulab.ururu.product.domain.entity.Product;
 
 import java.time.Duration;
@@ -41,10 +42,8 @@ public record GroupBuyDetailResponse(
                                               List<GroupBuyOption> options,
                                               List<GroupBuyImage> images) {
 
-        Instant now = Instant.now();
-        TimeInfo timeInfo = calculateTimeInfo(groupBuy.getEndsAt(), now);
-
         List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
+        Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
 
         return new GroupBuyDetailResponse(
                 groupBuy.getId(),
@@ -56,7 +55,7 @@ public record GroupBuyDetailResponse(
                 groupBuy.getLimitQuantityPerMember(),
                 groupBuy.getStatus(),
                 groupBuy.getEndsAt(),
-                timeInfo.remainingSeconds(),
+                remainingSeconds,
 
                 ProductInfo.from(groupBuy.getProduct()),
 
@@ -73,18 +72,6 @@ public record GroupBuyDetailResponse(
                 groupBuy.getUpdatedAt()
         );
     }
-
-    // 시간 계산
-    private static TimeInfo calculateTimeInfo(Instant endsAt, Instant now) {
-        if (endsAt.isBefore(now)) {
-            return new TimeInfo(0L);  // 종료 시 0초
-        }
-
-        Duration remaining = Duration.between(now, endsAt);
-        return new TimeInfo(remaining.getSeconds());  // 남은 초만
-    }
-
-    private record TimeInfo(Long remainingSeconds) {}
 
     public record ProductInfo(
             Long id,
