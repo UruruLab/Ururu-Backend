@@ -1,7 +1,7 @@
-package com.ururulab.ururu.order.controller.dto.request;
+package com.ururulab.ururu.order.dto.request;
 
-import com.ururulab.ururu.order.controller.dto.validation.OrderValidationConstants;
-import com.ururulab.ururu.order.controller.dto.validation.OrderValidationMessages;
+import com.ururulab.ururu.order.dto.validation.OrderValidationConstants;
+import com.ururulab.ururu.order.dto.validation.OrderValidationMessages;
 import jakarta.validation.constraints.*;
 
 /**

@@ -1,4 +1,4 @@
-package com.ururulab.ururu.order.controller.dto.response;
+package com.ururulab.ururu.order.dto.response;
 
 /**
  * 장바구니 아이템 수량 변경 응답 DTO

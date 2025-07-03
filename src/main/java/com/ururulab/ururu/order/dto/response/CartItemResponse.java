@@ -1,4 +1,4 @@
-package com.ururulab.ururu.order.controller.dto.response;
+package com.ururulab.ururu.order.dto.response;
 
 import java.time.Instant;
 
