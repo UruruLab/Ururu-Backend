@@ -58,6 +58,13 @@ public class GroupBuy extends BaseEntity {
     @Column(nullable = false)
     private GroupBuyStatus status; // 공동구매 상태
 
+    /**
+     * 화면 표시용 최종 할인 적용 가격 (성능 최적화를 위한 비정규화)
+     * = 첫 번째 옵션의 priceOverride * (100 - 최고 할인율) / 100
+     */
+    @Column(name = "display_final_price")
+    private Integer displayFinalPrice;
+
     @Column(nullable = false)
     private Instant startAt; // 공동구매 시작일
 
@@ -87,6 +94,7 @@ public class GroupBuy extends BaseEntity {
         groupBuy.thumbnailUrl = thumbnailUrl;
         groupBuy.discountStages = discountStages;
         groupBuy.limitQuantityPerMember = limitQuantityPerMember;
+        groupBuy.displayFinalPrice = null; // 등록 이후에 계산
         groupBuy.status = status;
         groupBuy.startAt = startAt;
         groupBuy.endsAt = endsAt;
@@ -100,5 +108,12 @@ public class GroupBuy extends BaseEntity {
 
     public void updateStatus(GroupBuyStatus status) {
         this.status = status;
+    }
+
+    /**
+     * 화면 표시용 최종 가격 업데이트
+     */
+    public void updateDisplayFinalPrice(Integer finalPrice) {
+        this.displayFinalPrice = finalPrice;
     }
 }

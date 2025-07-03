@@ -33,6 +33,7 @@ public class GroupBuyService {
     private final GroupBuyOptionService groupBuyOptionService;
     private final GroupBuyThumbnailService groupBuyThumbnailService;
     private final GroupBuyDetailImageService groupBuyDetailImageService;
+    private final GroupBuyPriceService groupBuyPriceService;
 
 
     @Transactional
@@ -55,6 +56,7 @@ public class GroupBuyService {
 
         GroupBuy savedGroupBuy = groupBuyRepository.save(request.toEntity(product, seller, null));
         groupBuyOptionService.createGroupBuyOptions(savedGroupBuy, request.options());
+        groupBuyPriceService.updateDisplayFinalPrice(savedGroupBuy.getId());
 
         // 2. 이미지 업로드 (비동기)
         if (thumbnail != null) {
