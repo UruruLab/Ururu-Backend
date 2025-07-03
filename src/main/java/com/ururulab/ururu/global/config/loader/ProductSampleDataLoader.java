@@ -43,9 +43,9 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         CATEGORY_MAPPING.put("메이크업-아이", 74L);
 
         // 스킨케어
-        CATEGORY_MAPPING.put("스킨케어-스킨", 2L);
+        CATEGORY_MAPPING.put("스킨-더모코스메틱", 2L);
         CATEGORY_MAPPING.put("스킨케어-에센스", 3L);
-        CATEGORY_MAPPING.put("스킨케어-크림", 4L);
+        CATEGORY_MAPPING.put("스킨-크림", 5L);
         CATEGORY_MAPPING.put("스킨케어-로션", 7L);
 
         // 바디케어
@@ -61,7 +61,6 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
     @Override
     public void run(String... args) throws Exception {
-        // 개발 환경에서만 실행 (운영 환경 방지)
         if (productRepository.count() > 0) {
             log.info("Product sample data already exists (count: {}). Skipping data loading.",
                     productRepository.count());
