@@ -31,8 +31,8 @@ public class ProductNotice extends BaseEntity {
     @Column(nullable = false, length = EXPIRY_MAX)
     private String expiry; // 사용기한
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String usage; //사용 방법
+    @Column(name = "usage_guide", nullable = false, columnDefinition = "TEXT")
+    private String usage; //사용 방법 // 컬럼명: usage_guide (MySQL 예약어 회피용)
 
     @Column(nullable = false, length = MANUFACTURER_MAX)
     private String manufacturer; // 화장품 제조업자

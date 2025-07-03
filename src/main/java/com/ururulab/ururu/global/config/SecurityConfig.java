@@ -2,6 +2,7 @@ package com.ururulab.ururu.global.config;
 
 import com.ururulab.ururu.auth.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -35,15 +36,15 @@ public class SecurityConfig {
     @Bean
     @Profile("dev")
     public SecurityFilterChain devFilterChain(
-            final HttpSecurity http, 
-            final CorsConfigurationSource corsConfigurationSource
+            final HttpSecurity http,
+            @Qualifier("corsConfigurationSource") final CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/health", "/actuator/health").permitAll()
+                        .requestMatchers("/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
@@ -69,14 +70,14 @@ public class SecurityConfig {
     @Profile("prod")
     public SecurityFilterChain prodFilterChain(
             final HttpSecurity http,
-            final CorsConfigurationSource prodCorsConfigurationSource  // 운영용 CORS 주입
+            @Qualifier("corsConfigurationSource") final CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
         return http
-                .cors(cors -> cors.configurationSource(prodCorsConfigurationSource))  // 운영용 CORS 적용
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))  // 운영용 CORS 적용
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/health", "/actuator/health").permitAll()
+                        .requestMatchers("/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
