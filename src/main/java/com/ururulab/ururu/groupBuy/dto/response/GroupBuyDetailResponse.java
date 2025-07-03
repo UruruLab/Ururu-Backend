@@ -1,0 +1,154 @@
+package com.ururulab.ururu.groupBuy.dto.response;
+
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyImage;
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
+import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
+import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
+import com.ururulab.ururu.product.domain.entity.Product;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
+public record GroupBuyDetailResponse(
+        Long id,
+        String title,
+        String description,
+        String thumbnailUrl,
+        List<DiscountStageDto> discountStages,
+        Integer limitQuantityPerMember,
+        GroupBuyStatus status,
+        Instant endsAt,
+        Long remainingTimeSeconds, // 남은 시간 (초 단위)
+
+        // 상품 정보
+        ProductInfo product,
+
+        // 옵션 정보
+        List<GroupBuyOptionInfo> options,
+
+        // 이미지 정보
+        List<GroupBuyImageInfo> images,
+
+        // 메타 정보
+        Instant createdAt,
+        Instant updatedAt
+) {
+    public static GroupBuyDetailResponse from(GroupBuy groupBuy,
+                                              List<GroupBuyOption> options,
+                                              List<GroupBuyImage> images) {
+
+        Instant now = Instant.now();
+        TimeInfo timeInfo = calculateTimeInfo(groupBuy.getEndsAt(), now);
+
+        List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
+
+        return new GroupBuyDetailResponse(
+                groupBuy.getId(),
+                groupBuy.getTitle(),
+                groupBuy.getDescription(),
+                groupBuy.getThumbnailUrl(),
+                parsedStages,
+                groupBuy.getLimitQuantityPerMember(),
+                groupBuy.getStatus(),
+                groupBuy.getEndsAt(),
+                timeInfo.remainingSeconds(),
+
+                ProductInfo.from(groupBuy.getProduct()),
+
+                options.stream()
+                        .map(GroupBuyOptionInfo::from)
+                        .toList(),
+
+                images.stream()
+                        .filter(image -> !image.getIsDeleted())
+                        .map(GroupBuyImageInfo::from)
+                        .toList(),
+
+                groupBuy.getCreatedAt(),
+                groupBuy.getUpdatedAt()
+        );
+    }
+
+    // 시간 계산
+    private static TimeInfo calculateTimeInfo(Instant endsAt, Instant now) {
+        if (endsAt.isBefore(now)) {
+            return new TimeInfo(0L);  // 종료 시 0초
+        }
+
+        Duration remaining = Duration.between(now, endsAt);
+        return new TimeInfo(remaining.getSeconds());  // 남은 초만
+    }
+
+    private record TimeInfo(Long remainingSeconds) {}
+
+    public record ProductInfo(
+            Long id,
+            String name,
+            String description,
+            List<String> categoryIds,
+            List<String> tags  // 상품 태그 추가
+    ) {
+        public static ProductInfo from(Product product) {
+            List<String> categoryIds = product.getProductCategories().stream()
+                    .map(pc -> pc.getCategory().getName())
+                    .distinct()
+                    .sorted()
+                    .toList();
+
+            List<String> tags = product.getProductTags().stream()
+                    .map(pt -> pt.getTagCategory().getName()) // ProductTag -> Tag -> name
+                    .distinct()
+                    .sorted()
+                    .toList();
+
+            return new ProductInfo(
+                    product.getId(),
+                    product.getName(),
+                    product.getDescription(),
+                    categoryIds,
+                    tags
+            );
+        }
+    }
+
+    public record GroupBuyOptionInfo(
+            Long id,
+            Long productOptionId,
+            String optionName,
+            String optionImageUrl,
+            String fullIngredients,  // 전성분 추가
+            Integer stock,
+            Integer priceOverride,
+            Integer salePrice
+    ) {
+        public static GroupBuyOptionInfo from(GroupBuyOption option) {
+            return new GroupBuyOptionInfo(
+                    option.getId(),
+                    option.getProductOption().getId(),
+                    option.getProductOption().getName(),
+                    option.getProductOption().getImageUrl(),
+                    option.getProductOption().getFullIngredients(), // 전성분
+                    option.getStock(),
+                    option.getPriceOverride(),
+                    option.getSalePrice()
+            );
+        }
+    }
+
+    public record GroupBuyImageInfo(
+            Long id,
+            String imageUrl,
+            Integer displayOrder
+    ) {
+        public static GroupBuyImageInfo from(GroupBuyImage image) {
+            return new GroupBuyImageInfo(
+                    image.getId(),
+                    image.getImageUrl(),
+                    image.getDisplayOrder()
+            );
+        }
+    }
+}

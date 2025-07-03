@@ -97,4 +97,8 @@ public class GroupBuy extends BaseEntity {
         this.thumbnailUrl = thumbnailUrl;
         this.thumbnailHash = thumbnailHash;
     }
+
+    public void updateStatus(GroupBuyStatus status) {
+        this.status = status;
+    }
 }

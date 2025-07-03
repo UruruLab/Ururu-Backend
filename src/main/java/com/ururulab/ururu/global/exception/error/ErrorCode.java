@@ -83,6 +83,13 @@ public enum ErrorCode {
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
 	GROUPBUY_NOT_FOUND(HttpStatus.BAD_REQUEST, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
 	GROUPBUY_DETAIL_IMAGES_TOO_MANY(HttpStatus.BAD_REQUEST, "GROUPBUY023", "상세 페이지 이미지 개수를 초과하였습니다."),
+	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
+	INVALID_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "GROUPBUY025", "허용되지 않은 상태 변경입니다."),
+	INVALID_STATUS_TRANSITION(HttpStatus.BAD_REQUEST, "GROUPBUY026", "현재 상태에서 요청한 상태로 변경할 수 없습니다."),
+	GROUPBUY_NOT_STARTED_YET(HttpStatus.BAD_REQUEST, "GROUPBUY027", "공동구매 시작일이 아직 되지 않았습니다."),
+	GROUPBUY_ALREADY_ENDED(HttpStatus.BAD_REQUEST, "GROUPBUY028", "공동구매 종료일이 지났습니다."),
+	GROUPBUY_NO_OPTIONS(HttpStatus.BAD_REQUEST, "GROUPBUY029", "공동구매에 옵션이 없습니다."),
+	GROUPBUY_NO_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY030", "공동구매에 재고가 없습니다."),
 
 
 	// --- 판매자 ---
