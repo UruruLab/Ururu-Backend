@@ -5,6 +5,7 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.event.GroupBuyThumbnailUploadEvent;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
+import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
 import com.ururulab.ururu.image.validation.ImageValidator;
@@ -90,8 +91,15 @@ public class GroupBuyThumbnailService {
 
             log.info("Thumbnail uploaded for groupBuy ID: {} -> {}", groupBuyId, imageUrl);
 
-        } catch (Exception e) {
-            log.error("Failed to upload thumbnail for groupBuy ID: {}", groupBuyId, e);
+        } catch (BusinessException e) {
+            throw e;
+
+        } catch (InvalidImageFormatException | IllegalArgumentException e) {
+            log.error("Invalid image format or illegal argument for groupBuy ID: {}", groupBuyId, e);
+            throw new BusinessException(IMAGE_UPLOAD_FAILED);
+
+        } catch (RuntimeException e) {
+            log.error("Unexpected error during thumbnail upload for groupBuy ID: {}", groupBuyId, e);
             throw new BusinessException(IMAGE_PROCESSING_FAILED);
         }
     }
