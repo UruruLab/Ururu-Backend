@@ -1,8 +1,8 @@
 package com.ururulab.ururu.groupBuy.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.controller.dto.common.DiscountStageDto;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyOptionRequest;
+import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyOptionRequest;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;

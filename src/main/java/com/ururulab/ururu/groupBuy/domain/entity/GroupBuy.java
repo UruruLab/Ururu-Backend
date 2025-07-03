@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
+import static com.ururulab.ururu.groupBuy.dto.validation.GroupBuyValidationConstants.*;
 
 @Entity
 @Getter

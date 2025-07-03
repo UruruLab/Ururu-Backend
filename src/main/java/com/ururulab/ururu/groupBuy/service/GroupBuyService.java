@@ -1,13 +1,11 @@
 package com.ururulab.ururu.groupBuy.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyRequest;
-import com.ururulab.ururu.groupBuy.controller.dto.response.GroupBuyCreateResponse;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
+import com.ururulab.ururu.groupBuy.dto.response.GroupBuyCreateResponse;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
-import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
-import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.ProductRepository;

@@ -1,13 +1,12 @@
 package com.ururulab.ururu.groupBuy.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyImageUploadRequest;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyImageUploadRequest;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyImage;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyDetailImageRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.event.GroupBuyDetailImageUploadEvent;
-import com.ururulab.ururu.groupBuy.event.GroupBuyThumbnailUploadEvent;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
 import com.ururulab.ururu.image.service.ImageHashService;
 import com.ururulab.ururu.image.service.ImageService;
@@ -25,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
-import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.MAX_GROUP_BUY_DETAIL_IMAGES;
+import static com.ururulab.ururu.groupBuy.dto.validation.GroupBuyValidationConstants.MAX_GROUP_BUY_DETAIL_IMAGES;
 import static com.ururulab.ururu.image.domain.ImageCategory.*;
 
 @Service

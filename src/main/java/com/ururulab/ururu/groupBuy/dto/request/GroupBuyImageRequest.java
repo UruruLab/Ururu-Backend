@@ -1,4 +1,4 @@
-package com.ururulab.ururu.groupBuy.controller.dto.request;
+package com.ururulab.ururu.groupBuy.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 

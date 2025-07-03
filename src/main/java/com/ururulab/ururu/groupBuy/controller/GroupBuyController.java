@@ -1,8 +1,8 @@
 package com.ururulab.ururu.groupBuy.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyRequest;
-import com.ururulab.ururu.groupBuy.controller.dto.response.GroupBuyCreateResponse;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
+import com.ururulab.ururu.groupBuy.dto.response.GroupBuyCreateResponse;
 import com.ururulab.ururu.groupBuy.service.GroupBuyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

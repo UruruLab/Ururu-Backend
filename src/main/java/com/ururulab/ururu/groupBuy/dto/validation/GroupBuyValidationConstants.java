@@ -1,4 +1,4 @@
-package com.ururulab.ururu.groupBuy.controller.dto.validation;
+package com.ururulab.ururu.groupBuy.dto.validation;
 
 import lombok.experimental.UtilityClass;
 

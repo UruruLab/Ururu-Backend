@@ -1,6 +1,6 @@
 package com.ururulab.ururu.groupBuy.event;
 
-import com.ururulab.ururu.groupBuy.controller.dto.request.GroupBuyImageUploadRequest;
+import com.ururulab.ururu.groupBuy.dto.request.GroupBuyImageUploadRequest;
 
 import java.util.List;
 
