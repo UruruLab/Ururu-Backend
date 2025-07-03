@@ -279,9 +279,6 @@
          * @param payment 결제 정보
          */
         private void completePaymentProcessing(Payment payment) {
-            // 포인트 차감
-            processPointUsage(payment.getMember(), payment.getPoint());
-
             // 재고 차감 + 예약 해제
             payment.getOrder().getOrderItems().forEach(item -> {
                 Long optionId = item.getGroupBuyOption().getId();
@@ -296,6 +293,9 @@
                 // 예약 해제
                 stockReservationService.releaseReservation(optionId, payment.getMember().getId());
             });
+
+            // 포인트 차감
+            processPointUsage(payment.getMember(), payment.getPoint());
 
             removeOrderedItemsFromCart(payment);
 

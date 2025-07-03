@@ -60,6 +60,9 @@ public class Payment extends BaseEntity {
     @Column
     private Instant cancelledAt;
 
+    @Version
+    private Long version;
+
     public static Payment create(
             Member member,
             Order order,
