@@ -1,10 +1,10 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.member.domain.dto.request.BeautyProfileRequest;
-import com.ururulab.ururu.member.domain.dto.response.BeautyProfileCreateResponse;
-import com.ururulab.ururu.member.domain.dto.response.BeautyProfileGetResponse;
-import com.ururulab.ururu.member.domain.dto.response.BeautyProfileUpdateResponse;
+import com.ururulab.ururu.member.controller.dto.request.BeautyProfileRequest;
+import com.ururulab.ururu.member.controller.dto.response.BeautyProfileCreateResponse;
+import com.ururulab.ururu.member.controller.dto.response.BeautyProfileGetResponse;
+import com.ururulab.ururu.member.controller.dto.response.BeautyProfileUpdateResponse;
 import com.ururulab.ururu.member.service.BeautyProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -31,9 +32,9 @@ public class BeautyProfileController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음"),
             @ApiResponse(responseCode = "409", description = "이미 뷰티 프로필이 존재함")
     })
-    @PostMapping("/{memberId}/beauty-profile")
+    @PostMapping("/beauty-profile")
     public ResponseEntity<ApiResponseFormat<BeautyProfileCreateResponse>> createBeautyProfile(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @Valid @RequestBody final BeautyProfileRequest request
     ){
       final BeautyProfileCreateResponse response = beautyProfileService.createBeautyProfile(memberId, request);
@@ -46,9 +47,9 @@ public class BeautyProfileController {
             @ApiResponse(responseCode = "200", description = "뷰티 프로필 조회 성공"),
             @ApiResponse(responseCode = "404", description = "회원 또는 뷰티 프로필을 찾을 수 없음")
     })
-    @GetMapping("/{memberId}/beauty-profile")
+    @GetMapping("/beauty-profile")
     public ResponseEntity<ApiResponseFormat<BeautyProfileGetResponse>> getBeautyProfile(
-            @PathVariable final Long memberId
+            @AuthenticationPrincipal final Long memberId
     ) {
         final BeautyProfileGetResponse response = beautyProfileService.getBeautyProfile(memberId);
         return ResponseEntity.ok(
@@ -62,9 +63,9 @@ public class BeautyProfileController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
             @ApiResponse(responseCode = "404", description = "회원 또는 뷰티 프로필을 찾을 수 없음")
     })
-    @PatchMapping("/{memberId}/beauty-profile")
+    @PatchMapping("/beauty-profile")
     public ResponseEntity<ApiResponseFormat<BeautyProfileUpdateResponse>> updateBeautyProfile(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @Valid @RequestBody final BeautyProfileRequest request
     ) {
         final BeautyProfileUpdateResponse response = beautyProfileService.updateBeautyProfile(memberId, request);
@@ -78,9 +79,9 @@ public class BeautyProfileController {
             @ApiResponse(responseCode = "200", description = "뷰티 프로필 삭제 성공"),
             @ApiResponse(responseCode = "404", description = "회원 또는 뷰티 프로필을 찾을 수 없음")
     })
-    @DeleteMapping("/{memberId}/beauty-profile")
+    @DeleteMapping("/beauty-profile")
     public ResponseEntity<ApiResponseFormat<Void>> deleteBeautyProfile(
-            @PathVariable final Long memberId
+            @AuthenticationPrincipal final Long memberId
     ) {
         beautyProfileService.deleteBeautyProfile(memberId);
         return ResponseEntity.ok(

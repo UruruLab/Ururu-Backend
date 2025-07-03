@@ -1,16 +1,5 @@
 package com.ururulab.ururu.review.service;
 
-import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.util.List;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.ururulab.ururu.global.domain.entity.Tag;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
@@ -20,16 +9,24 @@ import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
-import com.ururulab.ururu.product.domain.entity.Product;
-import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.review.domain.dto.request.ImageUploadRequest;
 import com.ururulab.ururu.review.domain.dto.request.ReviewRequest;
 import com.ururulab.ururu.review.domain.entity.Review;
 import com.ururulab.ururu.review.domain.entity.enumerated.AgeGroup;
 import com.ururulab.ururu.review.domain.repository.ReviewRepository;
 import com.ururulab.ururu.review.event.ReviewCreatedEvent;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
+
+import static com.ururulab.ururu.global.exception.error.ErrorCode.IMAGE_CONVERSION_FAILED;
+import static com.ururulab.ururu.global.exception.error.ErrorCode.TAG_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +54,7 @@ public class ReviewService {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			LocalDate.now(),
+			Instant.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL

@@ -1,9 +1,9 @@
 package com.ururulab.ururu.member.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
-import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationConstants;
-import com.ururulab.ururu.member.domain.dto.validation.BeautyProfileValidationMessages;
+import com.ururulab.ururu.member.domain.policy.BeautyProfilePolicy;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -30,6 +30,10 @@ public class BeautyProfile extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SkinType skinType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SkinTone skinTone;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "JSON", nullable = false)
@@ -58,6 +62,7 @@ public class BeautyProfile extends BaseEntity {
     public static BeautyProfile of(
             Member member,
             SkinType skinType,
+            SkinTone skinTone,
             List<String> concerns,
             Boolean hasAllergy,
             List<String> allergies,
@@ -66,12 +71,12 @@ public class BeautyProfile extends BaseEntity {
             Integer maxPrice,
             String additionalInfo
     ) {
-        validateCreationParameters(skinType, concerns, hasAllergy, allergies,
-                interestCategories, minPrice, maxPrice, additionalInfo);
+        validateCreationParameters(hasAllergy, allergies, minPrice, maxPrice);
 
         BeautyProfile beautyProfile = new BeautyProfile();
         beautyProfile.member = member;
         beautyProfile.skinType = skinType;
+        beautyProfile.skinTone = skinTone;
         beautyProfile.concerns = concerns != null ? new ArrayList<>(concerns) : new ArrayList<>();
         beautyProfile.hasAllergy = hasAllergy;
         beautyProfile.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
@@ -84,6 +89,7 @@ public class BeautyProfile extends BaseEntity {
 
     public void updateProfile(
             SkinType skinType,
+            SkinTone skinTone,
             List<String> concerns,
             Boolean hasAllergy,
             List<String> allergies,
@@ -92,10 +98,10 @@ public class BeautyProfile extends BaseEntity {
             Integer maxPrice,
             String additionalInfo
     ) {
-        validateCreationParameters(skinType, concerns, hasAllergy, allergies,
-                interestCategories, minPrice, maxPrice, additionalInfo);
+        validateCreationParameters(hasAllergy, allergies, minPrice, maxPrice);
 
         this.skinType = skinType;
+        this.skinTone = skinTone;
         this.concerns = concerns != null ? new ArrayList<>(concerns) : new ArrayList<>();
         this.hasAllergy = hasAllergy;
         this.allergies = hasAllergy && allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
@@ -106,90 +112,36 @@ public class BeautyProfile extends BaseEntity {
     }
 
     private static void validateCreationParameters(
-            SkinType skinType,
-            List<String> concerns,
             Boolean hasAllergy,
             List<String> allergies,
-            List<String> interestCategories,
             Integer minPrice,
-            Integer maxPrice,
-            String additionalInfo
+            Integer maxPrice
     ) {
-        validateSkinType(skinType);
-        validateConcerns(concerns);
+
         validateAllergyConsistency(hasAllergy, allergies);
-        validateInterestCategories(interestCategories);
         validatePriceRange(minPrice, maxPrice);
-        validateAdditionalInfo(additionalInfo);
     }
 
-    private static void validateSkinType(SkinType skinType) {
-        if (skinType == null) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.SKIN_TYPE_REQUIRED);
-        }
-    }
-
-    private static void validateConcerns(List<String> concerns) {
-        if (concerns != null) {
-            if (concerns.size() > BeautyProfileValidationConstants.MAX_CONCERNS_COUNT) {
-                throw new IllegalArgumentException(BeautyProfileValidationMessages.SKIN_CONCERNS_SIZE);
-            }
-            for (String concern : concerns) {
-                if (concern != null && concern.length() > BeautyProfileValidationConstants.CONCERN_ITEM_MAX_LENGTH) {
-                    throw new IllegalArgumentException(BeautyProfileValidationMessages.SKIN_CONCERN_ITEM_SIZE);
-                }
-            }
-        }
-    }
 
     private static void validateAllergyConsistency(Boolean hasAllergy, List<String> allergies) {
         if (hasAllergy && (allergies == null || allergies.isEmpty())) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.ALLERGY_INCONSISTENCY);
+            throw new IllegalArgumentException(BeautyProfilePolicy.ALLERGY_INCONSISTENCY);
         }
         if (!hasAllergy && allergies != null && !allergies.isEmpty()) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.NO_ALLERGY_INCONSISTENCY);
+            throw new IllegalArgumentException(BeautyProfilePolicy.NO_ALLERGY_INCONSISTENCY);
         }
         if (allergies != null) {
             for (String allergy : allergies) {
-                if (allergy != null && allergy.length() > BeautyProfileValidationConstants.ALLERGY_ITEM_MAX_LENGTH) {
-                    throw new IllegalArgumentException(BeautyProfileValidationMessages.ALLERGY_ITEM_SIZE);
+                if (allergy != null && allergy.length() > BeautyProfilePolicy.ALLERGY_ITEM_MAX_LENGTH) {
+                    throw new IllegalArgumentException(BeautyProfilePolicy.ALLERGY_ITEM_SIZE);
                 }
-            }
-        }
-    }
-
-    private static void validateInterestCategories(List<String> interestCategories) {
-        if (interestCategories == null || interestCategories.isEmpty()) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.INTEREST_CATEGORIES_REQUIRED);
-        }
-        for (String category : interestCategories) {
-            if (category != null && category.length() > BeautyProfileValidationConstants.INTEREST_CATEGORY_ITEM_MAX_LENGTH) {
-                throw new IllegalArgumentException(BeautyProfileValidationMessages.INTEREST_CATEGORY_ITEM_SIZE);
             }
         }
     }
 
     private static void validatePriceRange(Integer minPrice, Integer maxPrice) {
-        if (minPrice == null) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.MIN_PRICE_INVALID);
-        }
-        if (maxPrice == null) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.MAX_PRICE_INVALID);
-        }
-        if (minPrice < BeautyProfileValidationConstants.MIN_PRICE_VALUE) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.MIN_PRICE_INVALID);
-        }
-        if (maxPrice < BeautyProfileValidationConstants.MAX_PRICE_VALUE) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.MAX_PRICE_INVALID);
-        }
         if (minPrice > maxPrice) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.PRICE_RANGE_INVALID);
-        }
-    }
-
-    private static void validateAdditionalInfo(String additionalInfo) {
-        if (additionalInfo != null && additionalInfo.length() > BeautyProfileValidationConstants.ADDITIONAL_INFO_MAX_LENGTH) {
-            throw new IllegalArgumentException(BeautyProfileValidationMessages.ADDITIONAL_INFO_SIZE);
+            throw new IllegalArgumentException(BeautyProfilePolicy.PRICE_MIN_MAX_COMPARE);
         }
     }
 }

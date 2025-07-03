@@ -1,8 +1,8 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.member.domain.dto.request.MemberAgreementRequest;
-import com.ururulab.ururu.member.domain.dto.response.MemberAgreementCreateResponse;
+import com.ururulab.ururu.member.controller.dto.request.MemberAgreementRequest;
+import com.ururulab.ururu.member.controller.dto.response.MemberAgreementCreateResponse;
 import com.ururulab.ururu.member.service.MemberAgreementService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,9 +29,9 @@ public class MemberAgreementController {
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
-    @PostMapping("/{memberId}/agreements")
+    @PostMapping("/agreements")
     public ResponseEntity<ApiResponseFormat<MemberAgreementCreateResponse>> createMemberAgreement(
-            @PathVariable final Long memberId,
+            @AuthenticationPrincipal final Long memberId,
             @Valid @RequestBody final MemberAgreementRequest request
     ){
         final MemberAgreementCreateResponse response = memberAgreementService.createAgreements(memberId, request);
