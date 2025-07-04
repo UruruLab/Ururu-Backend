@@ -196,6 +196,22 @@ public class MemberController {
         );
     }
 
+    @Operation(summary = "마이페이지 조회", description = "회원의 마이페이지 정보를 조회합니다. 닉네임, 프로필 이미지, 포인트, 뷰티 프로필 정보를 포함합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "마이페이지 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
+    })
+    @GetMapping("/me/mypage")
+    public ResponseEntity<ApiResponseFormat<MemberMyPageResponse>> getMyPage(
+            @AuthenticationPrincipal final Long memberId
+    ) {
+        final MemberMyPageResponse response = memberService.getMyPage(memberId);
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("마이페이지 정보를 조회했습니다.", response)
+        );
+    }
+
 
 
     private Long getCurrentMemberId() {

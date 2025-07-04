@@ -2,6 +2,7 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
+import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
@@ -132,6 +133,18 @@ public class MemberService {
 
         final WithdrawalPreviewResponse.LossInfo lossInfo = calculateLossInfo(memberId, member);
         return WithdrawalPreviewResponse.of(memberInfo, lossInfo);
+    }
+
+    @Transactional(readOnly = true)
+    public MemberMyPageResponse getMyPage(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+        final Optional<BeautyProfile> beautyProfileOpt = beautyProfileRepository.findByMemberId(memberId);
+
+        if (beautyProfileOpt.isPresent()) {
+            return MemberMyPageResponse.of(member, beautyProfileOpt.get());
+        } else {
+            return MemberMyPageResponse.from(member);
+        }
     }
 
 
