@@ -9,6 +9,7 @@ import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.dto.request.MemberRequest;
 import com.ururulab.ururu.member.dto.response.MemberGetResponse;
 import com.ururulab.ururu.member.dto.response.MemberUpdateResponse;
+import com.ururulab.ururu.member.dto.response.NicknameAvailabilityResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,17 +45,17 @@ public class MemberServiceTest {
     @Test
     @DisplayName("소셜 로그인 시 기존 회원 존재하면 해당 회원 반환")
     void findOrCreateMember_existingMember_returnsExistingMember() {
-        //given
+        // Given
         SocialMemberInfo socialMemberInfo = MemberTestFixture.createSocialMemberInfo();
         Member existingMember = MemberTestFixture.createMember(1L, "기존사용자", "existing@example.com");
 
         given(memberRepository.findBySocialProviderAndSocialId(any(), any()))
                 .willReturn(Optional.of(existingMember));
 
-        // when
+        // When
         Member result = memberService.findOrCreateMember(socialMemberInfo);
 
-        // then
+        // Then
         assertThat(result).isNotNull();
         assertThat(result.getNickname()).isEqualTo("기존사용자");
         assertThat(result.getEmail()).isEqualTo("existing@example.com");
@@ -67,7 +68,7 @@ public class MemberServiceTest {
     @Test
     @DisplayName("소셜 로그인 시 기존 회원이 없으면 새 회원을 생성")
     void findOrCreateMember_newMember() {
-        //given
+        // Given
         SocialMemberInfo socialMemberInfo = MemberTestFixture.createSocialMemberInfo();
         Member newMember = MemberTestFixture.createMember(1L, "testuser", "test@example.com");
 
@@ -75,10 +76,10 @@ public class MemberServiceTest {
                 .willReturn(Optional.empty());
         given(memberRepository.save(any(Member.class))).willReturn(newMember);
 
-        // when
+        // When
         Member result = memberService.findOrCreateMember(socialMemberInfo);
 
-        // then
+        // Then
         assertThat(result).isNotNull();
         assertThat(result.getNickname()).isEqualTo("testuser");
         assertThat(result.getEmail()).isEqualTo("test@example.com");
@@ -155,6 +156,40 @@ public class MemberServiceTest {
         assertThatThrownBy(() -> memberService.updateMyProfile(memberId, updateRequest))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("이미 사용 중인 닉네임입니다.");
+    }
+
+    // TODO: uploadProfileImage(), deleteProfileImage Test code 추후 작성
+    // (아직 실제 로직 구현하지 않음)
+
+    @Test
+    @DisplayName("닉네임 존재 여부 확인 - 존재하는 경우")
+    void checkNicknameExists_existingNickname() {
+        // Given
+        String existingNickname = "exist";
+        given(memberRepository.existsByNickname(existingNickname)).willReturn(true);
+
+        // When
+        boolean result = memberService.checkNicknameExists(existingNickname);
+
+        // Then
+        assertThat(result).isTrue();
+        then(memberRepository).should().existsByNickname(existingNickname);
+    }
+
+    @Test
+    @DisplayName("닉네임 사용 가능 여부 확인 - 사용가능한 경우")
+    void getNicknameAvailability_availableNickname() {
+        // Given
+        String availableNickname = "available";
+        given(memberRepository.isNicknameAvailable(availableNickname)).willReturn(true);
+
+        // When
+        NicknameAvailabilityResponse result = memberService.getNicknameAvailability(availableNickname);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.isAvailable()).isTrue();
+        then(memberRepository).should().isNicknameAvailable(availableNickname);
     }
 
 
