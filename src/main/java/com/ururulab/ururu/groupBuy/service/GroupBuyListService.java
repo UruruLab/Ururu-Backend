@@ -6,7 +6,6 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
-import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NOT_FOUND;
 
@@ -26,14 +24,8 @@ public class GroupBuyListService {
 
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
-    private final OrderItemRepository orderItemRepository;
+    private final GroupBuyRankingService rankingService;
 
-    /**
-     * 전체 공동구매 목록 조회 (주문량 기준 정렬)
-     */
-    public List<GroupBuyListResponse> getGroupBuyListOrderByOrderCount(int limit) {
-        return getGroupBuyListOrderByOrderCount(null, limit);
-    }
 
     /**
      * 카테고리별 공동구매 목록 조회 (주문량 기준 정렬)
@@ -75,11 +67,6 @@ public class GroupBuyListService {
     }
 
     private Map<Long, Integer> getOrderCountMap(List<Long> groupBuyIds) {
-        List<Object[]> results = orderItemRepository.getTotalQuantitiesByGroupBuyIds(groupBuyIds);
-        return results.stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],           // groupBuyId
-                        row -> ((Long) row[1]).intValue() // 총 주문량
-                ));
+        return rankingService.getOrderCounts(groupBuyIds);
     }
 }
