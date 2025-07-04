@@ -25,38 +25,6 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @Operation(summary = "회원 정보 조회", description = "특정 회원의 프로필 정보를 조회합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "회원 정보 조회 성공"),
-            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
-    })
-    @GetMapping("")
-    public ResponseEntity<ApiResponseFormat<MemberGetResponse>> getMemberProfile(
-        @AuthenticationPrincipal final Long memberId
-    ) {
-        final MemberGetResponse response = memberService.getMemberProfile(memberId);
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("회원 정보를 조회했습니다.", response)
-        );
-    }
-
-    @Operation(summary = "회원 정보 수정", description = "특정 회원의 프로필 정보를 수정합니다.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "회원 정보 수정 성공"),
-            @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
-    })
-    @PatchMapping("")
-    public ResponseEntity<ApiResponseFormat<MemberUpdateResponse>> updateMember(
-            @AuthenticationPrincipal final Long memberId,
-            @Valid @RequestBody final MemberRequest request
-    ) {
-        final MemberUpdateResponse response = memberService.updateMemberProfile(memberId, request);
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("회원 정보를 수정했습니다.", response)
-        );
-    }
-
     @Operation(summary = "내 정보 조회", description = "현재 로그인한 회원의 프로필 정보를 조회합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "내 정보 조회 성공"),

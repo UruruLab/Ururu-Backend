@@ -38,21 +38,9 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public MemberGetResponse getMemberProfile(final Long memberId) {
-        final Member member = findActiveMemberById(memberId);
-        return MemberGetResponse.from(member);
-    }
-
-    @Transactional(readOnly = true)
     public MemberGetResponse getMyProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
         return MemberGetResponse.from(member);
-    }
-
-    @Transactional
-    public MemberUpdateResponse updateMemberProfile(final Long memberId, final MemberRequest request) {
-        final Member updatedMember = updateProfile(memberId, request);
-        return MemberUpdateResponse.from(updatedMember);
     }
 
     @Transactional
@@ -176,20 +164,6 @@ public class MemberService {
         return savedMember;
     }
 
-    private void validateMemberCreation(final MemberRequest request) {
-        if (memberRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-
-        if (memberRepository.existsByNickname(request.nickname())) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
-        }
-
-        if (memberRepository.existsBySocialProviderAndSocialId(
-                request.socialProvider(), request.socialId())) {
-            throw new IllegalArgumentException("이미 등록된 소셜 계정입니다.");
-        }
-    }
 
     private void updateMemberFields(final Member member, final MemberRequest request) {
         if (request.nickname() != null) { member.updateNickname(request.nickname());}

@@ -6,7 +6,6 @@ import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
-import com.ururulab.ururu.member.dto.response.MemberGetResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,8 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,23 +81,5 @@ public class MemberServiceTest {
         then(memberRepository).should().save(any(Member.class));
     }
 
-    @Test
-    @DisplayName("회원 프로필 조회 성공")
-    void getMemberProfile_validId_success() {
-        // given
-        Long memberId = 1L;
-        Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
-
-        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-
-        // when
-        MemberGetResponse result = memberService.getMemberProfile(memberId);
-
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(memberId);
-        assertThat(result.nickname()).isEqualTo("testuser");
-        assertThat(result.email()).isEqualTo("test@example.com");
-    }
 
 }
