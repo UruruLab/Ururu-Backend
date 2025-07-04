@@ -198,7 +198,6 @@ public class MemberController {
 
 
 
-
     private Long getCurrentMemberId() {
         // TODO: 추후 아래와 같은 방식으로 구현 예정
         // @AuthenticationPrincipal MemberPrincipal principal 파라미터로 받아서 사용
