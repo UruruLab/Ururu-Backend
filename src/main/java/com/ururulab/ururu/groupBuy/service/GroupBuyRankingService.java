@@ -25,22 +25,6 @@ public class GroupBuyRankingService {
     private static final String RANKING_KEY = "groupbuy:ranking";
     private static final String ORDER_COUNT_PREFIX = "groupbuy:order_count:";
 
-
-    /**
-     * 특정 공동구매의 주문량 조회 (Redis에서)
-     */
-    public Integer getOrderCount(Long groupBuyId) {
-        try {
-            String countKey = ORDER_COUNT_PREFIX + groupBuyId;
-            Object count = stringRedisTemplate.opsForValue().get(countKey);
-            return count != null ? Integer.valueOf(count.toString()) : 0;
-        } catch (Exception e) {
-            log.error("Failed to get order count from Redis for groupBuy: {}", groupBuyId, e);
-            // Redis 실패 시 DB에서 조회
-            return orderItemRepository.getTotalQuantityByGroupBuyId(groupBuyId);
-        }
-    }
-
     /**
      * 여러 공동구매의 주문량 조회 (Redis 배치 조회)
      */

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
@@ -24,6 +25,7 @@ public class GroupBuyDetailService {
 
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
+    private final GroupBuyStockService stockService;
 
     /**
      * 공동구매 상세 정보 조회
@@ -45,10 +47,12 @@ public class GroupBuyDetailService {
         // 3. 이미지 정보는 이미 페치된 데이터에서 추출
         List<GroupBuyImage> images = extractAndSortImages(groupBuy);
 
+        Map<Long, Integer> currentStocks = stockService.getCurrentStocksByGroupBuy(groupBuyId, options);
+
         log.info("Successfully fetched group buy detail - ID: {}, options: {}, images: {}",
                 groupBuyId, options.size(), images.size());
 
-        return GroupBuyDetailResponse.from(groupBuy, options, images);
+        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks);
     }
 
     /**
@@ -99,7 +103,9 @@ public class GroupBuyDetailService {
         // 3번 쿼리: 옵션
         List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
 
-        return GroupBuyDetailResponse.from(groupBuy, options, images);
+        Map<Long, Integer> currentStocks = stockService.getCurrentStocksByGroupBuy(groupBuyId, options);
+
+        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks);
     }
 
     /**

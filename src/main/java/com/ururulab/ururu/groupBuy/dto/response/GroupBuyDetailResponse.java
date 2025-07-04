@@ -9,9 +9,9 @@ import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import com.ururulab.ururu.groupBuy.util.TimeCalculator;
 import com.ururulab.ururu.product.domain.entity.Product;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 public record GroupBuyDetailResponse(
         Long id,
@@ -40,7 +40,8 @@ public record GroupBuyDetailResponse(
 ) {
     public static GroupBuyDetailResponse from(GroupBuy groupBuy,
                                               List<GroupBuyOption> options,
-                                              List<GroupBuyImage> images) {
+                                              List<GroupBuyImage> images,
+                                              Map<Long, Integer> currentStocks) {
 
         List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
         Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
@@ -60,7 +61,7 @@ public record GroupBuyDetailResponse(
                 ProductInfo.from(groupBuy.getProduct()),
 
                 options.stream()
-                        .map(GroupBuyOptionInfo::from)
+                        .map(option -> GroupBuyOptionInfo.from(option, currentStocks))
                         .toList(),
 
                 images.stream()
@@ -109,11 +110,14 @@ public record GroupBuyDetailResponse(
             String optionName,
             String optionImageUrl,
             String fullIngredients,  // 전성분 추가
-            Integer stock,
+            Integer stock, // 기존 재고
+            Integer currentStock, // 현재 남은 재고
+            Boolean isOutOfStock,    // 품절 여부
             Integer priceOverride,
             Integer salePrice
     ) {
-        public static GroupBuyOptionInfo from(GroupBuyOption option) {
+        public static GroupBuyOptionInfo from(GroupBuyOption option, Map<Long, Integer> currentStocks) {
+            Integer currentStock = currentStocks.getOrDefault(option.getId(), option.getStock());
             return new GroupBuyOptionInfo(
                     option.getId(),
                     option.getProductOption().getId(),
@@ -121,6 +125,8 @@ public record GroupBuyDetailResponse(
                     option.getProductOption().getImageUrl(),
                     option.getProductOption().getFullIngredients(), // 전성분
                     option.getStock(),
+                    currentStock,
+                    currentStock <= 0,
                     option.getPriceOverride(),
                     option.getSalePrice()
             );
