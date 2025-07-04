@@ -10,6 +10,7 @@ import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.dto.response.*;
+import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class MemberService {
     private final BeautyProfileRepository beautyProfileRepository;
     private final ShippingAddressRepository shippingAddressRepository;
     private final MemberAgreementRepository memberAgreementRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
@@ -196,13 +198,12 @@ public class MemberService {
     private void validateMemberDeletion(final Long memberId) {
         // TODO: 실제 Repository 구현 후 주석 해제
 
-        // 1. 활성 주문 확인
-        // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-        // if (activeOrders > 0) {
-        //     throw new IllegalStateException(
-        //         String.format("진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다.", activeOrders)
-        //     );
-        // }
+         int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+         if (activeOrders > 0) {
+             throw new IllegalStateException(
+                 String.format("진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다.", activeOrders)
+             );
+         }
 
         // 2. 진행 중인 결제 확인
         // boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
