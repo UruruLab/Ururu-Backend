@@ -18,7 +18,8 @@ public record GroupBuyListResponse(
         Integer maxDiscountRate, // 리워드 최고 할인률
         Instant endsAt,
         Long remainingTimeSeconds, // 남은 시간 (초 단위)
-        Integer orderCount // 주문량 (정렬 기준)
+        Integer orderCount, // 주문량 (정렬 기준)
+        Instant createdAt
 ) {
     public static GroupBuyListResponse from(GroupBuy groupBuy,
                                             List<GroupBuyOption> options,
@@ -36,7 +37,8 @@ public record GroupBuyListResponse(
                 stages.get(stages.size() - 1).discountRate(),
                 groupBuy.getEndsAt(),
                 remainingSeconds,
-                orderCount
+                orderCount,
+                groupBuy.getCreatedAt()
         );
     }
 }
