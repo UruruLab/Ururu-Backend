@@ -7,6 +7,7 @@ import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.dto.request.MemberRequest;
+import com.ururulab.ururu.member.dto.response.EmailAvailabilityResponse;
 import com.ururulab.ururu.member.dto.response.MemberGetResponse;
 import com.ururulab.ururu.member.dto.response.MemberUpdateResponse;
 import com.ururulab.ururu.member.dto.response.NicknameAvailabilityResponse;
@@ -192,5 +193,34 @@ public class MemberServiceTest {
         then(memberRepository).should().isNicknameAvailable(availableNickname);
     }
 
+    @Test
+    @DisplayName("이메일 존재 여부 확인 - 존재하는 경우")
+    void checkEmailExists_existingEmail() {
+        // Given
+        String existingEmail = "existing@exmaple.com";
+        given(memberRepository.existsByEmail(existingEmail)).willReturn(true);
 
+        // When
+        boolean result = memberService.checkEmailExists(existingEmail);
+
+        // Then
+        assertThat(result).isTrue();
+        then(memberRepository).should().existsByEmail(existingEmail);
+    }
+
+    @Test
+    @DisplayName("이메일 사용 가능 여부 확인 - 사용가능한 경우")
+    void getEmailAvailable_AvailableEmail() {
+        // Given
+        String availableEmail = "available@example.com";
+        given(memberRepository.isEmailAvailable(availableEmail)).willReturn(true);
+
+        // When
+        EmailAvailabilityResponse result = memberService.getEmailAvailability(availableEmail);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.isAvailable()).isTrue();
+        then(memberRepository).should().isEmailAvailable(availableEmail);
+    }
 }
