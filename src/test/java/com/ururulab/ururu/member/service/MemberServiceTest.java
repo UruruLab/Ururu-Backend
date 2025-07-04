@@ -223,4 +223,27 @@ public class MemberServiceTest {
         assertThat(result.isAvailable()).isTrue();
         then(memberRepository).should().isEmailAvailable(availableEmail);
     }
+
+    @Test
+    @DisplayName("회원 삭제 성공")
+    void deleteMember_validMemberId_success() {
+        // Given
+        Long memberId = 1L;
+        Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        //given(beautyProfileRepository.existsByMemberId(memberId)).willReturn(false);
+        //given(shippingAddressRepository.countByMemberId(memberId)).willReturn(0);
+        //given(memberAgreementRepository.countByMemberId(memberId)).willReturn(0);
+        given(memberRepository.save(any(Member.class))).willReturn(member);
+
+        // When
+        memberService.deleteMember(memberId);
+
+        // Then
+        then(memberRepository).should().save(any(Member.class));
+        then(shippingAddressRepository).should().deleteByMemberId(memberId);
+        then(beautyProfileRepository).should().deleteByMemberId(memberId);
+        then(memberAgreementRepository).should().deleteByMemberId(memberId);
+    }
 }
