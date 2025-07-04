@@ -2,16 +2,20 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
-import com.ururulab.ururu.member.dto.request.MemberRequest;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
+import com.ururulab.ururu.member.dto.request.MemberRequest;
 import com.ururulab.ururu.member.dto.response.*;
+import com.ururulab.ururu.order.domain.entity.Cart;
+import com.ururulab.ururu.order.domain.repository.CartItemRepository;
+import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
+import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,6 +37,9 @@ public class MemberService {
     private final MemberAgreementRepository memberAgreementRepository;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final PointTransactionRepository pointTransactionRepository;
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
@@ -222,7 +230,6 @@ public class MemberService {
     }
 
     private void cleanupMemberRelatedData(final Long memberId) {
-        // TODO: 실제 Repository들이 구현되면 아래 로직 구현
 
         try {
             cleanupCart(memberId);
@@ -240,12 +247,12 @@ public class MemberService {
     }
 
     private void cleanupCart(final Long memberId) {
-        // TODO: 구현
-        // Cart cart = cartRepository.findByMemberId(memberId);
-        // if (cart != null) {
-        //     cartItemRepository.deleteByCartId(cart.getId());
-        //     cartRepository.delete(cart);
-        // }
+        Optional<Cart> cartOpt = cartRepository.findByMemberId(memberId);
+        if (cartOpt.isPresent()) {
+            Cart cart = cartOpt.get();
+            cart.clearItems();
+            cartRepository.delete(cart);
+        }
         log.debug("Cart cleanup completed for member ID: {}", memberId);
     }
 
@@ -260,21 +267,16 @@ public class MemberService {
     private WithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
         // TODO: 실제 Repository들이 구현되면 아래 주석을 해제하고 실제 데이터 조회
 
-        // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-        int activeOrders = 0; // 임시
 
         // int reviewCount = reviewRepository.countByMemberIdAndIsDeleteFalse(memberId);
         int reviewCount = 0; // 임시
 
+        int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
         boolean beautyProfileExists = beautyProfileRepository.existsByMemberId(memberId);
         int shippingAddressesCount = shippingAddressRepository.countByMemberId(memberId);
         int memberAgreementsCount = memberAgreementRepository.countByMemberId(memberId);
-
-        // int cartItemsCount = cartItemRepository.countByCart_MemberId(memberId);
-        int cartItemsCount = 0; // 임시
-
-        // int pointTransactionsCount = pointTransactionRepository.countByMemberId(memberId);
-        int pointTransactionsCount = 0; // 임시
+        int cartItemsCount = cartItemRepository.countByCartMemberId(memberId);
+        int pointTransactionsCount = pointTransactionRepository.countByMemberId(memberId);
 
         return WithdrawalPreviewResponse.LossInfo.of(
                 member.getPoint(),
