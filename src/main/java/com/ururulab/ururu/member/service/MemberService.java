@@ -37,28 +37,6 @@ public class MemberService {
         ).orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
-    @Transactional
-    public Member createMember(final MemberRequest request) {
-        validateMemberCreation(request);
-
-        final Member member = Member.of(
-                request.nickname(),
-                request.email(),
-                request.socialProvider(),
-                request.socialId(),
-                parseGender(request.gender()),
-                request.birth(),
-                request.phone(),
-                request.profileImage(),
-                Role.NORMAL
-        );
-
-        final Member savedMember = memberRepository.save(member);
-        log.debug("New member created with ID: {}", savedMember.getId());
-
-        return savedMember;
-    }
-
     @Transactional(readOnly = true)
     public MemberGetResponse getMemberProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);

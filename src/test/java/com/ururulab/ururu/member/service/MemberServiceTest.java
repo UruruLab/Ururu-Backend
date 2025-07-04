@@ -81,4 +81,6 @@ public class MemberServiceTest {
         then(memberRepository).should().save(any(Member.class));
     }
 
+
+
 }
