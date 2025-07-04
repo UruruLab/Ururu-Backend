@@ -11,6 +11,7 @@ import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.dto.response.*;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
+import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class MemberService {
     private final ShippingAddressRepository shippingAddressRepository;
     private final MemberAgreementRepository memberAgreementRepository;
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
@@ -205,11 +207,10 @@ public class MemberService {
              );
          }
 
-        // 2. 진행 중인 결제 확인
-        // boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
-        // if (hasPendingPayments) {
-        //     throw new IllegalStateException("진행 중인 결제가 있어 탈퇴할 수 없습니다.");
-        // }
+         boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
+         if (hasPendingPayments) {
+             throw new IllegalStateException("진행 중인 결제가 있어 탈퇴할 수 없습니다.");
+         }
 
         // 3. 환불 진행 중인 건 확인
         // boolean hasProcessingRefunds = refundRepository.existsProcessingRefundsByMemberId(memberId);
