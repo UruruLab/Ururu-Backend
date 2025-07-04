@@ -32,8 +32,8 @@ public class MemberController {
     })
     @GetMapping("/me")
     public ResponseEntity<ApiResponseFormat<MemberGetResponse>> getMyProfile(
+            @AuthenticationPrincipal final Long memberId
     ) {
-        final Long memberId = getCurrentMemberId();
         final MemberGetResponse response = memberService.getMyProfile(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("내 정보를 조회했습니다", response)
@@ -48,9 +48,9 @@ public class MemberController {
     })
     @PatchMapping("/me")
     public ResponseEntity<ApiResponseFormat<MemberUpdateResponse>> updateMyProfile(
+            @AuthenticationPrincipal final Long memberId,
             @Valid @RequestBody final MemberRequest request
     ) {
-        final Long memberId = getCurrentMemberId(); // 임시
         final MemberUpdateResponse response = memberService.updateMyProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("내 정보를 수정했습니다.", response)
@@ -172,9 +172,9 @@ public class MemberController {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @DeleteMapping("/me")
-    public ResponseEntity<ApiResponseFormat<Void>> deleteMyAccount() {
-        final Long memberId = getCurrentMemberId();
-
+    public ResponseEntity<ApiResponseFormat<Void>> deleteMyAccount(
+            @AuthenticationPrincipal final Long memberId
+    ) {
         memberService.deleteMember(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("탈퇴가 완료되었습니다.")
@@ -188,8 +188,9 @@ public class MemberController {
             @ApiResponse(responseCode = "404", description = "회원을 찾을 수 없음")
     })
     @GetMapping("/me/withdrawal/preview")
-    public ResponseEntity<ApiResponseFormat<WithdrawalPreviewResponse>> getWithdrawalPreview() {
-        final Long memberId = getCurrentMemberId();
+    public ResponseEntity<ApiResponseFormat<WithdrawalPreviewResponse>> getWithdrawalPreview(
+            @AuthenticationPrincipal final Long memberId
+    ) {
         final WithdrawalPreviewResponse response = memberService.getWithdrawalPreview(memberId);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("탈퇴 시 손실 정보를 조회했습니다.", response)
@@ -211,14 +212,4 @@ public class MemberController {
                 ApiResponseFormat.success("마이페이지 정보를 조회했습니다.", response)
         );
     }
-
-
-
-    private Long getCurrentMemberId() {
-        // TODO: 추후 아래와 같은 방식으로 구현 예정
-        // @AuthenticationPrincipal MemberPrincipal principal 파라미터로 받아서 사용
-        // return principal.getMemberId();
-        return 1L;
-    }
-
 }
