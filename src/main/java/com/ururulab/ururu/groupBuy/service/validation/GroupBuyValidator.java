@@ -31,6 +31,7 @@ public class GroupBuyValidator {
     public void validateCritical(GroupBuyRequest request) {
         validateSchedule(request.startAt(), request.endsAt());
         discountStageValidator.validateDiscountStages(request.discountStages());
+        discountStageValidator.validateDiscountStageOrder(request.discountStages());
 
         int totalStock = request.options().stream()
                 .mapToInt(GroupBuyOptionRequest::stock)
@@ -46,7 +47,9 @@ public class GroupBuyValidator {
     }
 
     /**
-     * 공동구매 스케줄 검증 (핵심 비즈니스 규칙)
+     * 공동구매 시작일과 종료일 검증
+     * @param startAt
+     * @param endsAt
      */
     private void validateSchedule(Instant startAt, Instant endsAt) {
         Instant now = Instant.now();
@@ -96,7 +99,8 @@ public class GroupBuyValidator {
     }
 
     /**
-     * 상태 업데이트 요청 검증
+     * 상태 업데이트 요청 시 검증
+     * @param request
      */
     public void validateStatusUpdateRequest(GroupBuyStatusUpdateRequest request) {
         if (!request.isValidStatusChange()) {
@@ -105,7 +109,9 @@ public class GroupBuyValidator {
     }
 
     /**
-     * 상태 변경 가능 여부 검증
+     * 상태 변경 가능 여부 검즘 (STATUS가 DRAFT일 때만 OPEN으로 변경 가능)
+     * @param currentStatus
+     * @param newStatus
      */
     public void validateStatusChange(GroupBuyStatus currentStatus, GroupBuyStatus newStatus) {
         // DRAFT → OPEN만 허용
@@ -116,7 +122,8 @@ public class GroupBuyValidator {
     }
 
     /**
-     * 공동구매 오픈 조건 검증
+     * 공동구매 OPEN으로 변경 시 검증 (시작일보다 이전 시간에 오픈할 수 없음)
+     * @param groupBuy
      */
     public void validateGroupBuyOpenConditions(GroupBuy groupBuy) {
         //Instant now = Instant.now();

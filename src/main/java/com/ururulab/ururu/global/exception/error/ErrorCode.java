@@ -90,6 +90,8 @@ public enum ErrorCode {
 	GROUPBUY_ALREADY_ENDED(HttpStatus.BAD_REQUEST, "GROUPBUY028", "공동구매 종료일이 지났습니다."),
 	GROUPBUY_NO_OPTIONS(HttpStatus.BAD_REQUEST, "GROUPBUY029", "공동구매에 옵션이 없습니다."),
 	GROUPBUY_NO_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY030", "공동구매에 재고가 없습니다."),
+	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
+	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
 
 
 	// --- 판매자 ---
