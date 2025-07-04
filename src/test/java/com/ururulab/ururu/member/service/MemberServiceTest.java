@@ -7,10 +7,12 @@ import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.dto.request.MemberRequest;
-import com.ururulab.ururu.member.dto.response.EmailAvailabilityResponse;
-import com.ururulab.ururu.member.dto.response.MemberGetResponse;
-import com.ururulab.ururu.member.dto.response.MemberUpdateResponse;
-import com.ururulab.ururu.member.dto.response.NicknameAvailabilityResponse;
+import com.ururulab.ururu.member.dto.response.*;
+import com.ururulab.ururu.order.domain.repository.CartItemRepository;
+import com.ururulab.ururu.order.domain.repository.CartRepository;
+import com.ururulab.ururu.order.domain.repository.OrderRepository;
+import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
+import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,21 @@ public class MemberServiceTest {
 
     @Mock
     private MemberAgreementRepository memberAgreementRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
+
+    @Mock
+    private CartRepository cartRepository;
+
+    @Mock
+    private CartItemRepository cartItemRepository;
+
+    @Mock
+    private PointTransactionRepository pointTransactionRepository;
 
     @Test
     @DisplayName("소셜 로그인 시 기존 회원 존재하면 해당 회원 반환")
@@ -232,18 +249,77 @@ public class MemberServiceTest {
         Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
 
         given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-        //given(beautyProfileRepository.existsByMemberId(memberId)).willReturn(false);
-        //given(shippingAddressRepository.countByMemberId(memberId)).willReturn(0);
-        //given(memberAgreementRepository.countByMemberId(memberId)).willReturn(0);
         given(memberRepository.save(any(Member.class))).willReturn(member);
+
+        given(orderRepository.countActiveOrdersByMemberId(memberId)).willReturn(0);
+        given(paymentRepository.existsPendingPaymentsByMemberId(memberId)).willReturn(false);
+
+        given(cartRepository.findByMemberId(memberId)).willReturn(Optional.empty());
 
         // When
         memberService.deleteMember(memberId);
 
         // Then
-        then(memberRepository).should().save(any(Member.class));
+        then(orderRepository).should().countActiveOrdersByMemberId(memberId);
+        then(paymentRepository).should().existsPendingPaymentsByMemberId(memberId);
+
+        then(memberAgreementRepository).should().deleteByMemberId(memberId);
         then(shippingAddressRepository).should().deleteByMemberId(memberId);
         then(beautyProfileRepository).should().deleteByMemberId(memberId);
-        then(memberAgreementRepository).should().deleteByMemberId(memberId);
+        then(cartRepository).should().findByMemberId(memberId);
+
+        then(memberRepository).should().save(any(Member.class));
+    }
+
+    @Test
+    @DisplayName("회원 삭제 - 활성 주문이 있는 회원 삭제 시 실패")
+    void deleteMember_hasActiveOrders_fail() {
+        // Given
+        Long memberId = 1L;
+        Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(orderRepository.countActiveOrdersByMemberId(memberId)).willReturn(2);
+
+        // When & Then
+        assertThatThrownBy(() -> memberService.deleteMember(memberId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("진행 중인 주문이 2건 있어 탈퇴할 수 없습니다.");
+
+        then(shippingAddressRepository).should(never()).deleteByMemberId(any());
+        then(beautyProfileRepository).should(never()).deleteByMemberId(any());
+        then(memberAgreementRepository).should(never()).deleteByMemberId(any());
+        then(memberRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 미리보기를 정상적으로 조회한다")
+    void getWithdrawalPreview_ValidMember_ReturnsPreview() {
+        // Given
+        Long memberId = 1L;
+        Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+
+        given(orderRepository.countActiveOrdersByMemberId(memberId)).willReturn(1);
+        given(beautyProfileRepository.existsByMemberId(memberId)).willReturn(true);
+        given(shippingAddressRepository.countByMemberId(memberId)).willReturn(2);
+        given(memberAgreementRepository.countByMemberId(memberId)).willReturn(4);
+        given(cartItemRepository.countByCartMemberId(memberId)).willReturn(3);
+        given(pointTransactionRepository.countByMemberId(memberId)).willReturn(5);
+
+        // When
+        WithdrawalPreviewResponse result = memberService.getWithdrawalPreview(memberId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.memberInfo().nickname()).isEqualTo("testuser");
+        assertThat(result.memberInfo().email()).isEqualTo("test@example.com");
+        assertThat(result.lossInfo().activeOrders()).isEqualTo(1);
+        assertThat(result.lossInfo().beautyProfileExists()).isTrue();
+        assertThat(result.lossInfo().shippingAddressesCount()).isEqualTo(2);
+        assertThat(result.lossInfo().memberAgreementsCount()).isEqualTo(4);
+        assertThat(result.lossInfo().cartItemsCount()).isEqualTo(3);
+        assertThat(result.lossInfo().pointTransactionsCount()).isEqualTo(5);
     }
 }
