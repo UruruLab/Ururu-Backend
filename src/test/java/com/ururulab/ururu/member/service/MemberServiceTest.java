@@ -6,6 +6,7 @@ import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
+import com.ururulab.ururu.member.dto.response.MemberGetResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,7 @@ public class MemberServiceTest {
 
     @Test
     @DisplayName("소셜 로그인 시 기존 회원 존재하면 해당 회원 반환")
-    void findOrCreateMember_ExistingMember_ReturnsExistingMember() {
+    void findOrCreateMember_existingMember_returnsExistingMember() {
         //given
         SocialMemberInfo socialMemberInfo = MemberTestFixture.createSocialMemberInfo();
         Member existingMember = MemberTestFixture.createMember(1L, "기존사용자", "existing@example.com");
@@ -61,7 +62,7 @@ public class MemberServiceTest {
 
     @Test
     @DisplayName("소셜 로그인 시 기존 회원이 없으면 새 회원을 생성")
-    void findOrCreateMember_NewMember() {
+    void findOrCreateMember_newMember() {
         //given
         SocialMemberInfo socialMemberInfo = MemberTestFixture.createSocialMemberInfo();
         Member newMember = MemberTestFixture.createMember(1L, "testuser", "test@example.com");
@@ -81,6 +82,23 @@ public class MemberServiceTest {
         then(memberRepository).should().save(any(Member.class));
     }
 
+    @Test
+    @DisplayName("회원 프로필 조회 성공")
+    void getMemberProfile_validId_success() {
+        // given
+        Long memberId = 1L;
+        Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
 
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+
+        // when
+        MemberGetResponse result = memberService.getMemberProfile(memberId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(memberId);
+        assertThat(result.nickname()).isEqualTo("testuser");
+        assertThat(result.email()).isEqualTo("test@example.com");
+    }
 
 }

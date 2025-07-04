@@ -6,6 +6,7 @@ import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 
+import java.lang.reflect.Field;
 import java.time.Instant;
 
 public class MemberTestFixture {
@@ -21,7 +22,7 @@ public class MemberTestFixture {
     }
 
     public static Member createMember(Long id, String nickname, String email){
-        return Member.of(
+        Member member =  Member.of(
                 nickname,
                 email,
                 SocialProvider.GOOGLE,
@@ -32,5 +33,17 @@ public class MemberTestFixture {
                 null,
                 Role.NORMAL
         );
+        setMemberId(member, id);
+        return member;
+    }
+
+    private static void setMemberId(Member member, Long id){
+        try{
+            Field idField = Member.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(member, id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set member id for test", e);
+        }
     }
 }
