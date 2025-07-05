@@ -58,6 +58,7 @@ public enum ErrorCode {
 	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
 	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
 	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
+	PRODUCT_NOT_EXIST(HttpStatus.BAD_REQUEST, "PRODUCT005", "공동구매 등록 가능한 상품 없습니다."),
 
 	// --- 공동 구매 ---
 	DISCOUNT_STAGES_PARSING_FAILED(HttpStatus.BAD_REQUEST, "GROUPBUY001", "할인 단계 정보를 파싱하는 데 실패했습니다."),
