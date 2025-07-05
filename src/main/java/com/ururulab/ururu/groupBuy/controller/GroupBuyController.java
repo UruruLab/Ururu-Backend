@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/groupbuy")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
+@Slf4j
 public class GroupBuyController {
 
     private final GroupBuyService groupBuyService;
@@ -131,10 +133,16 @@ public class GroupBuyController {
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<GroupBuyListResponse>>> getGroupBuyList(
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "20") int limit) {
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "order_count") String sort) {
+        List<GroupBuyListResponse> responses;
 
-        List<GroupBuyListResponse> responses =
-                groupBuyListService.getGroupBuyListOrderByOrderCount(categoryId, limit);
+        if ("order_count".equals(sort)) {
+            // 주문량 기준 정렬 (기존 Redis 캐시 로직)
+            responses = groupBuyListService.getGroupBuyListOrderByOrderCount(categoryId, limit);
+        } else {
+            responses = groupBuyListService.getGroupBuyListWithSort(categoryId, limit, sort);
+        }
 
         return ResponseEntity.ok(ApiResponseFormat.success("공동 구매 목록 조회에 성공하였습니다.", responses));
     }

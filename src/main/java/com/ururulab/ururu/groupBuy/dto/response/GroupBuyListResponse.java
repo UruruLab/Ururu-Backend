@@ -26,19 +26,21 @@ public record GroupBuyListResponse(
                                             Integer orderCount) {
 
         List<DiscountStageDto> stages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
+        Integer maxDiscountRate = stages.get(stages.size() - 1).discountRate();
         Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
 
-        return new GroupBuyListResponse(
-                groupBuy.getId(),
-                groupBuy.getTitle(),
-                groupBuy.getThumbnailUrl(),
-                groupBuy.getDisplayFinalPrice(),
-                options.get(0).getPriceOverride(),
-                stages.get(stages.size() - 1).discountRate(),
-                groupBuy.getEndsAt(),
-                remainingSeconds,
-                orderCount,
-                groupBuy.getCreatedAt()
+        return new GroupBuyListResponse
+                (
+                groupBuy.getId(), // 공구 아이디
+                groupBuy.getTitle(), // 공구 제목
+                groupBuy.getThumbnailUrl(), //공구 썸네일
+                groupBuy.getDisplayFinalPrice(), // 공구 메인 가격
+                options.get(0).getPriceOverride(), // 공구 첫번째 공구 시작가
+                maxDiscountRate, // 최대 할인률
+                groupBuy.getEndsAt(), // 공구 종료일
+                remainingSeconds, // 종료일까지 남은 초
+                orderCount, // 주문량
+                groupBuy.getCreatedAt() // 생성일
         );
     }
 }

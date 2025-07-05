@@ -65,4 +65,162 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long> {
     // 전체 공동구매 조회 (DRAFT 제외)
     @Query("SELECT gb FROM GroupBuy gb WHERE gb.status IN ('OPEN', 'CLOSED')")
     List<GroupBuy> findAllPublic();
+
+    // 최신 등록순
+    @Query(value = """
+    SELECT gb.id,
+           gb.title,
+           gb.thumbnail_url,
+           gb.display_final_price,
+           (SELECT gbo.price_override 
+            FROM groupbuy_options gbo 
+            WHERE gbo.groupbuy_id = gb.id 
+            ORDER BY gbo.id LIMIT 1),
+           gb.discount_stages,
+           gb.ends_at,
+           DATEDIFF('SECOND', CURRENT_TIMESTAMP, gb.ends_at) AS remaining_seconds,
+           (SELECT COALESCE(SUM(oi.quantity), 0) 
+            FROM order_items oi 
+            INNER JOIN groupbuy_options gbo ON oi.groupbuy_option_id = gbo.id 
+            WHERE gbo.groupbuy_id = gb.id),
+           gb.created_at
+    FROM groupbuys gb
+    INNER JOIN products p ON gb.product_id = p.id
+    INNER JOIN product_categories pc ON p.id = pc.product_id
+    WHERE (:categoryId IS NULL OR pc.category_id = :categoryId)
+      AND gb.status = 'OPEN'
+      AND gb.ends_at > CURRENT_TIMESTAMP
+    ORDER BY gb.created_at DESC
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<Object[]> findByCategoryIdOrderByLatest(
+            @Param("categoryId") Long categoryId,
+            @Param("limit") int limit);
+
+    // 마감 임박순
+    @Query(value = """
+    SELECT gb.id,
+           gb.title,
+           gb.thumbnail_url,
+           gb.display_final_price,
+           (SELECT gbo.price_override 
+            FROM groupbuy_options gbo 
+            WHERE gbo.groupbuy_id = gb.id 
+            ORDER BY gbo.id LIMIT 1),
+           gb.discount_stages,
+           gb.ends_at,
+           DATEDIFF('SECOND', CURRENT_TIMESTAMP, gb.ends_at) AS remaining_seconds,
+           (SELECT COALESCE(SUM(oi.quantity), 0) 
+            FROM order_items oi 
+            INNER JOIN groupbuy_options gbo ON oi.groupbuy_option_id = gbo.id 
+            WHERE gbo.groupbuy_id = gb.id),
+           gb.created_at
+    FROM groupbuys gb
+    INNER JOIN products p ON gb.product_id = p.id
+    INNER JOIN product_categories pc ON p.id = pc.product_id
+    WHERE (:categoryId IS NULL OR pc.category_id = :categoryId)
+      AND gb.status = 'OPEN'
+      AND gb.ends_at > CURRENT_TIMESTAMP
+    ORDER BY gb.ends_at ASC
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<Object[]> findByCategoryIdOrderByDeadline(
+            @Param("categoryId") Long categoryId,
+            @Param("limit") int limit);
+
+    // 가격 낮은 순
+    @Query(value = """
+    SELECT gb.id,
+           gb.title,
+           gb.thumbnail_url,
+           gb.display_final_price,
+           (SELECT gbo.price_override 
+            FROM groupbuy_options gbo 
+            WHERE gbo.groupbuy_id = gb.id 
+            ORDER BY gbo.id LIMIT 1),
+           gb.discount_stages,
+           gb.ends_at,
+           DATEDIFF('SECOND', CURRENT_TIMESTAMP, gb.ends_at) AS remaining_seconds,
+           (SELECT COALESCE(SUM(oi.quantity), 0) 
+            FROM order_items oi 
+            INNER JOIN groupbuy_options gbo ON oi.groupbuy_option_id = gbo.id 
+            WHERE gbo.groupbuy_id = gb.id),
+           gb.created_at
+    FROM groupbuys gb
+    INNER JOIN products p ON gb.product_id = p.id
+    INNER JOIN product_categories pc ON p.id = pc.product_id
+    WHERE (:categoryId IS NULL OR pc.category_id = :categoryId)
+      AND gb.status = 'OPEN'
+      AND gb.ends_at > CURRENT_TIMESTAMP
+    ORDER BY gb.display_final_price ASC
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<Object[]> findByCategoryIdOrderByPriceLow(
+            @Param("categoryId") Long categoryId,
+            @Param("limit") int limit);
+
+    // 가격 높은 순
+    @Query(value = """
+    SELECT gb.id,
+           gb.title,
+           gb.thumbnail_url,
+           gb.display_final_price,
+           (SELECT gbo.price_override 
+            FROM groupbuy_options gbo 
+            WHERE gbo.groupbuy_id = gb.id 
+            ORDER BY gbo.id LIMIT 1),
+           gb.discount_stages,
+           gb.ends_at,
+           DATEDIFF('SECOND', CURRENT_TIMESTAMP, gb.ends_at) AS remaining_seconds,
+           (SELECT COALESCE(SUM(oi.quantity), 0) 
+            FROM order_items oi 
+            INNER JOIN groupbuy_options gbo ON oi.groupbuy_option_id = gbo.id 
+            WHERE gbo.groupbuy_id = gb.id),
+           gb.created_at
+    FROM groupbuys gb
+    INNER JOIN products p ON gb.product_id = p.id
+    INNER JOIN product_categories pc ON p.id = pc.product_id
+    WHERE (:categoryId IS NULL OR pc.category_id = :categoryId)
+      AND gb.status = 'OPEN'
+      AND gb.ends_at > CURRENT_TIMESTAMP
+    ORDER BY gb.display_final_price DESC
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<Object[]> findByCategoryIdOrderByPriceHigh(
+            @Param("categoryId") Long categoryId,
+            @Param("limit") int limit);
+
+    // 할인율 높은 순
+    @Query(value = """
+    SELECT gb.id,
+           gb.title,
+           gb.thumbnail_url,
+           gb.display_final_price,
+           (SELECT gbo.price_override 
+            FROM groupbuy_options gbo 
+            WHERE gbo.groupbuy_id = gb.id 
+            ORDER BY gbo.id LIMIT 1),
+           gb.discount_stages,
+           gb.ends_at,
+           DATEDIFF('SECOND', CURRENT_TIMESTAMP, gb.ends_at) AS remaining_seconds,
+           (SELECT COALESCE(SUM(oi.quantity), 0) 
+            FROM order_items oi 
+            INNER JOIN groupbuy_options gbo ON oi.groupbuy_option_id = gbo.id 
+            WHERE gbo.groupbuy_id = gb.id),
+           gb.created_at
+    FROM groupbuys gb
+    INNER JOIN products p ON gb.product_id = p.id
+    INNER JOIN product_categories pc ON p.id = pc.product_id
+    WHERE (:categoryId IS NULL OR pc.category_id = :categoryId)
+      AND gb.status = 'OPEN'
+      AND gb.ends_at > CURRENT_TIMESTAMP
+    ORDER BY gb.display_final_price ASC
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<Object[]> findByCategoryIdOrderByDiscount(
+            @Param("categoryId") Long categoryId,
+            @Param("limit") int limit);
+
+    //TIMESTAMPDIFF(SECOND, NOW(), gb.ends_at) AS remaining_seconds, - MySQL용
+
 }
