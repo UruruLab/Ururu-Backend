@@ -8,7 +8,7 @@ import com.ururulab.ururu.member.domain.entity.Member;
 
 public record MemberMyPageResponse(
         @JsonProperty("member_name") String memberName,
-        @JsonProperty("profile_image") String progileImage,
+        @JsonProperty("profile_image") String profileImage,
         Integer points,
         @JsonProperty("skin_type") SkinType skinType,
         @JsonProperty("skin_tone")SkinTone skinTone

@@ -214,7 +214,7 @@ public class MemberServiceTest {
     @DisplayName("이메일 존재 여부 확인 - 존재하는 경우")
     void checkEmailExists_existingEmail() {
         // Given
-        String existingEmail = "existing@exmaple.com";
+        String existingEmail = "existing@example.com";
         given(memberRepository.existsByEmail(existingEmail)).willReturn(true);
 
         // When
