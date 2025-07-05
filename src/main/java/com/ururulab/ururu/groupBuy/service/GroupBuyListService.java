@@ -10,9 +10,11 @@ import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,13 @@ public class GroupBuyListService {
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final GroupBuyRankingService rankingService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    private String generateCacheKey(Long categoryId, int limit, String sortType) {
+        return "groupbuy:list:category:" + (categoryId == null ? "all" : categoryId)
+                + ":sort:" + sortType + ":limit:" + limit;
+    }
+
 
 
     public List<GroupBuyListResponse> getGroupBuyList(Long categoryId, int limit, String sortType) {
@@ -91,6 +100,16 @@ public class GroupBuyListService {
             throw new BusinessException(GROUPBUY_NOT_FOUND, "유효하지 않은 정렬 타입입니다.");
         }
 
+        // 캐시 확인
+        String key = generateCacheKey(categoryId, limit, sortType);
+        List<GroupBuyListResponse> cached = (List<GroupBuyListResponse>) redisTemplate.opsForValue().get(key);
+        if (cached != null) {
+            log.info("[CACHE HIT] key={}", key);
+            return cached;
+        }
+
+        log.info("[CACHE MISS] key={}", key);
+
         // 네이티브 쿼리를 통한 정렬된 데이터 조회 (Object[] 방식)
         List<Object[]> results = switch (sortType) {
             case "deadline" -> groupBuyRepository.findByCategoryIdOrderByDeadline(categoryId, limit);
@@ -109,9 +128,15 @@ public class GroupBuyListService {
             throw new BusinessException(GROUPBUY_NOT_FOUND, message);
         }
 
-        return results.stream()
+        List<GroupBuyListResponse> responseList = results.stream()
                 .map(this::convertFromObjectArray)
                 .collect(Collectors.toList());
+
+        // 캐시에 저장 (5분 TTL)
+        redisTemplate.opsForValue().set(key, responseList, Duration.ofMinutes(5));
+        log.info("[CACHE SAVE] key={} TTL=5min", key);
+
+        return responseList;
     }
 
     /**
