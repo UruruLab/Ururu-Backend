@@ -57,4 +57,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("id") Long id,
             @Param("sellerId") Long sellerId,
             @Param("statuses") List<Status> statuses);
+
+    @Query("SELECT DISTINCT p FROM Product p " +
+            "LEFT JOIN FETCH p.productOptions po " +
+            "WHERE p.seller.id = :sellerId AND p.status = :status " +
+            "ORDER BY p.id")
+    List<Product> findBySellerIdAndStatusWithOptions(@Param("sellerId") Long sellerId,
+                                                     @Param("status") Status status);
 }
