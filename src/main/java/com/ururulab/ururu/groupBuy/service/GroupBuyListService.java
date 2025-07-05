@@ -31,6 +31,14 @@ public class GroupBuyListService {
     private final GroupBuyRankingService rankingService;
 
 
+    public List<GroupBuyListResponse> getGroupBuyList(Long categoryId, int limit, String sortType) {
+        if ("order_count".equals(sortType)) {
+            return getGroupBuyListOrderByOrderCount(categoryId, limit);
+        }
+        return getGroupBuyListWithSort(categoryId, limit, sortType);
+    }
+
+
     /**
      * 카테고리별 공동구매 목록 조회 (주문량 기준 정렬)
      */

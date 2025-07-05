@@ -136,12 +136,7 @@ public class GroupBuyController {
             @RequestParam(defaultValue = "order_count") String sort) {
         List<GroupBuyListResponse> responses;
 
-        if ("order_count".equals(sort)) {
-            // 주문량 기준 정렬 (기존 Redis 캐시 로직)
-            responses = groupBuyListService.getGroupBuyListOrderByOrderCount(categoryId, limit);
-        } else {
-            responses = groupBuyListService.getGroupBuyListWithSort(categoryId, limit, sort);
-        }
+        responses = groupBuyListService.getGroupBuyList(categoryId, limit, sort);
 
         return ResponseEntity.ok(ApiResponseFormat.success("공동 구매 목록 조회에 성공하였습니다.", responses));
     }
