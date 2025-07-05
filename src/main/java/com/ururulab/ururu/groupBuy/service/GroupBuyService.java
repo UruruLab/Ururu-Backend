@@ -35,7 +35,6 @@ public class GroupBuyService {
     private final GroupBuyDetailImageService groupBuyDetailImageService;
     private final GroupBuyPriceService groupBuyPriceService;
 
-
     @Transactional
     public GroupBuyCreateResponse createGroupBuy(GroupBuyRequest request, Long sellerId, MultipartFile thumbnail,
                                                  List<MultipartFile> detailImages) {

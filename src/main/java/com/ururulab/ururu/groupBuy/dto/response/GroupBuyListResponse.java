@@ -1,5 +1,6 @@
 package com.ururulab.ururu.groupBuy.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
