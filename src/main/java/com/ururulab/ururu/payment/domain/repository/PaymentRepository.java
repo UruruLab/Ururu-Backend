@@ -32,4 +32,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT p FROM Payment p " +
             "WHERE p.member.id = :memberId AND p.order.id = :orderId")
     Optional<Payment> findByMemberIdAndOrderId(@Param("memberId") Long memberId, @Param("orderId") String orderId);
+
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM Payment p WHERE p.member.id = :memberId AND p.status = 'PENDING'")
+    boolean existsPendingPaymentsByMemberId(@Param("memberId") Long memberId);
 }
