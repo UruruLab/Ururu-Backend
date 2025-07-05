@@ -7,6 +7,7 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyDetailResponse;
+import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class GroupBuyDetailService {
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final GroupBuyStockService stockService;
+    private final OrderItemRepository orderItemRepository;
 
     /**
      * 공동구매 상세 정보 조회
@@ -47,12 +49,16 @@ public class GroupBuyDetailService {
         // 3. 이미지 정보는 이미 페치된 데이터에서 추출
         List<GroupBuyImage> images = extractAndSortImages(groupBuy);
 
+        // 4. 현재 재고 조회
         Map<Long, Integer> currentStocks = stockService.getCurrentStocksByGroupBuy(groupBuyId, options);
+
+        // 5. 실시간 주문 수 조회
+        int currentOrderCount = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuyId);
 
         log.info("Successfully fetched group buy detail - ID: {}, options: {}, images: {}",
                 groupBuyId, options.size(), images.size());
 
-        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks);
+        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks, currentOrderCount);
     }
 
     /**
@@ -105,7 +111,9 @@ public class GroupBuyDetailService {
 
         Map<Long, Integer> currentStocks = stockService.getCurrentStocksByGroupBuy(groupBuyId, options);
 
-        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks);
+        int currentOrderCount = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuyId);
+
+        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks, currentOrderCount);
     }
 
     /**

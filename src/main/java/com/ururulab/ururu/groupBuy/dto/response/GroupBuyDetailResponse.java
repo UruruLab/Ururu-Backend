@@ -23,6 +23,7 @@ public record GroupBuyDetailResponse(
         GroupBuyStatus status,
         Instant endsAt,
         Long remainingTimeSeconds, // 남은 시간 (초 단위)
+        Integer currentOrderCount,
 
         // 상품 정보
         ProductInfoResponse product,
@@ -40,7 +41,9 @@ public record GroupBuyDetailResponse(
     public static GroupBuyDetailResponse from(GroupBuy groupBuy,
                                               List<GroupBuyOption> options,
                                               List<GroupBuyImage> images,
-                                              Map<Long, Integer> currentStocks) {
+                                              Map<Long, Integer> currentStocks,
+                                              Integer currentOrderCount
+    ) {
 
         List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
         Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
@@ -56,6 +59,7 @@ public record GroupBuyDetailResponse(
                 groupBuy.getStatus(),
                 groupBuy.getEndsAt(),
                 remainingSeconds,
+                currentOrderCount,
 
                 ProductInfoResponse.from(groupBuy.getProduct()),
 
