@@ -1,19 +1,23 @@
 package com.ururulab.ururu.groupBuy.service;
 
+import com.querydsl.core.Tuple;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
+import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuySortOption;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
+import com.ururulab.ururu.groupBuy.util.TimeCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +40,61 @@ public class GroupBuyListService {
         }
         return getGroupBuyListWithSort(categoryId, limit, sortType);
     }
+
+    // QueryDSL 적용
+    public List<GroupBuyListResponse> getGroupBuyListWithSort(Long categoryId, int limit, String sortType) {
+        log.debug("Fetching group buy list with sort - categoryId: {}, limit: {}, sortType: {}", categoryId, limit, sortType);
+
+        if (!isValidSortType(sortType)) {
+            log.warn("Invalid sort type: {}", sortType);
+            throw new BusinessException(GROUPBUY_NOT_FOUND, "유효하지 않은 정렬 타입입니다.");
+        }
+
+        GroupBuySortOption sortOption = GroupBuySortOption.from(sortType); // enum 매핑
+        List<Tuple> tuples = groupBuyRepository.findGroupBuysSorted(categoryId, sortOption, limit);
+
+        if (tuples.isEmpty()) {
+            String message = categoryId != null
+                    ? "해당 카테고리의 공동구매를 찾을 수 없습니다."
+                    : "공동구매를 찾을 수 없습니다.";
+            throw new BusinessException(GROUPBUY_NOT_FOUND, message);
+        }
+
+        // 할인율 정렬이면 수동 정렬
+        if ("discount".equals(sortType)) {
+            return tuples.stream()
+                    .map(this::convertToResponse)
+                    .sorted(Comparator.comparing(GroupBuyListResponse::maxDiscountRate).reversed())
+                    .limit(limit)
+                    .collect(Collectors.toList());
+        }
+
+        // 나머지 정렬은 그대로 DTO 매핑
+        return tuples.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private GroupBuyListResponse convertToResponse(Tuple row) {
+        Long id = row.get(0, Long.class);
+        String title = row.get(1, String.class);
+        String thumbnailUrl = row.get(2, String.class);
+        Integer displayFinalPrice = row.get(3, Integer.class);
+        Integer startPrice = row.get(4, Integer.class);
+        String discountStages = row.get(5, String.class);
+        Instant endsAt = row.get(6, Instant.class);
+        Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(endsAt);
+        Integer orderCount = row.get(7, Long.class).intValue();
+        Instant createdAt = row.get(8, Instant.class);
+        Integer maxDiscountRate = calculateMaxDiscountRate(discountStages);
+
+        return new GroupBuyListResponse(
+                id, title, thumbnailUrl, displayFinalPrice,
+                startPrice, maxDiscountRate, endsAt,
+                remainingSeconds, orderCount, createdAt
+        );
+    }
+
 
 
     /**
@@ -79,75 +138,6 @@ public class GroupBuyListService {
 
     private Map<Long, Integer> getOrderCountMap(List<Long> groupBuyIds) {
         return rankingService.getOrderCounts(groupBuyIds);
-    }
-
-    public List<GroupBuyListResponse> getGroupBuyListWithSort(Long categoryId, int limit, String sortType) {
-        log.debug("Fetching group buy list with sort - categoryId: {}, limit: {}, sortType: {}", categoryId, limit, sortType);
-
-        // 유효하지 않은 정렬 타입인 경우 예외 발생 또는 기본값 처리
-        if (!isValidSortType(sortType)) {
-            log.warn("Invalid sort type: {}", sortType);
-            throw new BusinessException(GROUPBUY_NOT_FOUND, "유효하지 않은 정렬 타입입니다.");
-        }
-
-        // 네이티브 쿼리를 통한 정렬된 데이터 조회 (Object[] 방식)
-        List<Object[]> results = switch (sortType) {
-            case "deadline" -> groupBuyRepository.findByCategoryIdOrderByDeadline(categoryId, limit);
-            case "discount" -> groupBuyRepository.findByCategoryIdOrderByDiscount(categoryId, limit);
-            case "latest" -> groupBuyRepository.findByCategoryIdOrderByLatest(categoryId, limit);
-            case "price_low" -> groupBuyRepository.findByCategoryIdOrderByPriceLow(categoryId, limit);
-            case "price_high" -> groupBuyRepository.findByCategoryIdOrderByPriceHigh(categoryId, limit);
-            default -> throw new IllegalStateException("Unexpected sort type: " + sortType);
-        };
-
-        // 데이터가 없으면 예외 발생
-        if (results.isEmpty()) {
-            String message = categoryId != null
-                    ? "해당 카테고리의 공동구매를 찾을 수 없습니다."
-                    : "공동구매를 찾을 수 없습니다.";
-            throw new BusinessException(GROUPBUY_NOT_FOUND, message);
-        }
-
-        return results.stream()
-                .map(this::convertFromObjectArray)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Object[] 배열을 GroupBuyListResponse로 변환
-     */
-    private GroupBuyListResponse convertFromObjectArray(Object[] row) {
-        // Object[] 인덱스 순서:
-        // 0: id, 1: title, 2: thumbnailUrl, 3: displayFinalPrice, 4: startPrice,
-        // 5: discountStages, 6: endsAt, 7: remainingTimeSeconds, 8: orderCount, 9: createdAt
-
-
-        Long id = (Long) row[0];
-        String title = (String) row[1];
-        String thumbnailUrl = (String) row[2];
-        Integer displayFinalPrice = (Integer) row[3];
-        Integer startPrice = (Integer) row[4];
-        String discountStages = (String) row[5];
-        OffsetDateTime endsAt = (OffsetDateTime) row[6]; //H2용
-        Long remainingTimeSeconds = (Long) row[7];
-        Long orderCount = (Long) row[8];
-        OffsetDateTime createdAt = (OffsetDateTime) row[9]; //H2용
-
-        // discount_stages JSON에서 실제 최대 할인률 계산
-        Integer maxDiscountRate = calculateMaxDiscountRate(discountStages);
-
-        return new GroupBuyListResponse(
-                id,
-                title,
-                thumbnailUrl,
-                displayFinalPrice,
-                startPrice,
-                maxDiscountRate, // 계산된 실제 값
-                endsAt.toInstant(),
-                remainingTimeSeconds,
-                orderCount.intValue(),
-                createdAt.toInstant()
-        );
     }
 
     /**
