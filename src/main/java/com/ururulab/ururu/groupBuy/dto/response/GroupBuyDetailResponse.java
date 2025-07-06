@@ -1,5 +1,6 @@
 package com.ururulab.ururu.groupBuy.dto.response;
 
+import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyImage;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
@@ -12,12 +13,16 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NO_OPTIONS;
+
 public record GroupBuyDetailResponse(
         Long id,
         String title,
         String description,
         String thumbnailUrl,
         Integer displayFinalPrice,
+        Integer startPrice,         // 공동구매 시작 가격
+        Integer maxDiscountRate,     // 최대 할인율 (%)
         List<DiscountStageDto> discountStages,
         Integer limitQuantityPerMember,
         GroupBuyStatus status,
@@ -47,6 +52,11 @@ public record GroupBuyDetailResponse(
 
         List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
         Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
+        Integer maxDiscountRate = parsedStages.get(parsedStages.size() - 1).discountRate();
+        Integer startPrice = options.stream()
+                .map(GroupBuyOption::getPriceOverride)
+                .min(Integer::compareTo)
+                .orElseThrow(() -> new BusinessException(GROUPBUY_NO_OPTIONS));
 
         return new GroupBuyDetailResponse(
                 groupBuy.getId(),
@@ -54,6 +64,8 @@ public record GroupBuyDetailResponse(
                 groupBuy.getDescription(),
                 groupBuy.getThumbnailUrl(),
                 groupBuy.getDisplayFinalPrice(),
+                startPrice,
+                maxDiscountRate,
                 parsedStages,
                 groupBuy.getLimitQuantityPerMember(),
                 groupBuy.getStatus(),
