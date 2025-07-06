@@ -6,6 +6,9 @@ import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -95,9 +98,19 @@ public class GroupBuyRankingService {
 
             // Redis 데이터 초기화
             stringRedisTemplate.delete(RANKING_KEY);
-            Set<String> keys = stringRedisTemplate.keys(ORDER_COUNT_PREFIX + "*");
-            if (keys != null && !keys.isEmpty()) {
-                stringRedisTemplate.delete(keys);
+            Set<String> keysToDelete = new HashSet<>();
+            stringRedisTemplate.execute((RedisCallback<Void>) connection -> {
+                Cursor<byte[]> cursor = connection.scan(
+                        ScanOptions.scanOptions()
+                                .match(ORDER_COUNT_PREFIX + "*")
+                                .count(100) // 한 번에 100개 힌트
+                                .build()
+                );
+                cursor.forEachRemaining(key -> keysToDelete.add(new String(key)));
+                return null;
+            });
+            if (!keysToDelete.isEmpty()) {
+                stringRedisTemplate.delete(keysToDelete);
             }
 
             // Redis에 데이터 저장
