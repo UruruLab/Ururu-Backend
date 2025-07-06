@@ -27,6 +27,11 @@ public class GroupBuyRankingScheduler {
     @Scheduled(cron = "0 0 3 * * *")
     public void fullSyncOrderCounts() {
         log.info("Starting daily full Redis synchronization...");
-        rankingService.syncOrderCountsFromDB();
+        try {
+            rankingService.syncOrderCountsFromDB();
+            log.info("Daily full Redis synchronization completed successfully");
+        } catch (Exception e) {
+            log.error("Failed to execute daily full Redis synchronization", e);
+        }
     }
 }
