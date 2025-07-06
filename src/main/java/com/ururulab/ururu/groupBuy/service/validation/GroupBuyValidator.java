@@ -9,6 +9,7 @@ import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyStatusUpdateRequest;
+import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class GroupBuyValidator {
         List<Long> optionIds = request.options().stream()
                 .map(GroupBuyOptionRequest::productOptionId)
                 .toList();
-        validateOptionsBeongToProduct(request.productId(), optionIds);
+        validateOptionsBelongToProduct(request.productId(), optionIds);
 
         int totalStock = request.options().stream()
                 .mapToInt(GroupBuyOptionRequest::stock)
@@ -151,7 +152,7 @@ public class GroupBuyValidator {
      * @param groupBuy
      */
     public void validateGroupBuyOpenConditions(GroupBuy groupBuy) {
-        //Instant now = Instant.now();
+        //Instant now = Instant.now(); - mysql로 배포 시 변경
         Instant now = Instant.now().plusSeconds(9 * 3600); // UTC + 9시간 = KST;
 
         // 1. 시작일 검증
@@ -183,50 +184,36 @@ public class GroupBuyValidator {
      * 옵션들이 해당 상품에 속하는지 검증
      * 단일 옵션 또는 여러 옵션 모두 처리 가능
      * @param productId 상품 ID
-     * @param optionIds 검증할 옵션 ID들 (가변인자)
+     * @param optionIds 검증할 옵션 ID 리스트
      */
-    private void validateOptionsBeongToProduct(Long productId, Long... optionIds) {
-        if (optionIds == null || optionIds.length == 0) {
+    public void validateOptionsBelongToProduct(Long productId, List<Long> optionIds) {
+        if (optionIds == null || optionIds.isEmpty()) {
             log.debug("옵션 ID가 없어 검증을 건너뜁니다.");
             return;
         }
 
-        List<Long> optionIdList = List.of(optionIds);
-        log.debug("상품 옵션 소속 검증 시작: productId={}, optionIds={}", productId, optionIdList);
+        log.debug("상품 옵션 소속 검증 시작: productId={}, optionIds={}", productId, optionIds);
 
         // 해당 상품에 속한 옵션 ID들 조회
         Set<Long> validOptionIds = productOptionRepository.findByProductId(productId)
                 .stream()
-                .map(option -> option.getId())
+                .map(ProductOption::getId)
                 .collect(Collectors.toSet());
 
         log.debug("상품에 속한 유효한 옵션 ID: {}", validOptionIds);
 
         // 요청된 옵션 ID들이 모두 해당 상품에 속하는지 검증
-        Set<Long> invalidOptionIds = optionIdList.stream()
+        Set<Long> invalidOptionIds = optionIds.stream()
                 .filter(optionId -> !validOptionIds.contains(optionId))
                 .collect(Collectors.toSet());
 
         if (!invalidOptionIds.isEmpty()) {
-            log.warn("상품에 속하지 않는 옵션이 포함되어 있습니다: productId={}, invalidOptionIds={}",
-                    productId, invalidOptionIds);
+            log.warn("상품에 속하지 않는 옵션이 포함되어 있습니다: productId={}, invalidOptionIds={}", productId, invalidOptionIds);
             throw new BusinessException(PRODUCT_OPTION_NOT_FOUND);
         }
 
-        log.info("상품 옵션 소속 검증 성공: productId={}, 검증된 옵션 수={}", productId, optionIdList.size());
+        log.info("상품 옵션 소속 검증 성공: productId={}, 검증된 옵션 수={}", productId, optionIds.size());
     }
 
-    /**
-     * 리스트로 옵션들이 해당 상품에 속하는지 검증
-     * @param productId 상품 ID
-     * @param optionIds 검증할 옵션 ID 리스트
-     */
-    public void validateOptionsBeongToProduct(Long productId, List<Long> optionIds) {
-        if (optionIds == null || optionIds.isEmpty()) {
-            return;
-        }
-
-        validateOptionsBeongToProduct(productId, optionIds.toArray(new Long[0]));
-    }
 
 }
