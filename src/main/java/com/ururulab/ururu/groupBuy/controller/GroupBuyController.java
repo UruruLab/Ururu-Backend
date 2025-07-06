@@ -69,18 +69,37 @@ public class GroupBuyController {
                 .body(ApiResponseFormat.success("공동구매가 성공적으로 등록되었습니다.", response));
     }
 
+    @Operation(
+            summary = "구매자용 공동구매 상세 정보 조회",
+            description = "특정 공동구매의 상세 정보를 조회합니다. 공동구매 정보, 옵션, 리워드, 총 주문수, 옵션의 현재 재고 등을 포함합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "공동구매 상세 정보 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "해당 공동구매를 찾을 수 없습니다."),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
     @GetMapping("/{groupBuyId}")
     public ResponseEntity<ApiResponseFormat<GroupBuyDetailResponse>> getGroupBuyDetail(
-            @Parameter(description = "공동구매 ID", example = "1")
             @PathVariable Long groupBuyId) {
 
         GroupBuyDetailResponse response = groupBuyDetailService.getPublicGroupBuyDetail(groupBuyId);
         return ResponseEntity.ok(ApiResponseFormat.success("공동구매 상세 정보를 성공적으로 조회했습니다.", response));
     }
 
+
+    @Operation(
+            summary = "판매자용 공동구매 상세 정보 조회",
+            description = "특정 공동구매의 상세 정보를 조회합니다. 공동구매 정보, 옵션, 리워드, 총 주문수, 옵션의 현재 재고 등을 포함합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "공동구매 상세 정보 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "해당 공동구매를 찾을 수 없습니다."),
+            @ApiResponse(responseCode = "400", description = "다른 판매자의 공동구매에 접근할 수 없습니다."),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 판매자입니다."),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
     @GetMapping("/{sellerId}/{groupBuyId}")
     public ResponseEntity<ApiResponseFormat<GroupBuyDetailResponse>> getSellerGroupBuyDetail(
-            @Parameter(description = "공동구매 ID", example = "1")
             @PathVariable Long sellerId,
             @PathVariable Long groupBuyId
     ) {
@@ -94,29 +113,15 @@ public class GroupBuyController {
             description = "판매자가 DRAFT 상태의 공동구매를 OPEN 상태로 변경합니다. 시작일, 종료일, 재고 등의 조건을 검증합니다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상태 업데이트 성공"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 상태 변경 요청"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "권한이 없거나 오픈 조건 미충족"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "공동구매를 찾을 수 없음"
-            )
+            @ApiResponse(responseCode = "200",description = "상태 업데이트 성공"),
+            @ApiResponse(responseCode = "400", description = "공동구매 시작일이 아직 되지 않았습니다."),
+            @ApiResponse(responseCode = "400", description = "다른 판매자의 공동구매에 접근할 수 없습니다."),
+            @ApiResponse(responseCode = "400", description = "해당 공동구매를 찾을 수 없습니다."),
+            @ApiResponse(responseCode = "400", description = "현재 상태에서 요청한 상태로 변경할 수 없습니다.")
     })
-
     @PatchMapping("/{sellerId}/{groupBuyId}/status")
     public ResponseEntity<ApiResponseFormat<Void>> updateGroupBuyStatus(
-            @Parameter(description = "판매자 ID", example = "1")
             @PathVariable Long sellerId,
-            @Parameter(description = "공동구매 ID", example = "1")
             @PathVariable Long groupBuyId,
             @Valid @RequestBody GroupBuyStatusUpdateRequest request) {
 
@@ -129,6 +134,15 @@ public class GroupBuyController {
         ));
     }
 
+    @Operation(
+            summary = "공동구매 목록 조회",
+            description = "카테고리별, 정렬 기준별로 공동구매 목록을 조회합니다. 페이지네이션과 필터링을 지원합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "공동구매 목록 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "해당 카테고리를 찾을 수 없음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<GroupBuyListResponse>>> getGroupBuyList(
             @RequestParam(required = false) Long categoryId,

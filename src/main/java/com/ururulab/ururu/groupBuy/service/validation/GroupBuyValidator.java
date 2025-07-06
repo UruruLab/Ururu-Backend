@@ -10,6 +10,7 @@ import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyStatusUpdateRequest;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
+import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ public class GroupBuyValidator {
     private final GroupBuyDiscountStageValidator discountStageValidator;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final ProductOptionRepository productOptionRepository;
+    private final SellerRepository sellerRepository;
 
     public void validateCritical(GroupBuyRequest request) {
         validateSchedule(request.startAt(), request.endsAt());
@@ -106,6 +108,19 @@ public class GroupBuyValidator {
 
         log.debug("Seller access validated successfully - sellerId: {}, groupBuyId: {}",
                 sellerId, groupBuy.getId());
+    }
+
+    /**
+     * 판매자 존재 여부 검증
+     * @param sellerId 판매자 ID
+     * @throws BusinessException 판매자가 존재하지 않는 경우
+     */
+    public void validateSellerExists(Long sellerId) {
+        if (!sellerRepository.existsById(sellerId)) {
+            log.error("Seller not found with ID: {}", sellerId);
+            throw new BusinessException(SELLER_NOT_FOUND, sellerId);
+        }
+        log.debug("Seller existence validated successfully - sellerId: {}", sellerId);
     }
 
     /**
