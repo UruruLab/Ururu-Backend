@@ -14,6 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -146,7 +148,7 @@ public class GroupBuyController {
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<GroupBuyListResponse>>> getGroupBuyList(
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "order_count") String sort) {
         List<GroupBuyListResponse> responses;
 
