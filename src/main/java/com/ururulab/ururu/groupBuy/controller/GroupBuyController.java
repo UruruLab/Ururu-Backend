@@ -95,8 +95,10 @@ public class GroupBuyController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "공동구매 상세 정보 조회 성공"),
-            @ApiResponse(responseCode = "400", description = "해당 공동구매를 찾을 수 없습니다."),
-            @ApiResponse(responseCode = "400", description = "다른 판매자의 공동구매에 접근할 수 없습니다."),
+            @ApiResponse(responseCode = "400", description = """
+                    - 해당 공동구매를 찾을 수 없습니다.
+                    - 다른 판매자의 공동구매에 접근할 수 없습니다.
+                    """),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 판매자입니다."),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
@@ -116,10 +118,12 @@ public class GroupBuyController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200",description = "상태 업데이트 성공"),
-            @ApiResponse(responseCode = "400", description = "공동구매 시작일이 아직 되지 않았습니다."),
-            @ApiResponse(responseCode = "400", description = "다른 판매자의 공동구매에 접근할 수 없습니다."),
-            @ApiResponse(responseCode = "400", description = "해당 공동구매를 찾을 수 없습니다."),
-            @ApiResponse(responseCode = "400", description = "현재 상태에서 요청한 상태로 변경할 수 없습니다.")
+            @ApiResponse(responseCode = "400", description = """
+                    - 공동구매 시작일이 아직 되지 않았습니다.
+                    - 다른 판매자의 공동구매에 접근할 수 없습니다.
+                    - 해당 공동구매를 찾을 수 없습니다.
+                    - 현재 상태에서 요청한 상태로 변경할 수 없습니다.
+                    """)
     })
     @PatchMapping("/{sellerId}/{groupBuyId}/status")
     public ResponseEntity<ApiResponseFormat<Void>> updateGroupBuyStatus(
