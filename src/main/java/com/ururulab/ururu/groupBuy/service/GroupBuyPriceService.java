@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NOT_FOUND;
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +38,12 @@ public class GroupBuyPriceService {
 
         List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
 
-        Integer originalPrice = options.get(0).getPriceOverride();
+        //Integer originalPrice = options.get(0).getPriceOverride();
+        Integer originalPrice = options.stream()
+                .map(GroupBuyOption::getPriceOverride)
+                .min(Integer::compareTo)
+                .orElseThrow(() -> new BusinessException(GROUPBUY_NO_OPTIONS));
+
         Integer maxDiscountRate = getMaxDiscountRate(groupBuy.getDiscountStages());
         Integer finalPrice = originalPrice * (100 - maxDiscountRate) / 100;
 

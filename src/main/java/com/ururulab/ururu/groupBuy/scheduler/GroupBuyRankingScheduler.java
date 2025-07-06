@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class GroupBuyRankingScheduler {
     private final GroupBuyRankingService rankingService;
 
-    @Scheduled(fixedRate = 180000) // 15분
+    @Scheduled(fixedRate = 900000) // 15분
     public void syncOrderCounts() {
         log.info("Starting scheduled Redis synchronization...");
 

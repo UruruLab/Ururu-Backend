@@ -1,6 +1,7 @@
 package com.ururulab.ururu.groupBuy.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
@@ -9,6 +10,8 @@ import com.ururulab.ururu.groupBuy.util.TimeCalculator;
 
 import java.time.Instant;
 import java.util.List;
+
+import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NO_OPTIONS;
 
 public record GroupBuyListResponse(
         Long id,
@@ -29,6 +32,11 @@ public record GroupBuyListResponse(
         List<DiscountStageDto> stages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
         Integer maxDiscountRate = stages.get(stages.size() - 1).discountRate();
         Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
+        Integer startPrice = options.stream()
+                .map(GroupBuyOption::getPriceOverride)
+                .min(Integer::compareTo)
+                .orElseThrow(() -> new BusinessException(GROUPBUY_NO_OPTIONS));
+
 
         return new GroupBuyListResponse
                 (
@@ -36,7 +44,7 @@ public record GroupBuyListResponse(
                 groupBuy.getTitle(), // 공구 제목
                 groupBuy.getThumbnailUrl(), //공구 썸네일
                 groupBuy.getDisplayFinalPrice(), // 공구 메인 가격
-                options.get(0).getPriceOverride(), // 공구 첫번째 공구 시작가
+                startPrice, // 공구 옵션 중 최저가
                 maxDiscountRate, // 최대 할인률
                 groupBuy.getEndsAt(), // 공구 종료일
                 remainingSeconds, // 종료일까지 남은 초
