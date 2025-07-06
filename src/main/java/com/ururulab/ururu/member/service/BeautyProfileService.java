@@ -2,10 +2,10 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
 import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
-import com.ururulab.ururu.member.controller.dto.request.BeautyProfileRequest;
-import com.ururulab.ururu.member.controller.dto.response.BeautyProfileCreateResponse;
-import com.ururulab.ururu.member.controller.dto.response.BeautyProfileGetResponse;
-import com.ururulab.ururu.member.controller.dto.response.BeautyProfileUpdateResponse;
+import com.ururulab.ururu.member.dto.request.BeautyProfileRequest;
+import com.ururulab.ururu.member.dto.response.BeautyProfileCreateResponse;
+import com.ururulab.ururu.member.dto.response.BeautyProfileGetResponse;
+import com.ururulab.ururu.member.dto.response.BeautyProfileUpdateResponse;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;

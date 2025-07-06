@@ -28,16 +28,6 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
     Optional<GroupBuyOption> findByIdWithDetails(@Param("optionId") Long optionId);
 
     /**
-     * 공동구매별 옵션 조회 (ProductOption 정보 포함)
-     * 상세 페이지에서 사용 - 옵션의 이름, 가격, 이미지 등이 필요
-     */
-    @Query("SELECT gbo FROM GroupBuyOption gbo " +
-            "LEFT JOIN FETCH gbo.productOption po " +
-            "WHERE gbo.groupBuy = :groupBuy " +
-            "ORDER BY po.id ASC")
-    List<GroupBuyOption> findAllByGroupBuy(GroupBuy groupBuy);
-
-    /**
      * 공구 옵션 재고 차감
      * Payment 도메인에서 결제 완료 시 사용:
      * - 결제 승인 완료 후 실제 재고 차감
@@ -48,6 +38,16 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
     @Query("UPDATE GroupBuyOption gbo SET gbo.stock = gbo.stock - :quantity " +
             "WHERE gbo.id = :optionId AND gbo.stock >= :quantity")
     int decreaseStock(@Param("optionId") Long optionId, @Param("quantity") Integer quantity);
+
+    /**
+     * 공동구매별 옵션 조회 (ProductOption 정보 포함)
+     * 상세 페이지에서 사용 - 옵션의 이름, 가격, 이미지 등이 필요
+     */
+    @Query("SELECT gbo FROM GroupBuyOption gbo " +
+            "LEFT JOIN FETCH gbo.productOption po " +
+            "WHERE gbo.groupBuy = :groupBuy " +
+            "ORDER BY po.id ASC")
+    List<GroupBuyOption> findAllByGroupBuy(GroupBuy groupBuy);
 
     /**
      * 공동구매별 옵션 조회 (기본 - ProductOption 페치 없음)
