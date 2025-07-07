@@ -56,6 +56,8 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
 
         try {
             final String requestBody = kakaoOAuthProperties.buildTokenRequestBody(code);
+            log.debug("카카오 토큰 요청 - URI: {}, Body: {}", kakaoOAuthProperties.getTokenUri(), requestBody);
+            
             final String response = socialLoginRestClient.post()
                     .uri(kakaoOAuthProperties.getTokenUri())
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -63,11 +65,12 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     .retrieve()
                     .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
                         final String errorMsg = String.format("카카오 토큰 요청 실패: %s", res.getStatusCode());
-                        log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getTokenUri());
+                        log.error("{} - URI: {}, RequestBody: {}", errorMsg, kakaoOAuthProperties.getTokenUri(), requestBody);
                         throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
                     })
                     .body(String.class);
 
+            log.debug("카카오 토큰 응답: {}", response);
             return extractAccessToken(response);
         } catch (final BusinessException e) {
             throw e;
@@ -82,6 +85,9 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
         validateAccessToken(accessToken);
 
         try {
+            log.debug("카카오 회원 정보 요청 - URI: {}, Token: {}...", 
+                    kakaoOAuthProperties.getMemberInfoUri(), accessToken.substring(0, Math.min(10, accessToken.length())));
+                    
             final String response = socialLoginRestClient.get()
                     .uri(kakaoOAuthProperties.getMemberInfoUri())
                     .header(HttpHeaders.AUTHORIZATION, BEARER_PREFIX + accessToken)
@@ -93,6 +99,7 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     })
                     .body(String.class);
 
+            log.debug("카카오 회원 정보 응답: {}", response);
             return parseMemberInfo(response);
         } catch (final BusinessException e) {
             throw e;
