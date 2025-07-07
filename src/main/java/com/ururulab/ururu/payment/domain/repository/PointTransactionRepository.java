@@ -27,4 +27,6 @@ public interface PointTransactionRepository extends JpaRepository<PointTransacti
             @Param("source") PointSource source,
             Pageable pageable
     );
+
+    int countByMemberId(Long memberId);
 }

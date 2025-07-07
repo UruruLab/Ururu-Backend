@@ -2,14 +2,21 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
-import com.ururulab.ururu.member.controller.dto.request.MemberRequest;
-import com.ururulab.ururu.member.controller.dto.response.*;
+import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
+import com.ururulab.ururu.member.dto.request.MemberRequest;
+import com.ururulab.ururu.member.dto.response.*;
+import com.ururulab.ururu.order.domain.entity.Cart;
+import com.ururulab.ururu.order.domain.repository.CartItemRepository;
+import com.ururulab.ururu.order.domain.repository.CartRepository;
+import com.ururulab.ururu.order.domain.repository.OrderRepository;
+import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
+import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -28,6 +36,11 @@ public class MemberService {
     private final BeautyProfileRepository beautyProfileRepository;
     private final ShippingAddressRepository shippingAddressRepository;
     private final MemberAgreementRepository memberAgreementRepository;
+    private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final PointTransactionRepository pointTransactionRepository;
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
@@ -37,44 +50,10 @@ public class MemberService {
         ).orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
-    @Transactional
-    public Member createMember(final MemberRequest request) {
-        validateMemberCreation(request);
-
-        final Member member = Member.of(
-                request.nickname(),
-                request.email(),
-                request.socialProvider(),
-                request.socialId(),
-                parseGender(request.gender()),
-                request.birth(),
-                request.phone(),
-                request.profileImage(),
-                Role.NORMAL
-        );
-
-        final Member savedMember = memberRepository.save(member);
-        log.debug("New member created with ID: {}", savedMember.getId());
-
-        return savedMember;
-    }
-
-    @Transactional(readOnly = true)
-    public MemberGetResponse getMemberProfile(final Long memberId) {
-        final Member member = findActiveMemberById(memberId);
-        return MemberGetResponse.from(member);
-    }
-
     @Transactional(readOnly = true)
     public MemberGetResponse getMyProfile(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
         return MemberGetResponse.from(member);
-    }
-
-    @Transactional
-    public MemberUpdateResponse updateMemberProfile(final Long memberId, final MemberRequest request) {
-        final Member updatedMember = updateProfile(memberId, request);
-        return MemberUpdateResponse.from(updatedMember);
     }
 
     @Transactional
@@ -156,6 +135,18 @@ public class MemberService {
         return WithdrawalPreviewResponse.of(memberInfo, lossInfo);
     }
 
+    @Transactional(readOnly = true)
+    public MemberMyPageResponse getMyPage(final Long memberId) {
+        final Member member = findActiveMemberById(memberId);
+        final Optional<BeautyProfile> beautyProfileOpt = beautyProfileRepository.findByMemberId(memberId);
+
+        if (beautyProfileOpt.isPresent()) {
+            return MemberMyPageResponse.of(member, beautyProfileOpt.get());
+        } else {
+            return MemberMyPageResponse.from(member);
+        }
+    }
+
 
 
     private Member updateProfile(final Long memberId, final MemberRequest request) {
@@ -198,20 +189,6 @@ public class MemberService {
         return savedMember;
     }
 
-    private void validateMemberCreation(final MemberRequest request) {
-        if (memberRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        }
-
-        if (memberRepository.existsByNickname(request.nickname())) {
-            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
-        }
-
-        if (memberRepository.existsBySocialProviderAndSocialId(
-                request.socialProvider(), request.socialId())) {
-            throw new IllegalArgumentException("이미 등록된 소셜 계정입니다.");
-        }
-    }
 
     private void updateMemberFields(final Member member, final MemberRequest request) {
         if (request.nickname() != null) { member.updateNickname(request.nickname());}
@@ -244,19 +221,17 @@ public class MemberService {
     private void validateMemberDeletion(final Long memberId) {
         // TODO: 실제 Repository 구현 후 주석 해제
 
-        // 1. 활성 주문 확인
-        // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-        // if (activeOrders > 0) {
-        //     throw new IllegalStateException(
-        //         String.format("진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다.", activeOrders)
-        //     );
-        // }
+         int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+         if (activeOrders > 0) {
+             throw new IllegalStateException(
+                 String.format("진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다.", activeOrders)
+             );
+         }
 
-        // 2. 진행 중인 결제 확인
-        // boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
-        // if (hasPendingPayments) {
-        //     throw new IllegalStateException("진행 중인 결제가 있어 탈퇴할 수 없습니다.");
-        // }
+         boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
+         if (hasPendingPayments) {
+             throw new IllegalStateException("진행 중인 결제가 있어 탈퇴할 수 없습니다.");
+         }
 
         // 3. 환불 진행 중인 건 확인
         // boolean hasProcessingRefunds = refundRepository.existsProcessingRefundsByMemberId(memberId);
@@ -268,7 +243,6 @@ public class MemberService {
     }
 
     private void cleanupMemberRelatedData(final Long memberId) {
-        // TODO: 실제 Repository들이 구현되면 아래 로직 구현
 
         try {
             cleanupCart(memberId);
@@ -286,12 +260,12 @@ public class MemberService {
     }
 
     private void cleanupCart(final Long memberId) {
-        // TODO: 구현
-        // Cart cart = cartRepository.findByMemberId(memberId);
-        // if (cart != null) {
-        //     cartItemRepository.deleteByCartId(cart.getId());
-        //     cartRepository.delete(cart);
-        // }
+        Optional<Cart> cartOpt = cartRepository.findByMemberId(memberId);
+        if (cartOpt.isPresent()) {
+            Cart cart = cartOpt.get();
+            cart.clearItems();
+            cartRepository.delete(cart);
+        }
         log.debug("Cart cleanup completed for member ID: {}", memberId);
     }
 
@@ -306,21 +280,16 @@ public class MemberService {
     private WithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
         // TODO: 실제 Repository들이 구현되면 아래 주석을 해제하고 실제 데이터 조회
 
-        // int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-        int activeOrders = 0; // 임시
 
         // int reviewCount = reviewRepository.countByMemberIdAndIsDeleteFalse(memberId);
         int reviewCount = 0; // 임시
 
+        int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
         boolean beautyProfileExists = beautyProfileRepository.existsByMemberId(memberId);
         int shippingAddressesCount = shippingAddressRepository.countByMemberId(memberId);
         int memberAgreementsCount = memberAgreementRepository.countByMemberId(memberId);
-
-        // int cartItemsCount = cartItemRepository.countByCart_MemberId(memberId);
-        int cartItemsCount = 0; // 임시
-
-        // int pointTransactionsCount = pointTransactionRepository.countByMemberId(memberId);
-        int pointTransactionsCount = 0; // 임시
+        int cartItemsCount = cartItemRepository.countByCartMemberId(memberId);
+        int pointTransactionsCount = pointTransactionRepository.countByMemberId(memberId);
 
         return WithdrawalPreviewResponse.LossInfo.of(
                 member.getPoint(),

@@ -39,5 +39,22 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
             "WHERE gbo.id = :optionId AND gbo.stock >= :quantity")
     int decreaseStock(@Param("optionId") Long optionId, @Param("quantity") Integer quantity);
 
+    /**
+     * 공동구매별 옵션 조회 (ProductOption 정보 포함)
+     * 상세 페이지에서 사용 - 옵션의 이름, 가격, 이미지 등이 필요
+     */
+    @Query("SELECT gbo FROM GroupBuyOption gbo " +
+            "LEFT JOIN FETCH gbo.productOption po " +
+            "WHERE gbo.groupBuy = :groupBuy " +
+            "ORDER BY po.id ASC")
     List<GroupBuyOption> findAllByGroupBuy(GroupBuy groupBuy);
+
+    /**
+     * 공동구매별 옵션 조회 (기본 - ProductOption 페치 없음)
+     * 단순 재고 조회 등에 사용
+     */
+    @Query("SELECT gbo FROM GroupBuyOption gbo " +
+            "WHERE gbo.groupBuy = :groupBuy " +
+            "ORDER BY gbo.id ASC")
+    List<GroupBuyOption> findAllByGroupBuyBasic(@Param("groupBuy") GroupBuy groupBuy);
 }

@@ -24,4 +24,6 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
     @Modifying
     @Query("UPDATE ProductOption po SET po.isDeleted = true WHERE po.product.id = :productId AND po.isDeleted = false")
     void markAllAsDeletedByProductId(@Param("productId") Long productId);
+
+    List<ProductOption> findByProductId(Long productId);
 }
