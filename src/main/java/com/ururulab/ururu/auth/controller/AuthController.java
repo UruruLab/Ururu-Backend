@@ -65,52 +65,7 @@ public class AuthController {
             @RequestParam(required = false) final String error,
             final HttpServletResponse response) {
 
-        log.info("Kakao OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
-                error, code != null, state != null, getCurrentProfile());
-
-        // 에러 처리
-        if (error != null) {
-            return redirectToError(error, "kakao");
-        }
-
-        // 인증 코드 필수 검증
-        if (code == null || code.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
-        }
-
-        // 중복 코드 사용 방지
-        if (USED_CODES.contains(code)) {
-            log.warn("Kakao OAuth code already used: {}...", maskSensitiveData(code));
-            return redirectToError("code_already_used", "kakao");
-        }
-
-        try {
-            // 코드를 사용된 목록에 추가 (중복 방지)
-            USED_CODES.add(code);
-            
-            // 소셜로그인 처리
-            final SocialLoginService kakaoService = socialLoginServiceFactory.getService(SocialProvider.KAKAO);
-            final SocialLoginResponse loginResponse = kakaoService.processLogin(code);
-
-            // JWT 토큰을 쿠키로 설정
-            setSecureCookies(response, loginResponse);
-
-            // 프론트엔드 성공 페이지로 리다이렉트
-            final RedirectView redirectView = new RedirectView();
-            redirectView.setContextRelative(false);
-            final String redirectUrl = buildFrontendUrl("/auth/success");
-            redirectView.setUrl(redirectUrl);
-
-            log.info("Kakao login successful for user: {} (env: {})", 
-                    maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
-            log.info("Redirecting to: {}", redirectUrl);
-
-            return redirectView;
-        } catch (final Exception e) {
-            // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
-            USED_CODES.remove(code);
-            throw e;
-        }
+        return handleOAuthCallback(code, error, SocialProvider.KAKAO, response);
     }
 
     /**
@@ -123,52 +78,7 @@ public class AuthController {
             @RequestParam(required = false) final String error,
             final HttpServletResponse response) {
 
-        log.info("Google OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
-                error, code != null, state != null, getCurrentProfile());
-
-        // 에러 처리
-        if (error != null) {
-            return redirectToError(error, "google");
-        }
-
-        // 인증 코드 필수 검증
-        if (code == null || code.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
-        }
-
-        // 중복 코드 사용 방지
-        if (USED_CODES.contains(code)) {
-            log.warn("Google OAuth code already used: {}...", maskSensitiveData(code));
-            return redirectToError("code_already_used", "google");
-        }
-
-        try {
-            // 코드를 사용된 목록에 추가 (중복 방지)
-            USED_CODES.add(code);
-            
-            // 소셜로그인 처리
-            final SocialLoginService googleService = socialLoginServiceFactory.getService(SocialProvider.GOOGLE);
-            final SocialLoginResponse loginResponse = googleService.processLogin(code);
-
-            // JWT 토큰을 쿠키로 설정
-            setSecureCookies(response, loginResponse);
-
-            // 프론트엔드 성공 페이지로 리다이렉트
-            final RedirectView redirectView = new RedirectView();
-            redirectView.setContextRelative(false);
-            final String redirectUrl = buildFrontendUrl("/auth/success");
-            redirectView.setUrl(redirectUrl);
-
-            log.info("Google login successful for user: {} (env: {})", 
-                    maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
-            log.info("Redirecting to: {}", redirectUrl);
-
-            return redirectView;
-        } catch (final Exception e) {
-            // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
-            USED_CODES.remove(code);
-            throw e;
-        }
+        return handleOAuthCallback(code, error, SocialProvider.GOOGLE, response);
     }
 
     /**
@@ -333,6 +243,65 @@ public class AuthController {
     }
 
     // Private Helper Methods
+
+    /**
+     * OAuth 콜백 공통 처리 메서드
+     */
+    private RedirectView handleOAuthCallback(
+            final String code,
+            final String error, 
+            final SocialProvider provider,
+            final HttpServletResponse response) {
+        
+        final String providerName = provider.name().toLowerCase();
+        
+        log.info("{} OAuth callback received - error: {}, hasCode: {}, environment: {}", 
+                providerName, error, code != null, getCurrentProfile());
+
+        // 에러 처리
+        if (error != null) {
+            return redirectToError(error, providerName);
+        }
+
+        // 인증 코드 필수 검증
+        if (code == null || code.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
+        }
+
+        // 중복 코드 사용 방지
+        if (USED_CODES.contains(code)) {
+            log.warn("{} OAuth code already used: {}...", providerName, maskSensitiveData(code));
+            return redirectToError("code_already_used", providerName);
+        }
+
+        try {
+            // 코드를 사용된 목록에 추가 (중복 방지)
+            USED_CODES.add(code);
+            
+            // 소셜로그인 처리
+            final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
+            final SocialLoginResponse loginResponse = loginService.processLogin(code);
+
+            // JWT 토큰을 쿠키로 설정
+            setSecureCookies(response, loginResponse);
+
+            // 프론트엔드 성공 페이지로 리다이렉트
+            final RedirectView redirectView = new RedirectView();
+            redirectView.setContextRelative(false);
+            final String redirectUrl = buildFrontendUrl("/auth/success");
+            redirectView.setUrl(redirectUrl);
+
+            log.info("{} login successful for user: {} (env: {})", 
+                    providerName, maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
+            log.info("Redirecting to: {}", redirectUrl);
+
+            return redirectView;
+        } catch (final Exception e) {
+            // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
+            USED_CODES.remove(code);
+            throw e;
+        }
+    }
 
     /**
      * JWT 토큰을 안전한 쿠키로 설정.
