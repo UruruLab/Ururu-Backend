@@ -51,58 +51,48 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     );
 
     /**
-     * 회원별 주문 상태 통계 조회 (수정된 버전)
+     * 1. inProgress: OPEN 상태 + 환불 안된 상품들
      */
-    @Query(value =
-            "SELECT " +
-                    "  (SELECT COUNT(DISTINCT o1.id) FROM orders o1 " +
-                    "   JOIN order_items oi1 ON o1.id = oi1.order_id " +
-                    "   JOIN groupbuy_options gbo1 ON oi1.groupbuy_option_id = gbo1.id " +
-                    "   JOIN groupbuys gb1 ON gbo1.groupbuy_id = gb1.id " +
-                    "   WHERE o1.member_id = :memberId " +
-                    "   AND o1.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
-                    "   AND gb1.status = 'OPEN' " +
-                    "   AND NOT EXISTS (" +
-                    "     SELECT 1 FROM refund_item ri1 " +
-                    "     JOIN refund r1 ON ri1.refund_id = r1.id " +
-                    "     WHERE ri1.order_item_id = oi1.id " +
-                    "     AND r1.status IN ('APPROVED', 'COMPLETED')" +
-                    "   )) as inProgress, " +
-                    "  (SELECT COUNT(DISTINCT o2.id) FROM orders o2 " +
-                    "   WHERE o2.member_id = :memberId " +
-                    "   AND o2.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
-                    "   AND EXISTS (" +
-                    "     SELECT 1 FROM order_items oi2 " +
-                    "     WHERE oi2.order_id = o2.id " +
-                    "     AND NOT EXISTS (" +
-                    "       SELECT 1 FROM refund_item ri2 " +
-                    "       JOIN refund r2 ON ri2.refund_id = r2.id " +
-                    "       WHERE ri2.order_item_id = oi2.id " +
-                    "       AND r2.status IN ('APPROVED', 'COMPLETED')" +
-                    "     )" +
-                    "   ) " +
-                    "   AND NOT EXISTS (" +
-                    "     SELECT 1 FROM order_items oi3 " +
-                    "     JOIN groupbuy_options gbo3 ON oi3.groupbuy_option_id = gbo3.id " +
-                    "     JOIN groupbuys gb3 ON gbo3.groupbuy_id = gb3.id " +
-                    "     WHERE oi3.order_id = o2.id " +
-                    "     AND gb3.status = 'OPEN' " +
-                    "     AND NOT EXISTS (" +
-                    "       SELECT 1 FROM refund_item ri3 " +
-                    "       JOIN refund r3 ON ri3.refund_id = r3.id " +
-                    "       WHERE ri3.order_item_id = oi3.id " +
-                    "       AND r3.status IN ('APPROVED', 'COMPLETED')" +
-                    "     )" +
-                    "   )) as confirmed, " +
-                    "  (SELECT COUNT(r.id) FROM refund r " +
-                    "   JOIN payment p ON r.payment_id = p.id " +
-                    "   WHERE p.member_id = :memberId AND r.status = 'INITIATED') as refundPending",
-            nativeQuery = true)
-    OrderStatisticsProjection getOrderStatisticsByMemberId(@Param("memberId") Long memberId);
+    @Query("SELECT COUNT(DISTINCT o.id) " +
+            "FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.groupBuyOption gbo " +
+            "JOIN gbo.groupBuy gb " +
+            "WHERE o.member.id = :memberId " +
+            "AND o.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
+            "AND gb.status = 'OPEN' " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id" +
+            ")")
+    Long countInProgressOrders(@Param("memberId") Long memberId);
 
-    interface OrderStatisticsProjection {
-        Long getInProgress();
-        Long getConfirmed();
-        Long getRefundPending();
-    }
+    /**
+     * 2. confirmed: CLOSE 상태 + 환불 안된 상품들
+     */
+    @Query("SELECT COUNT(DISTINCT o.id) " +
+            "FROM Order o " +
+            "JOIN o.orderItems oi " +
+            "JOIN oi.groupBuyOption gbo " +
+            "JOIN gbo.groupBuy gb " +
+            "WHERE o.member.id = :memberId " +
+            "AND o.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
+            "AND gb.status != 'OPEN' " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id" +
+            ")")
+    Long countConfirmedOrders(@Param("memberId") Long memberId);
+
+    /**
+     * 3. refundPending: 환불 INITIATED 상태
+     */
+    @Query("SELECT COUNT(r.id) " +
+            "FROM Refund r " +
+            "JOIN r.payment p " +
+            "WHERE p.member.id = :memberId " +
+            "AND r.status = 'INITIATED'")
+    Long countRefundPendingOrders(@Param("memberId") Long memberId);
 }
