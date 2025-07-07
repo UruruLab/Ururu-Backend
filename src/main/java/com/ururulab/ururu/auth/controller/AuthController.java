@@ -397,18 +397,14 @@ public class AuthController {
      */
     private String getFrontendBaseUrl() {
         try {
-            // 개발환경에서는 고정값 사용
-            if (!isProductionEnvironment()) {
-                return "http://localhost:3000";
+            // 설정에서 프론트엔드 URL 가져오기
+            final String frontendUrl = environment.getProperty("app.frontend.base-url");
+            if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
+                return frontendUrl.trim();
             }
             
-            // 운영환경에서만 설정값 사용
-            final String corsOrigins = environment.getProperty("app.cors.allowed-origins[0]");
-            if (corsOrigins != null && !corsOrigins.trim().isEmpty()) {
-                return corsOrigins.trim();
-            }
-            
-            return "https://www.ururu.shop";
+            // 설정이 없을 경우 fallback
+            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
             
         } catch (final Exception e) {
             log.warn("Failed to get frontend URL from yml config, using fallback (env: {}): {}", 
@@ -452,8 +448,8 @@ public class AuthController {
         try {
             return environment.acceptsProfiles("prod");
         } catch (final Exception e) {
-            log.debug("Profile check failed, defaulting to development: {}", e.getMessage());
-            return false;
+            log.error("Profile check failed, defaulting to production for safety: {}", e.getMessage());
+            return true; // 안전을 위해 프로덕션으로 간주
         }
     }
 

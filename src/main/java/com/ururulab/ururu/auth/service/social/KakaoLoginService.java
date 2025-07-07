@@ -56,8 +56,8 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
 
         try {
             final String requestBody = kakaoOAuthProperties.buildTokenRequestBody(code);
-            log.debug("카카오 토큰 요청 - URI: {}, Body: {}", kakaoOAuthProperties.getTokenUri(), requestBody);
-            
+            log.debug("카카오 토큰 요청 - URI: {}, Body: {}", kakaoOAuthProperties.getTokenUri());
+
             final String response = socialLoginRestClient.post()
                     .uri(kakaoOAuthProperties.getTokenUri())
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -70,7 +70,7 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     })
                     .body(String.class);
 
-            log.debug("카카오 토큰 응답: {}", response);
+            log.debug("카카오 토큰 응답 수신 완료 (토큰 정보는 보안상 마스킹됨)");
             return extractAccessToken(response);
         } catch (final BusinessException e) {
             throw e;
@@ -85,8 +85,7 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
         validateAccessToken(accessToken);
 
         try {
-            log.debug("카카오 회원 정보 요청 - URI: {}, Token: {}...", 
-                    kakaoOAuthProperties.getMemberInfoUri(), accessToken.substring(0, Math.min(10, accessToken.length())));
+            log.debug("카카오 회원 정보 요청 - URI: {}", kakaoOAuthProperties.getMemberInfoUri());
                     
             final String response = socialLoginRestClient.get()
                     .uri(kakaoOAuthProperties.getMemberInfoUri())
@@ -99,7 +98,7 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     })
                     .body(String.class);
 
-            log.debug("카카오 회원 정보 응답: {}", response);
+            log.debug("카카오 회원 정보 응답 수신 완료 (개인정보는 보안상 마스킹됨)");
             return parseMemberInfo(response);
         } catch (final BusinessException e) {
             throw e;
