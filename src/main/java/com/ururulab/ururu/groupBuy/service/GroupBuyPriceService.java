@@ -64,4 +64,44 @@ public class GroupBuyPriceService {
                 .max()
                 .orElse(0);
     }
+
+    /**
+     * 최종 할인율로 모든 옵션의 판매가 업데이트
+     * 공동구매 종료 시 최종 할인율 적용
+     *
+     * @param groupBuy 대상 공동구매
+     * @param finalDiscountRate 최종 할인율 (%)
+     */
+    @Transactional
+    public void updateFinalSalePrices(GroupBuy groupBuy, Integer finalDiscountRate) {
+        log.debug("Updating final sale prices for group buy: {} with discount rate: {}%",
+                groupBuy.getId(), finalDiscountRate);
+
+        List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
+
+        if (options.isEmpty()) {
+            log.warn("No options found for group buy: {}", groupBuy.getId());
+            return;
+        }
+
+        // 각 옵션별 최종 판매가 계산 및 업데이트
+        for (GroupBuyOption option : options) {
+            int discountAmount = option.getPriceOverride() * finalDiscountRate / 100;
+            int finalPrice = option.getPriceOverride() - discountAmount;
+
+            // 최종 가격이 음수가 되지 않도록 보장
+            finalPrice = Math.max(finalPrice, 0);
+
+            option.updateSalePrice(finalPrice);
+
+            log.trace("Option {} price updated: {} -> {} ({}% discount)",
+                    option.getId(), option.getPriceOverride(), finalPrice, finalDiscountRate);
+        }
+
+        // 변경된 옵션들 일괄 저장
+        groupBuyOptionRepository.saveAll(options);
+
+        log.info("Updated final sale prices for {} options with {}% discount",
+                options.size(), finalDiscountRate);
+    }
 }

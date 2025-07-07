@@ -4,6 +4,7 @@
     import com.ururulab.ururu.global.exception.BusinessException;
     import com.ururulab.ururu.global.exception.error.ErrorCode;
     import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
+    import com.ururulab.ururu.groupBuy.event.OrderCompletedEvent;
     import com.ururulab.ururu.member.domain.entity.Member;
     import com.ururulab.ururu.member.domain.repository.MemberRepository;
     import com.ururulab.ururu.order.domain.entity.Cart;
@@ -31,6 +32,7 @@
     import lombok.extern.slf4j.Slf4j;
     import org.apache.commons.io.IOUtils;
     import org.springframework.beans.factory.annotation.Value;
+    import org.springframework.context.ApplicationEventPublisher;
     import org.springframework.stereotype.Service;
     import org.springframework.transaction.annotation.Transactional;
     import org.springframework.web.client.RestClient;
@@ -64,6 +66,7 @@
         private final CartRepository cartRepository;
         private final RestClient restClient;
         private final ObjectMapper objectMapper;
+        private final ApplicationEventPublisher eventPublisher;
 
         @Value("${toss.payments.secret-key}")
         private String tossSecretKey;
@@ -298,6 +301,11 @@
             processPointUsage(payment.getMember(), payment.getPoint());
 
             removeOrderedItemsFromCart(payment);
+
+            //결제 완료 후 이벤트 발행 추가
+            OrderCompletedEvent event = OrderCompletedEvent.from(payment.getOrder().getOrderItems());
+            eventPublisher.publishEvent(event);
+            log.info("결제 완료 및 재고 체크 이벤트 발행 - paymentId: {}", payment.getId());
 
             log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
                     payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());

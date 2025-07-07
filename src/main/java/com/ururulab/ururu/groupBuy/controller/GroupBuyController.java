@@ -39,6 +39,15 @@ public class GroupBuyController {
     private final GroupBuyListService groupBuyListService;
     private final GroupBuyProductService groupBuyProductService;
 
+    //임시 - 추후 삭제
+    private final GroupBuyRealtimeCloseService groupBuyRealtimeCloseService;
+
+    @GetMapping("/{groupBuyId}/check-stock") //테스트용
+    public ResponseEntity<String> checkStock(@PathVariable Long groupBuyId) {
+        groupBuyRealtimeCloseService.checkAndCloseIfStockDepleted(groupBuyId);
+        return ResponseEntity.ok("재고 체크 완료");
+    }
+
     @Operation(summary = "공동구매 등록", description = "판매자가 새로운 공동구매를 등록합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "공동구매가 성공적으로 등록되었습니다."),

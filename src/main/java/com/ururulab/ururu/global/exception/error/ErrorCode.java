@@ -69,8 +69,8 @@ public enum ErrorCode {
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH011", "접근 권한이 없습니다."),
 
 	// --- 상품 ---
-	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
-	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
+	PRODUCT_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
+	PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT002", "존재하지 않는 상품입니다."),
 	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
 	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
 	PRODUCT_NOT_EXIST(HttpStatus.BAD_REQUEST, "PRODUCT005", "공동구매 등록 가능한 상품 없습니다."),
@@ -97,7 +97,7 @@ public enum ErrorCode {
 	DUPLICATE_DISCOUNT_STAGE(HttpStatus.BAD_REQUEST, "GROUPBUY019", "동일한 최소 수량의 할인 단계가 중복됩니다."),
 	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
-	GROUPBUY_NOT_FOUND(HttpStatus.BAD_REQUEST, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
+	GROUPBUY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
 	GROUPBUY_DETAIL_IMAGES_TOO_MANY(HttpStatus.BAD_REQUEST, "GROUPBUY023", "상세 페이지 이미지 개수를 초과하였습니다."),
 	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
 	INVALID_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "GROUPBUY025", "허용되지 않은 상태 변경입니다."),
@@ -108,6 +108,12 @@ public enum ErrorCode {
 	GROUPBUY_NO_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY030", "공동구매에 재고가 없습니다."),
 	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
 	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
+
+	// 공동구매 통계 관련
+	GROUPBUY_STATISTICS_ALREADY_EXISTS(HttpStatus.CONFLICT, "GB_STAT_001", "이미 해당 공동구매의 통계가 존재합니다."),
+	GROUPBUY_STATISTICS_NOT_FOUND(HttpStatus.NOT_FOUND, "GB_STAT_002", "공동구매 통계를 찾을 수 없습니다."),
+	GROUPBUY_STATISTICS_CALCULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GB_STAT_003", "공동구매 통계 계산에 실패했습니다."),
+
 
 
 	// --- 판매자 ---

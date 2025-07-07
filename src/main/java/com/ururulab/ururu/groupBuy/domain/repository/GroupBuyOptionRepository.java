@@ -50,11 +50,8 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
     List<GroupBuyOption> findAllByGroupBuy(GroupBuy groupBuy);
 
     /**
-     * 공동구매별 옵션 조회 (기본 - ProductOption 페치 없음)
-     * 단순 재고 조회 등에 사용
+     * 여러 옵션 ID로 옵션 ID와 이름만 조회 (성능 최적화)
      */
-    @Query("SELECT gbo FROM GroupBuyOption gbo " +
-            "WHERE gbo.groupBuy = :groupBuy " +
-            "ORDER BY gbo.id ASC")
-    List<GroupBuyOption> findAllByGroupBuyBasic(@Param("groupBuy") GroupBuy groupBuy);
+    @Query("SELECT gbo.id, gbo.productOption.name, gbo.productOption.imageUrl FROM GroupBuyOption gbo WHERE gbo.id IN :ids")
+    List<Object[]> findIdAndNameByIdIn(@Param("ids") List<Long> ids);
 }

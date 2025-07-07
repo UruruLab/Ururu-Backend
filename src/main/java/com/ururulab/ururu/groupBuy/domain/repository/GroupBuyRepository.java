@@ -65,4 +65,18 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
     // 전체 공동구매 조회 (DRAFT 제외)
     @Query("SELECT gb FROM GroupBuy gb WHERE gb.status IN ('OPEN', 'CLOSED')")
     List<GroupBuy> findAllPublic();
+
+    /**
+     * 만료된 공동구매 조회 (OPEN 상태이면서 종료일이 지난 것들)
+     * 배치 처리용 - 필요한 연관 엔티티들을 한번에 페치
+     */
+    @Query("""
+        SELECT DISTINCT gb FROM GroupBuy gb
+        LEFT JOIN FETCH gb.product p
+        LEFT JOIN FETCH gb.seller s
+        WHERE gb.status = 'OPEN' 
+        AND gb.endsAt <= :currentTime
+        ORDER BY gb.endsAt ASC
+        """)
+    List<GroupBuy> findExpiredGroupBuys(@Param("currentTime") Instant currentTime);
 }

@@ -71,4 +71,26 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "AND o.status = 'ORDERED' " +
             "GROUP BY oi.groupBuyOption.id")
     List<Object[]> getOptionQuantitiesByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
+
+    /**
+     * 특정 공동구매의 모든 재고가 소진되었는지 확인
+     * 실시간 재고 체크용
+     *
+     * @param groupBuyId 공동구매 ID
+     * @return 모든 재고가 소진되었으면 true, 아니면 false
+     */
+    @Query("""
+        SELECT CASE 
+            WHEN COUNT(gbo) = 0 THEN true 
+            ELSE false 
+        END
+        FROM GroupBuyOption gbo 
+        WHERE gbo.groupBuy.id = :groupBuyId 
+        AND (gbo.stock - COALESCE(
+            (SELECT SUM(oi.quantity) 
+             FROM OrderItem oi 
+             WHERE oi.groupBuyOption.id = gbo.id), 0
+        )) > 0
+        """)
+    boolean isAllStockDepleted(@Param("groupBuyId") Long groupBuyId);
 }
