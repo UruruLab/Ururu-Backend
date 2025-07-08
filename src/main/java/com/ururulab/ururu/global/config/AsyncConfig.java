@@ -45,6 +45,8 @@ public class AsyncConfig {
 		executor.setQueueCapacity(100);
 		executor.setThreadNamePrefix("StockCheck-");
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		executor.setWaitForTasksToCompleteOnShutdown(true); // 데이터 일관성 보장
+		executor.setAwaitTerminationSeconds(30);             // 무한 대기 방지
 		executor.initialize();
 		return executor;
 	}

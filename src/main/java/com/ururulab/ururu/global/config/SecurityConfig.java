@@ -45,8 +45,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/health").permitAll()
-                        .requestMatchers("/products/**").permitAll() // 추후 삭제
-                        .requestMatchers("/groupbuy/**").permitAll() // 추후 삭제
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
