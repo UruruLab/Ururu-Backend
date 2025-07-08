@@ -124,6 +124,9 @@ public class Payment extends BaseEntity {
         if (this.status == PaymentStatus.PAID) {
             throw new IllegalStateException(PaymentPolicy.CANNOT_UPDATE_PAID);
         }
+        if (this.status == PaymentStatus.PARTIAL_REFUNDED) {
+            throw new IllegalStateException(PaymentPolicy.CANNOT_UPDATE_PARTIAL_REFUNDED);
+        }
         if (this.status == PaymentStatus.REFUNDED) {
             throw new IllegalStateException(PaymentPolicy.CANNOT_UPDATE_REFUNDED);
         }
@@ -148,24 +151,15 @@ public class Payment extends BaseEntity {
         if (this.status == PaymentStatus.PAID) {
             throw new IllegalStateException(PaymentPolicy.ALREADY_PAID);
         }
+        if (this.status == PaymentStatus.PARTIAL_REFUNDED) {  // 추가 필요
+            throw new IllegalStateException(PaymentPolicy.ALREADY_PARTIAL_REFUNDED);
+        }
         if (this.status == PaymentStatus.REFUNDED) {
             throw new IllegalStateException(PaymentPolicy.ALREADY_REFUNDED);
         }
 
         this.status = PaymentStatus.PAID;
         this.paidAt = approvedAt;
-    }
-
-    public void markAsRefunded(Instant cancelledAt) {
-        if (cancelledAt == null) {
-            throw new IllegalArgumentException(PaymentPolicy.CANCELLED_AT_REQUIRED);
-        }
-        if (this.status != PaymentStatus.PAID) {
-            throw new IllegalStateException(PaymentPolicy.NOT_PAID);
-        }
-
-        this.status = PaymentStatus.REFUNDED;
-        this.cancelledAt = cancelledAt;
     }
 
     public void markAsFailed() {
@@ -176,6 +170,25 @@ public class Payment extends BaseEntity {
         this.status = PaymentStatus.FAILED;
     }
 
+    public void markAsPartialRefunded() {
+        if (this.status != PaymentStatus.PAID && this.status != PaymentStatus.PARTIAL_REFUNDED) {
+            throw new IllegalStateException(PaymentPolicy.CANNOT_PARTIAL_REFUND_INVALID_STATUS);
+        }
+        this.status = PaymentStatus.PARTIAL_REFUNDED;
+    }
+
+    public void markAsRefunded(Instant cancelledAt) {
+        if (cancelledAt == null) {
+            throw new IllegalArgumentException(PaymentPolicy.CANCELLED_AT_REQUIRED);
+        }
+        if (this.status != PaymentStatus.PAID && this.status != PaymentStatus.PARTIAL_REFUNDED) {
+            throw new IllegalStateException(PaymentPolicy.CANNOT_REFUND_INVALID_STATUS);
+        }
+
+        this.status = PaymentStatus.REFUNDED;
+        this.cancelledAt = cancelledAt;
+    }
+
     public boolean isPending() {return this.status == PaymentStatus.PENDING;}
 
     public boolean isPaid() {
@@ -183,7 +196,11 @@ public class Payment extends BaseEntity {
     }
 
     public boolean isRefundable() {
-        return this.status == PaymentStatus.PAID;
+        return this.status == PaymentStatus.PAID || this.status == PaymentStatus.PARTIAL_REFUNDED;
+    }
+
+    public boolean isPartialRefunded() {
+        return this.status == PaymentStatus.PARTIAL_REFUNDED;
     }
 
     public boolean isCancellable() {

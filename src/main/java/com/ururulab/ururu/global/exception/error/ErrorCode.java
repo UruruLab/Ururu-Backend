@@ -6,7 +6,9 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
+	// --- 공통 ---
 	METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON001", "잘못된 HTTP 메서드를 호출했습니다."),
+	INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "COMMON002", "요청 파라미터가 유효하지 않습니다."),
 
 	// --- 리뷰 ---
 	REVIEW_NOT_FOUND(HttpStatus.BAD_REQUEST, "REVIEW001", "리뷰가 존재하지 않습니다."),
@@ -117,13 +119,11 @@ public enum ErrorCode {
 	GROUPBUY_STATISTICS_CALCULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GB_STAT_003", "공동구매 통계 계산에 실패했습니다."),
 
 
-
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
-
 
 
 	private final HttpStatus status;

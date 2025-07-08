@@ -56,7 +56,6 @@
         private static final String TOSS_PAYMENT_STATUS_CHANGED = "PAYMENT_STATUS_CHANGED"; // 토스 웹훅 이벤트 타입
         private static final String DONE = "DONE"; // Toss 결제 상태가 완료인 경우
 
-
         private final PaymentRepository paymentRepository;
         private final PointTransactionRepository pointTransactionRepository;
         private final OrderRepository orderRepository;
@@ -117,8 +116,7 @@
          * @param orderId 주문 ID
          * @param amount 결제 금액
          */
-        @SuppressWarnings("unused")
-        public void handlePaymentSuccess(final String paymentKey, final String orderId, final Integer amount) {
+        public void handlePaymentSuccess(final String paymentKey, final String orderId, @SuppressWarnings("unused") final Integer amount) {
             // 단순히 성공 안내만 함, 실제 처리는 결제 승인에서
             log.debug("결제 성공 리다이렉트 처리 - paymentKey: {}, orderId: {}", paymentKey, orderId);
         }
