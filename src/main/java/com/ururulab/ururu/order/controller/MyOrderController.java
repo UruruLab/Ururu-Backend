@@ -7,15 +7,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/api")
 @Tag(name = "주문/배송 내역", description = "주문/배송 내역 조회 API")
 public class MyOrderController {
@@ -32,8 +36,8 @@ public class MyOrderController {
     public ResponseEntity<ApiResponseFormat<MyOrderListResponseDto>> getMyOrders(
             @AuthenticationPrincipal Long memberId,
             @RequestParam(defaultValue = "all") String status,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "5") @Min(1) @Max(100) int size
     ) {
         log.debug("나의 주문 목록 조회 요청 - 회원ID: {}, 상태: {}, 페이지: {}, 크기: {}",
                 memberId, status, page, size);
