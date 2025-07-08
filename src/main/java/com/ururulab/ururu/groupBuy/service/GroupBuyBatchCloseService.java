@@ -78,6 +78,8 @@ public class GroupBuyBatchCloseService {
 
     /**
      * 공동구매 상태 업데이트 및 최종 가격 적용
+     * @param groupBuys
+     * @param statisticsList
      */
     private void updateGroupBuyStatusesAndPrices(List<GroupBuy> groupBuys,
                                                  List<GroupBuyStatistics> statisticsList) {

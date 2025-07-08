@@ -52,7 +52,7 @@ public class UpdateGroupBuyStatusService {
         groupBuyValidator.validateGroupBuyOpenConditions(groupBuy);
 
         // 5. 상태 업데이트
-        groupBuy.updateStatus(request.status());
+        groupBuy.startGroupBuy(request.status());
 
         // 6. 옵션 할인가 계산 (OPEN 시점에 초기 할인율 적용)
         if (request.status() == GroupBuyStatus.OPEN) {

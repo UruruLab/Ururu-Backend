@@ -65,7 +65,8 @@ public class GroupBuy extends BaseEntity {
     @Column(name = "display_final_price")
     private Integer displayFinalPrice;
 
-    @Column(nullable = false)
+    //@Column(nullable = false)
+    @Column(nullable = true)
     private Instant startAt; // 공동구매 시작일
 
     @Column(nullable = false)
@@ -108,6 +109,14 @@ public class GroupBuy extends BaseEntity {
 
     public void updateStatus(GroupBuyStatus status) {
         this.status = status;
+    }
+
+    /**
+     * 공동구매 시작 - DRAFT → OPEN 전환 시 호출
+     */
+    public void startGroupBuy(GroupBuyStatus status) {
+        this.status = status;
+        this.startAt = Instant.now();
     }
 
     /**

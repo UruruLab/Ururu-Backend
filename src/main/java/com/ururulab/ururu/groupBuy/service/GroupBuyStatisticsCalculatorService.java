@@ -25,6 +25,8 @@ public class GroupBuyStatisticsCalculatorService {
 
     /**
      * 배치용 - 여러 공동구매의 통계를 한번에 계산
+     * @param groupBuys
+     * @return
      */
     public List<GroupBuyStatistics> calculateBatchStatistics(List<GroupBuy> groupBuys) {
         if (groupBuys.isEmpty()) return List.of();
@@ -45,6 +47,8 @@ public class GroupBuyStatisticsCalculatorService {
 
     /**
      * 단일 공동구매 통계 계산 (실시간용)
+     * @param groupBuy
+     * @return
      */
     public GroupBuyStatistics calculateSingleStatistics(GroupBuy groupBuy) {
         int quantity = getTotalQuantityByGroupBuyId(groupBuy.getId());
@@ -53,6 +57,9 @@ public class GroupBuyStatisticsCalculatorService {
 
     /**
      * 공통 통계 계산 로직
+     * @param groupBuy
+     * @param totalQuantity
+     * @return
      */
     private GroupBuyStatistics calculateStatistics(GroupBuy groupBuy, int totalQuantity) {
         int discountRate = calculateFinalDiscountRate(groupBuy.getDiscountStages(), totalQuantity);
@@ -70,6 +77,9 @@ public class GroupBuyStatisticsCalculatorService {
 
     /**
      * 최종 할인율 계산
+     * @param discountStagesJson
+     * @param totalQuantity
+     * @return
      */
     public int calculateFinalDiscountRate(String discountStagesJson, int totalQuantity) {
         if (totalQuantity <= 0) return 0;
@@ -89,6 +99,8 @@ public class GroupBuyStatisticsCalculatorService {
 
     /**
      * 단일 공동구매의 총 주문 수량 조회
+     * @param groupBuyId
+     * @return
      */
     private int getTotalQuantityByGroupBuyId(Long groupBuyId) {
         Integer result = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuyId);
@@ -97,6 +109,8 @@ public class GroupBuyStatisticsCalculatorService {
 
     /**
      * 여러 공동구매 ID의 총 주문 수량 조회
+     * @param groupBuyIds
+     * @return
      */
     private Map<Long, Integer> getTotalQuantitiesByGroupBuyIds(List<Long> groupBuyIds) {
         List<Object[]> results = orderItemRepository.getTotalQuantitiesByGroupBuyIds(groupBuyIds);
