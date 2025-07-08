@@ -23,7 +23,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("groupBuyOptionId") Long groupBuyOptionId
     );
 
-
     /**
      * 특정 공동구매의 유효 주문 수량 조회
      * - 공동구매 종료(CLOSED) 시, 최종 할인율 적용을 위한 기준 수량 계산에 사용
