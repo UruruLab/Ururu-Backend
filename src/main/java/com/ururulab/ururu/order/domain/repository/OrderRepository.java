@@ -23,7 +23,55 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     int countActiveOrdersByMemberId(@Param("memberId") Long memberId);
 
     /**
-     * 회원의 주문 목록 조회 - 환불되지 않은 OrderItem이 있는 주문만
+     * 진행중 공구의 주문 목록 조회 (연관 엔티티 페치조인)
+     */
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "LEFT JOIN FETCH o.orderItems oi " +
+            "LEFT JOIN FETCH oi.groupBuyOption gbo " +
+            "LEFT JOIN FETCH gbo.groupBuy gb " +
+            "LEFT JOIN FETCH gb.product p " +
+            "LEFT JOIN FETCH gbo.productOption po " +
+            "WHERE o.member.id = :memberId " +
+            "AND o.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
+            "AND gb.status = 'OPEN' " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id " +
+            "  AND r.status IN ('APPROVED', 'COMPLETED')" +
+            ") " +
+            "ORDER BY o.createdAt DESC")
+    Page<Order> findInProgressOrdersWithDetails(
+            @Param("memberId") Long memberId,
+            Pageable pageable
+    );
+
+    /**
+     * 확정된 공구의 주문 목록 조회 (연관 엔티티 페치조인)
+     */
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "LEFT JOIN FETCH o.orderItems oi " +
+            "LEFT JOIN FETCH oi.groupBuyOption gbo " +
+            "LEFT JOIN FETCH gbo.groupBuy gb " +
+            "LEFT JOIN FETCH gb.product p " +
+            "LEFT JOIN FETCH gbo.productOption po " +
+            "WHERE o.member.id = :memberId " +
+            "AND o.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
+            "AND gb.status = 'CLOSED' " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id " +
+            "  AND r.status IN ('APPROVED', 'COMPLETED')" +
+            ") " +
+            "ORDER BY o.createdAt DESC")
+    Page<Order> findConfirmedOrdersWithDetails(
+            @Param("memberId") Long memberId,
+            Pageable pageable
+    );
+
+    /**
+     * 환불 대기중 주문 목록 조회 (연관 엔티티 페치조인)
      */
     @Query("SELECT DISTINCT o FROM Order o " +
             "LEFT JOIN FETCH o.orderItems oi " +
@@ -34,19 +82,37 @@ public interface OrderRepository extends JpaRepository<Order, String> {
             "WHERE o.member.id = :memberId " +
             "AND o.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
             "AND EXISTS (" +
-            "  SELECT 1 FROM OrderItem oi2 " +
-            "  WHERE oi2.order.id = o.id " +
-            "  AND NOT EXISTS (" +
-            "    SELECT 1 FROM RefundItem ri " +
-            "    JOIN ri.refund r " +
-            "    WHERE ri.orderItem.id = oi2.id " +
-            "    AND r.status IN ('APPROVED', 'COMPLETED')" +
-            "  )" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id " +
+            "  AND r.status = 'INITIATED'" +
             ") " +
             "ORDER BY o.createdAt DESC")
-    Page<Order> findMyOrdersWithDetails(
+    Page<Order> findRefundPendingOrdersWithDetails(
             @Param("memberId") Long memberId,
-            @Param("status") OrderStatus status,
+            Pageable pageable
+    );
+
+    /**
+     * 전체 주문 목록 조회 (연관 엔티티 페치조인)
+     */
+    @Query("SELECT DISTINCT o FROM Order o " +
+            "LEFT JOIN FETCH o.orderItems oi " +
+            "LEFT JOIN FETCH oi.groupBuyOption gbo " +
+            "LEFT JOIN FETCH gbo.groupBuy gb " +
+            "LEFT JOIN FETCH gb.product p " +
+            "LEFT JOIN FETCH gbo.productOption po " +
+            "WHERE o.member.id = :memberId " +
+            "AND o.status IN ('ORDERED', 'PARTIAL_REFUNDED') " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id " +
+            "  AND r.status IN ('APPROVED', 'COMPLETED')" +
+            ") " +
+            "ORDER BY o.createdAt DESC")
+    Page<Order> findAllOrdersWithDetails(
+            @Param("memberId") Long memberId,
             Pageable pageable
     );
 

@@ -65,14 +65,14 @@ public class MyOrderService {
 
         validateMemberExists(memberId);
 
-        OrderStatus status = parseOrderStatus(statusParam);
+        String statusFilter = parseStatusFilter(statusParam);
 
         // 주문 통계 조회
         Long inProgress = orderRepository.countInProgressOrders(memberId);
         Long confirmed = orderRepository.countConfirmedOrders(memberId);
         Long refundPending = orderRepository.countRefundPendingOrders(memberId);
 
-        Page<Order> orders = getOrdersWithPaging(memberId, status, page, size);
+        Page<Order> orders = getOrdersWithPaging(memberId, statusFilter, page, size);
 
         List<MyOrderResponseDto> orderDtos = orders.getContent().stream()
                 .map(this::toMyOrderResponseDto)
@@ -93,16 +93,20 @@ public class MyOrderService {
      * 페이징된 주문 목록을 조회합니다.
      *
      * @param memberId 회원 ID
-     * @param status 주문 상태
+     * @param statusFilter 공구 상태
      * @param page 페이지 번호
      * @param size 페이지 크기
      * @return 페이징된 주문 목록
      */
     @Transactional(readOnly = true)
-    protected Page<Order> getOrdersWithPaging(Long memberId, OrderStatus status, int page, int size) {
+    protected Page<Order> getOrdersWithPaging(Long memberId, String statusFilter, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-        return orderRepository.findMyOrdersWithDetails(memberId, status, pageable);
-    }
+        return switch (statusFilter) {
+            case "inprogress" -> orderRepository.findInProgressOrdersWithDetails(memberId, pageable);
+            case "confirmed" -> orderRepository.findConfirmedOrdersWithDetails(memberId, pageable);
+            case "refundpending" -> orderRepository.findRefundPendingOrdersWithDetails(memberId, pageable);
+            default -> orderRepository.findAllOrdersWithDetails(memberId, pageable);
+        };    }
 
     /**
      * 회원 존재 여부를 검증합니다.
@@ -117,22 +121,25 @@ public class MyOrderService {
     }
 
     /**
-     * 주문 상태 파라미터를 파싱합니다.
+     * 주문 상태 필터 파라미터를 파싱하고 검증합니다.
      *
-     * @param statusParam 상태 파라미터 문자열
-     * @return 파싱된 주문 상태 (null이면 전체)
+     * @param statusParam 상태 파라미터 ("all", "inprogress", "confirmed", "refundpending")
+     * @return 정규화된 상태 필터 문자열
      */
-    private OrderStatus parseOrderStatus(String statusParam) {
+    private String parseStatusFilter(String statusParam) {
         if (statusParam == null || "all".equalsIgnoreCase(statusParam)) {
-            return null;
+            return "all";
         }
-        try {
-            return OrderStatus.from(statusParam);
-        } catch (IllegalArgumentException e) {
-            log.warn("잘못된 주문 상태 파라미터, all로 처리: {}", statusParam);
-            return null;
+
+        String status = statusParam.toLowerCase();
+        if ("inprogress".equals(status) || "confirmed".equals(status) || "refundpending".equals(status)) {
+            return status;
         }
+
+        log.warn("잘못된 주문 상태 파라미터, all로 처리: {}", statusParam);
+        return "all";
     }
+
 
     /**
      * Order 엔티티를 MyOrderResponseDto로 변환합니다.
