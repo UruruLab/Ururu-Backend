@@ -1,11 +1,11 @@
 package com.ururulab.ururu.global.config;
 
-import lombok.RequiredArgsConstructor;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -81,5 +81,18 @@ public class HttpClientConfig {
         final RestTemplate restTemplate = new RestTemplate();
         restTemplate.setRequestFactory(httpRequestFactory);
         return restTemplate;
+    }
+
+    @Bean("aiServiceRestClient")
+    public RestClient aiServiceRestClient(
+            @Value("${ai.service.url:http://localhost:8001}") final String aiServiceUrl,
+            final HttpComponentsClientHttpRequestFactory httpRequestFactory
+    ) {
+        return RestClient.builder()
+                .baseUrl(aiServiceUrl)
+                .requestFactory(httpRequestFactory)
+                .defaultHeader("Accept", "application/json")
+                .defaultHeader("Content-Type", "application/json")
+                .build();
     }
 }
