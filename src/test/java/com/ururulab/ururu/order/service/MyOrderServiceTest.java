@@ -1,5 +1,6 @@
 package com.ururulab.ururu.order.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
@@ -9,7 +10,6 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyStatistics;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
-import com.ururulab.ururu.groupBuy.domain.entity.enumerated.FinalStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyStatisticsRepository;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
@@ -37,13 +37,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +53,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("MyOrderService 테스트")
 class MyOrderServiceTest {
 
@@ -84,42 +82,20 @@ class MyOrderServiceTest {
 
     private static final Long MEMBER_ID = 1L;
     private static final String ORDER_ID = "ORDER123";
-    private static final Long GROUP_BUY_ID = 100L;
     private static final Integer TOTAL_AMOUNT = 18000;
 
     private Member testMember;
     private Order testOrder;
     private OrderItem testOrderItem;
-    private Payment testPayment;
-    private GroupBuy testGroupBuy;
     private GroupBuyOption testGroupBuyOption;
+    private GroupBuy testGroupBuy;
     private Product testProduct;
     private ProductOption testProductOption;
+    private Payment testPayment;
 
     @BeforeEach
     void setUp() {
         setupTestEntities();
-        setupBasicMocks();
-    }
-
-    private void setupBasicMocks() {
-        // 기본 Mock 설정
-        given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-        given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
-        given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-        given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-        given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
-
-        // 환불되지 않은 상태로 설정 - INITIATED가 존재하지 않아야 화면에 표시됨
-        given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(eq(1L), eq(List.of(RefundStatus.INITIATED))))
-                .willReturn(false);
-
-        // ObjectMapper 기본 설정
-        try {
-            given(objectMapper.readValue(eq("[]"), any(TypeReference.class))).willReturn(List.of());
-        } catch (Exception e) {
-            // 예외 무시
-        }
     }
 
     @Nested
@@ -127,61 +103,87 @@ class MyOrderServiceTest {
     class GetMyOrdersTest {
 
         @Test
-        @DisplayName("성공 - 전체 조회")
-        void getMyOrders_all_success() {
+        @DisplayName("성공 - 진행중 주문 조회 (inProgress)")
+        void getMyOrders_inProgress_success() throws JsonProcessingException {
             // given
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
+
+            given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
+            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
+            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.findInProgressOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
                     .willReturn(orderPage);
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+
+            // ObjectMapper 모킹
+            List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
+            lenient().when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(stages);
+            lenient().when(orderItemRepository.getTotalQuantityByGroupBuyId(testGroupBuy.getId())).thenReturn(25);
 
             // when
-            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "all", 1, 5);
+            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "inProgress", 1, 5);
 
             // then
             assertThat(result.orders()).hasSize(1);
-            assertThat(result.page()).isEqualTo(1);
-            assertThat(result.size()).isEqualTo(5);
-            assertThat(result.total()).isEqualTo(1L);
-
-            MyOrderResponseDto orderDto = result.orders().get(0);
-            assertThat(orderDto.orderId()).isEqualTo(ORDER_ID);
-            // totalAmount는 환불 로직에 따라 달라질 수 있으므로 검증하지 않음
-            assertThat(orderDto.orderItems()).hasSize(1);
-
-            verify(memberRepository).existsById(MEMBER_ID);
-            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class));
+            verify(orderRepository).findInProgressOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
         }
 
         @Test
-        @DisplayName("성공 - 상태 필터링")
-        void getMyOrders_statusFilter_success() {
+        @DisplayName("성공 - 확정 주문 조회 (confirmed)")
+        void getMyOrders_confirmed_success() throws JsonProcessingException {
             // given
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq(OrderStatus.ORDERED), any(Pageable.class)))
+
+            given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
+            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(1L);
+            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.findConfirmedOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
                     .willReturn(orderPage);
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+
+            // ObjectMapper 모킹
+            List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
+            lenient().when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(stages);
+            lenient().when(orderItemRepository.getTotalQuantityByGroupBuyId(testGroupBuy.getId())).thenReturn(25);
 
             // when
-            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "ORDERED", 1, 5);
+            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "confirmed", 1, 5);
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq(OrderStatus.ORDERED), any(Pageable.class));
+            verify(orderRepository).findConfirmedOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
         }
 
         @Test
-        @DisplayName("성공 - 잘못된 상태 파라미터는 all로 처리")
-        void getMyOrders_invalidStatus_treatedAsAll() {
+        @DisplayName("성공 - 환불 대기 주문 조회 (refundPending)")
+        void getMyOrders_refundPending_success() throws JsonProcessingException {
             // given
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
+
+            given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
+            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(1L);
+            given(orderRepository.findRefundPendingOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
                     .willReturn(orderPage);
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+
+            // ObjectMapper 모킹
+            List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
+            lenient().when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(stages);
+            lenient().when(orderItemRepository.getTotalQuantityByGroupBuyId(testGroupBuy.getId())).thenReturn(25);
 
             // when
-            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "INVALID_STATUS", 1, 5);
+            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "refundPending", 1, 5);
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class));
+            verify(orderRepository).findRefundPendingOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
         }
 
         @Test
@@ -197,86 +199,48 @@ class MyOrderServiceTest {
                     .isEqualTo(ErrorCode.MEMBER_NOT_FOUND);
 
             verify(memberRepository).existsById(MEMBER_ID);
-            verify(orderRepository, never()).findMyOrdersWithDetails(anyLong(), any(), any(Pageable.class));
+            verify(orderRepository, never()).findAllOrdersWithDetails(anyLong(), any(Pageable.class));
         }
 
         @Test
-        @DisplayName("결제 정보 없음")
-        void getMyOrders_paymentNotFound_fail() {
+        @DisplayName("성공 - 잘못된 상태 파라미터는 all로 처리")
+        void getMyOrders_invalidStatus_treatedAsAll() throws JsonProcessingException {
             // given
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
-                    .willReturn(orderPage);
-            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
-            // when & then
-            assertThatThrownBy(() -> myOrderService.getMyOrders(MEMBER_ID, "all", 1, 5))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting(ex -> ((BusinessException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("성공 - 환불된 아이템은 제외")
-        void getMyOrders_excludeRefundedItems_success() {
-            // given
-            Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
+            given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
+            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
+            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
                     .willReturn(orderPage);
-            // 환불 신청 상태인 경우
-            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
-                    eq(1L),
-                    eq(List.of(
-                            RefundStatus.APPROVED,
-                            RefundStatus.COMPLETED,
-                            RefundStatus.FAILED,
-                            RefundStatus.REJECTED
-                    ))
-            )).willReturn(true);
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+
+            // ObjectMapper 모킹
+            List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
+            lenient().when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(stages);
+            lenient().when(orderItemRepository.getTotalQuantityByGroupBuyId(testGroupBuy.getId())).thenReturn(25);
 
             // when
-            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "all", 1, 5);
+            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "INVALID_STATUS", 1, 5);
 
             // then
-            MyOrderResponseDto orderDto = result.orders().get(0);
-            assertThat(orderDto.orderItems()).isEmpty(); // 환불 신청된 아이템은 제외됨
+            assertThat(result.orders()).hasSize(1);
+            verify(orderRepository).findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
         }
-
-        @Test
-        @DisplayName("INITIATED 상태의 환불 아이템은 주문 목록에 포함된다")
-        void getMyOrders_initiatedRefundItem_isVisible() {
-            // given
-            Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
-                    .willReturn(orderPage);
-
-            // INITIATED 상태는 제외 대상 아님 → 조회 시 보이는 게 맞음
-            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
-                    eq(1L),
-                    eq(List.of(
-                            RefundStatus.APPROVED,
-                            RefundStatus.COMPLETED,
-                            RefundStatus.FAILED,
-                            RefundStatus.REJECTED
-                    ))
-            )).willReturn(false);
-
-            // when
-            MyOrderListResponseDto result = myOrderService.getMyOrders(MEMBER_ID, "all", 1, 5);
-
-            // then
-            MyOrderResponseDto orderDto = result.orders().get(0);
-            assertThat(orderDto.orderItems()).hasSize(1);
-            assertThat(orderDto.orderItems().get(0).productName()).isEqualTo("테스트 상품");
-        }
-
 
         @Test
         @DisplayName("성공 - 빈 결과")
         void getMyOrders_emptyResult_success() {
             // given
             Page<Order> emptyPage = new PageImpl<>(List.of());
-            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
+
+            given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
+            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
+            given(orderRepository.findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
                     .willReturn(emptyPage);
 
             // when
@@ -284,6 +248,9 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).isEmpty();
+            assertThat(result.inProgress()).isEqualTo(0);
+            assertThat(result.confirmed()).isEqualTo(0);
+            assertThat(result.refundPending()).isEqualTo(0);
             assertThat(result.page()).isEqualTo(1);
             assertThat(result.size()).isEqualTo(5);
             assertThat(result.total()).isEqualTo(0L);
@@ -291,126 +258,193 @@ class MyOrderServiceTest {
     }
 
     @Nested
-    @DisplayName("공구 상태 결정")
-    class DetermineGroupBuyStatusTest {
+    @DisplayName("할인율 계산 테스트")
+    class DiscountRateCalculationTest {
 
         @Test
-        @DisplayName("OPEN 상태 - OPEN 반환")
-        void determineGroupBuyStatus_open_returnsOpen() {
+        @DisplayName("진행 중인 공구의 현재 할인율 계산")
+        void calculateCurrentDiscountRate_openGroupBuy_success() throws Exception {
             // given
-            given(testGroupBuy.getStatus()).willReturn(GroupBuyStatus.OPEN);
+            List<Map<String, Object>> stages = List.of(
+                    Map.of("count", 10, "rate", 5),
+                    Map.of("count", 20, "rate", 10),
+                    Map.of("count", 30, "rate", 15)
+            );
+
+            lenient().when(objectMapper.readValue(anyString(), any(TypeReference.class))).thenReturn(stages);
+            lenient().when(orderItemRepository.getTotalQuantityByGroupBuyId(testGroupBuy.getId())).thenReturn(25);
 
             // when
-            MyOrderListResponseDto result = executeGetMyOrders();
+            Method method = MyOrderService.class.getDeclaredMethod("calculateCurrentDiscountRate", GroupBuy.class);
+            method.setAccessible(true);
+            Integer result = (Integer) method.invoke(myOrderService, testGroupBuy);
 
             // then
-            OrderItemResponseDto orderItem = result.orders().get(0).orderItems().get(0);
-            assertThat(orderItem.status()).isEqualTo("OPEN");
+            assertThat(result).isEqualTo(10);
         }
 
         @Test
-        @DisplayName("CLOSED 상태 - 통계 있음")
-        void determineGroupBuyStatus_closedWithStats_returnsFinalStatus() {
+        @DisplayName("종료된 공구의 최종 할인율 조회")
+        void calculateDiscountRate_closedGroupBuy_success() {
             // given
-            given(testGroupBuy.getStatus()).willReturn(GroupBuyStatus.CLOSED);
+            lenient().when(testGroupBuy.getStatus()).thenReturn(GroupBuyStatus.CLOSED);
             GroupBuyStatistics statistics = mock(GroupBuyStatistics.class);
-            given(statistics.getFinalStatus()).willReturn(FinalStatus.SUCCESS);
-            given(statistics.getFinalDiscountRate()).willReturn(15);
-            given(groupBuyStatisticsRepository.findByGroupBuyId(GROUP_BUY_ID))
-                    .willReturn(Optional.of(statistics));
+            lenient().when(statistics.getFinalDiscountRate()).thenReturn(15);
+            lenient().when(groupBuyStatisticsRepository.findByGroupBuyId(testGroupBuy.getId()))
+                    .thenReturn(Optional.of(statistics));
 
             // when
-            MyOrderListResponseDto result = executeGetMyOrders();
+            try {
+                Method method = MyOrderService.class.getDeclaredMethod("calculateDiscountRate", GroupBuy.class);
+                method.setAccessible(true);
+                Integer result = (Integer) method.invoke(myOrderService, testGroupBuy);
 
-            // then
-            OrderItemResponseDto orderItem = result.orders().get(0).orderItems().get(0);
-            assertThat(orderItem.status()).isEqualTo("SUCCESS");
+                // then
+                assertThat(result).isEqualTo(15);
+            } catch (Exception e) {
+                fail("메서드 호출 실패", e);
+            }
         }
 
         @Test
-        @DisplayName("CLOSED 상태 - 통계 없음")
-        void determineGroupBuyStatus_closedWithoutStats_returnsClosed() {
+        @DisplayName("JSON 파싱 실패 시 0 반환")
+        void calculateCurrentDiscountRate_jsonParseError_returns0() throws Exception {
             // given
-            given(testGroupBuy.getStatus()).willReturn(GroupBuyStatus.CLOSED);
-            given(groupBuyStatisticsRepository.findByGroupBuyId(GROUP_BUY_ID))
-                    .willReturn(Optional.empty());
+            lenient().when(testGroupBuy.getDiscountStages()).thenReturn("invalid json");
+            // ObjectMapper에서 예외 발생 시 catch 블록에서 0 반환하도록 하는 테스트
+            lenient().when(objectMapper.readValue(eq("invalid json"), any(TypeReference.class)))
+                    .thenThrow(new RuntimeException("JSON parse error"));
 
             // when
-            MyOrderListResponseDto result = executeGetMyOrders();
+            Method method = MyOrderService.class.getDeclaredMethod("calculateCurrentDiscountRate", GroupBuy.class);
+            method.setAccessible(true);
+            Integer result = (Integer) method.invoke(myOrderService, testGroupBuy);
 
             // then
-            OrderItemResponseDto orderItem = result.orders().get(0).orderItems().get(0);
-            assertThat(orderItem.status()).isEqualTo("CLOSED");
+            assertThat(result).isEqualTo(0);
         }
     }
 
     @Nested
-    @DisplayName("할인율 계산")
-    class CalculateDiscountRateTest {
+    @DisplayName("환불 상태 확인")
+    class RefundStatusTest {
 
         @Test
-        @DisplayName("OPEN 상태 - 현재 할인율 계산")
-        void calculateDiscountRate_open_returnsCurrentRate() throws Exception {
+        @DisplayName("환불되지 않은 아이템 확인")
+        void isNotRefunded_success() {
             // given
-            given(testGroupBuy.getStatus()).willReturn(GroupBuyStatus.OPEN);
-            String discountStages = "[{\"count\":10,\"rate\":10},{\"count\":30,\"rate\":20}]";
-            given(testGroupBuy.getDiscountStages()).willReturn(discountStages);
-
-            List<Map<String, Object>> stages = List.of(
-                    Map.of("count", 10, "rate", 10),
-                    Map.of("count", 30, "rate", 20)
-            );
-
-            given(objectMapper.readValue(eq(discountStages), any(TypeReference.class)))
-                    .willReturn(stages);
-            given(orderItemRepository.getTotalQuantityByGroupBuyId(GROUP_BUY_ID))
-                    .willReturn(35); // 30개 이상이므로 20% 할인
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
+                    eq(testOrderItem.getId()),
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.FAILED, RefundStatus.REJECTED))
+            )).willReturn(false);
 
             // when
-            MyOrderListResponseDto result = executeGetMyOrders();
+            try {
+                Method method = MyOrderService.class.getDeclaredMethod("isNotRefunded", OrderItem.class);
+                method.setAccessible(true);
+                boolean result = (boolean) method.invoke(myOrderService, testOrderItem);
 
-            // then
-            OrderItemResponseDto orderItem = result.orders().get(0).orderItems().get(0);
-            assertThat(orderItem.rate()).isEqualTo(20);
+                // then
+                assertThat(result).isTrue();
+            } catch (Exception e) {
+                fail("메서드 호출 실패", e);
+            }
         }
 
         @Test
-        @DisplayName("CLOSED 상태 - 최종 할인율")
-        void calculateDiscountRate_closed_returnsFinalRate() {
+        @DisplayName("환불된 아이템 확인")
+        void isNotRefunded_refunded_returnsFalse() {
             // given
-            given(testGroupBuy.getStatus()).willReturn(GroupBuyStatus.CLOSED);
-            GroupBuyStatistics statistics = mock(GroupBuyStatistics.class);
-            given(statistics.getFinalStatus()).willReturn(FinalStatus.SUCCESS);
-            given(statistics.getFinalDiscountRate()).willReturn(15);
-            given(groupBuyStatisticsRepository.findByGroupBuyId(GROUP_BUY_ID))
-                    .willReturn(Optional.of(statistics));
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
+                    eq(testOrderItem.getId()),
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.FAILED, RefundStatus.REJECTED))
+            )).willReturn(true);
 
             // when
-            MyOrderListResponseDto result = executeGetMyOrders();
+            try {
+                Method method = MyOrderService.class.getDeclaredMethod("isNotRefunded", OrderItem.class);
+                method.setAccessible(true);
+                boolean result = (boolean) method.invoke(myOrderService, testOrderItem);
 
-            // then
-            OrderItemResponseDto orderItem = result.orders().get(0).orderItems().get(0);
-            assertThat(orderItem.rate()).isEqualTo(15);
+                // then
+                assertThat(result).isFalse();
+            } catch (Exception e) {
+                fail("메서드 호출 실패", e);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("현재 금액 계산")
+    class CurrentAmountCalculationTest {
+
+        @Test
+        @DisplayName("환불 없는 경우 전체 금액")
+        void calculateCurrentAmount_noRefund_success() {
+            // given
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            // isRefunded = false 이므로 환불되지 않음
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
+                    eq(testOrderItem.getId()),
+                    eq(List.of(RefundStatus.INITIATED))
+            )).willReturn(true); // INITIATED가 있으면 isRefunded = false
+
+            // when
+            try {
+                Method method = MyOrderService.class.getDeclaredMethod("calculateCurrentAmount", Order.class);
+                method.setAccessible(true);
+                Integer result = (Integer) method.invoke(myOrderService, testOrder);
+
+                // then
+                assertThat(result).isEqualTo(TOTAL_AMOUNT); // 환불 없으므로 전체 금액
+            } catch (Exception e) {
+                fail("메서드 호출 실패", e);
+            }
         }
 
         @Test
-        @DisplayName("할인 단계 파싱 실패 - 0% 반환")
-        void calculateDiscountRate_parsingError_returnsZero() throws Exception {
+        @DisplayName("환불 있는 경우 차감된 금액")
+        void calculateCurrentAmount_withRefund_success() {
             // given
-            given(testGroupBuy.getStatus()).willReturn(GroupBuyStatus.OPEN);
-            String invalidJson = "invalid_json";
-            given(testGroupBuy.getDiscountStages()).willReturn(invalidJson);
-
-            // ObjectMapper에서 예외 발생하도록 설정
-            given(objectMapper.readValue(eq(invalidJson), any(TypeReference.class)))
-                    .willThrow(new RuntimeException("Parsing error"));
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            // isRefunded = true 이므로 환불됨
+            given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
+                    eq(testOrderItem.getId()),
+                    eq(List.of(RefundStatus.INITIATED))
+            )).willReturn(false); // INITIATED가 없으면 isRefunded = true
 
             // when
-            MyOrderListResponseDto result = executeGetMyOrders();
+            try {
+                Method method = MyOrderService.class.getDeclaredMethod("calculateCurrentAmount", Order.class);
+                method.setAccessible(true);
+                Integer result = (Integer) method.invoke(myOrderService, testOrder);
 
-            // then
-            OrderItemResponseDto orderItem = result.orders().get(0).orderItems().get(0);
-            assertThat(orderItem.rate()).isEqualTo(0);
+                // then
+                assertThat(result).isEqualTo(TOTAL_AMOUNT - 15000); // 환불된 금액 제외
+            } catch (Exception e) {
+                fail("메서드 호출 실패", e);
+            }
+        }
+
+        @Test
+        @DisplayName("결제 정보 없는 경우 예외")
+        void calculateCurrentAmount_paymentNotFound_throwsException() {
+            // given
+            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
+
+            // when & then
+            try {
+                Method method = MyOrderService.class.getDeclaredMethod("calculateCurrentAmount", Order.class);
+                method.setAccessible(true);
+
+                assertThatThrownBy(() -> method.invoke(myOrderService, testOrder))
+                        .getCause()
+                        .isInstanceOf(BusinessException.class)
+                        .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                        .isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
+            } catch (Exception e) {
+                fail("메서드 호출 실패", e);
+            }
         }
     }
 
@@ -436,65 +470,60 @@ class MyOrderServiceTest {
 
     private Product createTestProduct() {
         Product product = mock(Product.class);
-        given(product.getName()).willReturn("테스트 상품");
+        lenient().when(product.getName()).thenReturn("테스트 상품");
         return product;
     }
 
     private ProductOption createTestProductOption() {
         ProductOption option = mock(ProductOption.class);
-        given(option.getId()).willReturn(10L);
-        given(option.getName()).willReturn("기본 옵션");
-        given(option.getImageUrl()).willReturn("image.jpg");
+        lenient().when(option.getId()).thenReturn(10L);
+        lenient().when(option.getName()).thenReturn("기본 옵션");
+        lenient().when(option.getImageUrl()).thenReturn("image.jpg");
         return option;
     }
 
     private GroupBuy createTestGroupBuy() {
         GroupBuy groupBuy = mock(GroupBuy.class);
-        given(groupBuy.getId()).willReturn(GROUP_BUY_ID);
-        given(groupBuy.getProduct()).willReturn(testProduct);
-        given(groupBuy.getStatus()).willReturn(GroupBuyStatus.OPEN);
-        given(groupBuy.getDiscountStages()).willReturn("[]");
+        lenient().when(groupBuy.getId()).thenReturn(1L);
+        lenient().when(groupBuy.getProduct()).thenReturn(testProduct);
+        lenient().when(groupBuy.getStatus()).thenReturn(GroupBuyStatus.OPEN);
+        lenient().when(groupBuy.getDiscountStages()).thenReturn(
+                "[{\"count\":10,\"rate\":5},{\"count\":20,\"rate\":10},{\"count\":30,\"rate\":15}]"
+        );
         return groupBuy;
     }
 
     private GroupBuyOption createTestGroupBuyOption() {
         GroupBuyOption option = mock(GroupBuyOption.class);
-        given(option.getId()).willReturn(1L);
-        given(option.getGroupBuy()).willReturn(testGroupBuy);
-        given(option.getProductOption()).willReturn(testProductOption);
-        given(option.getSalePrice()).willReturn(15000);
+        lenient().when(option.getId()).thenReturn(1L);
+        lenient().when(option.getGroupBuy()).thenReturn(testGroupBuy);
+        lenient().when(option.getProductOption()).thenReturn(testProductOption);
+        lenient().when(option.getSalePrice()).thenReturn(15000);
         return option;
     }
 
     private OrderItem createTestOrderItem() {
         OrderItem orderItem = mock(OrderItem.class);
-        given(orderItem.getId()).willReturn(1L);
-        given(orderItem.getGroupBuyOption()).willReturn(testGroupBuyOption);
-        given(orderItem.getQuantity()).willReturn(1);
+        lenient().when(orderItem.getId()).thenReturn(1L);
+        lenient().when(orderItem.getGroupBuyOption()).thenReturn(testGroupBuyOption);
+        lenient().when(orderItem.getQuantity()).thenReturn(1);
         return orderItem;
     }
 
     private Order createTestOrder() {
         Order order = mock(Order.class);
-        given(order.getId()).willReturn(ORDER_ID);
-        given(order.getMember()).willReturn(testMember);
-        given(order.getCreatedAt()).willReturn(Instant.now());
-        given(order.getTrackingNumber()).willReturn("TRACK123");
-        given(order.getOrderItems()).willReturn(List.of(testOrderItem));
+        lenient().when(order.getId()).thenReturn(ORDER_ID);
+        lenient().when(order.getMember()).thenReturn(testMember);
+        lenient().when(order.getStatus()).thenReturn(OrderStatus.ORDERED);
+        lenient().when(order.getCreatedAt()).thenReturn(Instant.now());
+        lenient().when(order.getOrderItems()).thenReturn(List.of(testOrderItem));
+        lenient().when(order.getTrackingNumber()).thenReturn(null);
         return order;
     }
 
     private Payment createTestPayment() {
         Payment payment = mock(Payment.class);
-        given(payment.getTotalAmount()).willReturn(TOTAL_AMOUNT);
+        lenient().when(payment.getTotalAmount()).thenReturn(TOTAL_AMOUNT);
         return payment;
-    }
-
-    private MyOrderListResponseDto executeGetMyOrders() {
-        Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
-        given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), isNull(), any(Pageable.class)))
-                .willReturn(orderPage);
-
-        return myOrderService.getMyOrders(MEMBER_ID, "all", 1, 5);
     }
 }
