@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/member/me")
+@RequestMapping("/api")
 @Tag(name = "취소/환불 내역", description = "취소/환불 내역 조회 API")
 public class MyRefundController {
 
@@ -31,7 +31,7 @@ public class MyRefundController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 회원")
     })
-    @GetMapping("/refunds")
+    @GetMapping("/refunds/my")
     public ResponseEntity<ApiResponseFormat<MyRefundListResponseDto>> getMyRefunds(
             @AuthenticationPrincipal Long memberId,
             @RequestParam(defaultValue = "all") String status,
