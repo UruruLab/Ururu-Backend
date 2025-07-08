@@ -170,7 +170,12 @@ public class MyOrderService {
         // INITIATED가 아니면 모두 "환불 안됨"으로 처리
         return !refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                 orderItem.getId(),
-                List.of(RefundStatus.INITIATED)
+                List.of(
+                        RefundStatus.APPROVED,
+                        RefundStatus.COMPLETED,
+                        RefundStatus.FAILED,
+                        RefundStatus.REJECTED
+                )
         );
     }
 
