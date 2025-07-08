@@ -99,7 +99,7 @@ public enum ErrorCode {
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
 	GROUPBUY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
 	GROUPBUY_DETAIL_IMAGES_TOO_MANY(HttpStatus.BAD_REQUEST, "GROUPBUY023", "상세 페이지 이미지 개수를 초과하였습니다."),
-	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
+	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.FORBIDDEN,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
 	INVALID_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "GROUPBUY025", "허용되지 않은 상태 변경입니다."),
 	INVALID_STATUS_TRANSITION(HttpStatus.BAD_REQUEST, "GROUPBUY026", "현재 상태에서 요청한 상태로 변경할 수 없습니다."),
 	GROUPBUY_NOT_STARTED_YET(HttpStatus.BAD_REQUEST, "GROUPBUY027", "공동구매 시작일이 아직 되지 않았습니다."),
@@ -108,8 +108,10 @@ public enum ErrorCode {
 	GROUPBUY_NO_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY030", "공동구매에 재고가 없습니다."),
 	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
 	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
+	GROUPBUY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "GROUPBUY033", "DRAFT 상태인 공동구매만 삭제할 수 있습니다."),
 
-	// 공동구매 통계 관련
+
+	// --- 공동구매 통계 ---
 	GROUPBUY_STATISTICS_ALREADY_EXISTS(HttpStatus.CONFLICT, "GB_STAT_001", "이미 해당 공동구매의 통계가 존재합니다."),
 	GROUPBUY_STATISTICS_NOT_FOUND(HttpStatus.NOT_FOUND, "GB_STAT_002", "공동구매 통계를 찾을 수 없습니다."),
 	GROUPBUY_STATISTICS_CALCULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GB_STAT_003", "공동구매 통계 계산에 실패했습니다."),

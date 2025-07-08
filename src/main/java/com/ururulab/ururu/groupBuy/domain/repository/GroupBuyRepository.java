@@ -50,20 +50,21 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
     Optional<GroupBuy> findByIdWithImages(@Param("groupBuyId") Long groupBuyId);
 
     /**
-     * 공동구매 상세 조회 (DRAFT 제외) - 구매자용
+     * 공동구매 상세 조회 (DRAFT, CLOSED 제외) - 구매자용
      */
-    @Query("SELECT gb FROM GroupBuy gb WHERE gb.id = :groupBuyId AND gb.status IN ('OPEN', 'CLOSED')")
+    //@Query("SELECT gb FROM GroupBuy gb WHERE gb.id = :groupBuyId AND gb.status IN ('OPEN', 'CLOSED')")
+    @Query("SELECT gb FROM GroupBuy gb WHERE gb.id = :groupBuyId AND gb.status ='OPEN'")
     Optional<GroupBuy> findPublicGroupBuyWithDetails(@Param("groupBuyId") Long groupBuyId);
 
     // 카테고리별 공동구매 조회
     @Query("SELECT gb FROM GroupBuy gb " +
             "JOIN gb.product p " +
             "JOIN p.productCategories pc " +
-            "WHERE pc.category.id = :categoryId AND gb.status IN ('OPEN', 'CLOSED')")
+            "WHERE pc.category.id = :categoryId AND gb.status ='OPEN'")
     List<GroupBuy> findByProductCategoryId(@Param("categoryId") Long categoryId);
 
     // 전체 공동구매 조회 (DRAFT 제외)
-    @Query("SELECT gb FROM GroupBuy gb WHERE gb.status IN ('OPEN', 'CLOSED')")
+    @Query("SELECT gb FROM GroupBuy gb WHERE gb.status ='OPEN'")
     List<GroupBuy> findAllPublic();
 
     /**

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
+import com.ururulab.ururu.image.domain.ImageCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -146,12 +147,16 @@ public class ImageService {
 	 */
 	private String extractKeyFromUrl(String imageUrl) {
 		try {
-			int productsIndex = imageUrl.indexOf("/products/");
-			if (productsIndex == -1) {
-				throw new IllegalArgumentException("Invalid image URL format - no products path found");
+			// ImageCategory enum의 모든 경로를 확인
+			for (ImageCategory category : ImageCategory.values()) {
+				String path = "/" + category.getPath() + "/";
+				int pathIndex = imageUrl.indexOf(path);
+				if (pathIndex != -1) {
+					return imageUrl.substring(pathIndex + 1);
+				}
 			}
 
-			return imageUrl.substring(productsIndex + 1); // 맨 앞 "/" 제거
+			throw new IllegalArgumentException("Invalid image URL format - no path found");
 
 		} catch (Exception e) {
 			log.error("Failed to extract S3 key from URL: {}", imageUrl, e);

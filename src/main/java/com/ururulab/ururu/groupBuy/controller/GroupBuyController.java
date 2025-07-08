@@ -38,6 +38,7 @@ public class GroupBuyController {
     private final UpdateGroupBuyStatusService updateGroupBuyStatusService;
     private final GroupBuyListService groupBuyListService;
     private final GroupBuyProductService groupBuyProductService;
+    private final GroupBuyDeleteService groupBuyDeleteService;
 
     //임시 - 추후 삭제
     private final GroupBuyRealtimeCloseService groupBuyRealtimeCloseService;
@@ -179,5 +180,25 @@ public class GroupBuyController {
 
         GroupBuyCreatePageResponse response = groupBuyProductService.getGroupBuyCreateData(sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("공동구매 등록 페이지 데이터를 성공적으로 조회했습니다.", response));
+    }
+
+    @Operation(
+            summary = "공동구매 삭제",
+            description = "판매자가 본인의 공동구매 중 DRAFT 상태인 항목을 삭제합니다. 하드 딜리트 방식입니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "공동구매 삭제 성공"),
+            @ApiResponse(responseCode = "400", description = "DRAFT 상태인 공동구매만 삭제할 수 있습니다."),
+            @ApiResponse(responseCode = "403", description = "다른 판매자의 공동구매에 접근할 수 없습니다."),
+            @ApiResponse(responseCode = "404", description = "해당 공동구매를 찾을 수 없습니다."),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    @DeleteMapping("/{sellerId}/{groupBuyId}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteGroupBuy(
+            @PathVariable Long groupBuyId,
+            @PathVariable Long sellerId
+    ) {
+        groupBuyDeleteService.deleteGroupBuy(groupBuyId, sellerId);
+        return ResponseEntity.ok(ApiResponseFormat.success("공동구매가 성공적으로 삭제되었습니다."));
     }
 }
