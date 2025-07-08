@@ -55,6 +55,10 @@ dependencies {
 
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    // Spring Retry
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
+
 }
 
 tasks.named('test') {
