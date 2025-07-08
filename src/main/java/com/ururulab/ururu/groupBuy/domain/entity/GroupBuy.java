@@ -1,5 +1,6 @@
 package com.ururulab.ururu.groupBuy.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.product.domain.entity.Product;
@@ -65,7 +66,6 @@ public class GroupBuy extends BaseEntity {
     @Column(name = "display_final_price")
     private Integer displayFinalPrice;
 
-    //@Column(nullable = false)
     @Column(nullable = true)
     private Instant startAt; // 공동구매 시작일
 
