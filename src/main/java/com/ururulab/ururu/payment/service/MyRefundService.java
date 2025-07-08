@@ -55,8 +55,7 @@ public class MyRefundService {
         );
     }
 
-    @Transactional(readOnly = true)
-    protected Page<Refund> getRefundsWithPaging(Long memberId, RefundStatus status, int page, int size) {
+    private Page<Refund> getRefundsWithPaging(Long memberId, RefundStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
         return refundRepository.findProcessedRefundsByMemberId(memberId, status, pageable);
     }
