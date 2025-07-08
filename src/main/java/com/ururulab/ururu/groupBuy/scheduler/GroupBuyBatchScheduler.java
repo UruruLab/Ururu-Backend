@@ -17,8 +17,8 @@ public class GroupBuyBatchScheduler {
      * 매일 자정(00:05)에 만료된 공동구매 배치 종료
      * 5분 여유를 두어 정확한 자정 처리 보장
      */
-    //@Scheduled(cron = "0 1 0 * * *")
-    @Scheduled(cron = "0 */3 * * * *")
+    @Scheduled(cron = "0 0 0 * * *")
+    //@Scheduled(cron = "0 */3 * * * *")
     public void closeExpiredGroupBuysBatch() {
         log.info("Starting daily batch process for expired group buys...");
 
