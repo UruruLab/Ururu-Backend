@@ -2,6 +2,7 @@ package com.ururulab.ururu.groupBuy.domain.repository;
 
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
+import com.ururulab.ururu.groupBuy.dto.projection.GroupBuyOptionBasicInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -55,7 +56,7 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
      * @return
      */
     @Query("SELECT gbo.id, gbo.productOption.name, gbo.productOption.imageUrl FROM GroupBuyOption gbo WHERE gbo.id IN :ids")
-    List<Object[]> findIdAndNameByIdIn(@Param("ids") List<Long> ids);
+    List<GroupBuyOptionBasicInfo> findIdAndNameByIdIn(@Param("ids") List<Long> ids);
 
     /**
      * 지정된 공동구매 ID에 해당하는 모든 공동구매 옵션을 삭제
