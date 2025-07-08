@@ -10,6 +10,7 @@ import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NOT_FOUND;
 
@@ -30,6 +31,7 @@ public class GroupBuyRealtimeCloseService {
      *
      * @param groupBuyId 확인할 공동구매 ID
      */
+    @Transactional
     public void checkAndCloseIfStockDepleted(Long groupBuyId) {
         log.debug("재고 소진 체크 시작 - groupBuyId: {}", groupBuyId);
 
