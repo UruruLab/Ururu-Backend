@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/member/me")
+@RequestMapping("/api")
 @Tag(name = "주문/배송 내역", description = "주문/배송 내역 조회 API")
 public class MyOrderController {
 
@@ -28,7 +28,7 @@ public class MyOrderController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 회원")
     })
-    @GetMapping("/orders")
+    @GetMapping("/orders/my")
     public ResponseEntity<ApiResponseFormat<MyOrderListResponseDto>> getMyOrders(
             @AuthenticationPrincipal Long memberId,
             @RequestParam(defaultValue = "all") String status,
