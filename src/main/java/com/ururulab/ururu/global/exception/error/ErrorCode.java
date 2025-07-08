@@ -82,6 +82,23 @@ public enum ErrorCode {
 	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
 
+	// --- AI 서비스 ---
+
+	// AI 서비스 연결 및 통신 에러
+	AI_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI001", "AI 추천 서비스를 사용할 수 없습니다."),
+	AI_SERVICE_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "AI002", "AI 서비스 응답 시간이 초과되었습니다."),
+	AI_SERVICE_CONNECTION_FAILED(HttpStatus.BAD_GATEWAY, "AI003", "AI 서비스 연결에 실패했습니다."),
+
+	// AI 추천 처리 에러
+	AI_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI004", "상품 추천 생성에 실패했습니다."),
+	AI_INVALID_REQUEST_FORMAT(HttpStatus.BAD_REQUEST, "AI005", "AI 서비스 요청 형식이 올바르지 않습니다."),
+	AI_NO_RECOMMENDATIONS_FOUND(HttpStatus.NOT_FOUND, "AI006", "추천 가능한 상품이 없습니다."),
+
+	// 회원 프로필 관련 에러 (기존 코드와 중복 방지를 위해 수정)
+	BEAUTY_PROFILE_INCOMPLETE(HttpStatus.BAD_REQUEST, "AI007", "뷰티 프로필이 완성되지 않았습니다."),
+
+	// AI 서비스 상태 관련 에러
+	AI_SERVICE_HEALTH_CHECK_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI008", "AI 서비스 상태 확인에 실패했습니다."),
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
