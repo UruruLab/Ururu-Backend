@@ -86,7 +86,8 @@ public class GroupBuyPriceService {
 
         // 각 옵션별 최종 판매가 계산 및 업데이트
         for (GroupBuyOption option : options) {
-            int discountAmount = option.getPriceOverride() * finalDiscountRate / 100;
+            // 반올림을 위해 double 계산 후 변환
+            int discountAmount = (int) Math.round(option.getPriceOverride() * finalDiscountRate / 100.0);
             int finalPrice = option.getPriceOverride() - discountAmount;
 
             // 최종 가격이 음수가 되지 않도록 보장
