@@ -6,9 +6,12 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyStatistics;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyStatisticsRepository;
+import com.ururulab.ururu.groupBuy.dto.projection.GroupBuyOptionBasicInfo;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyStatisticsDetailResponse;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyStatisticsResponse;
 import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
+import com.ururulab.ururu.seller.domain.entity.Seller;
+import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +31,7 @@ public class GroupBuyStatisticsService {
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final OrderItemRepository orderItemRepository;
+    private final SellerRepository sellerRepository;
 
     public GroupBuyStatisticsDetailResponse getGroupBuyStatisticsDetail(Long groupBuyId, Long sellerId) {
         // 1. 공동구매 조회 및 본인 소유 확인
@@ -52,8 +56,8 @@ public class GroupBuyStatisticsService {
         Map<Long, String> optionNameMap = groupBuyOptionRepository.findIdAndNameByIdIn(optionIds)
                 .stream()
                 .collect(Collectors.toMap(
-                        result -> (Long) result[0],
-                        result -> (String) result[1]
+                        GroupBuyOptionBasicInfo::getId,
+                        GroupBuyOptionBasicInfo::getName
                 ));
 
         // 5. DTO 변환
@@ -79,13 +83,17 @@ public class GroupBuyStatisticsService {
      * 판매자의 모든 그룹 구매 통계 조회
      */
     public List<GroupBuyStatisticsResponse> getGroupBuyStatisticsBySeller(Long sellerId) {
+        if (!sellerRepository.existsById(sellerId)) {
+            throw new BusinessException(SELLER_NOT_FOUND);
+        }
+
         List<GroupBuyStatistics> statisticsList = statisticsRepository.findByGroupBuy_SellerId(sellerId);
 
         if (statisticsList.isEmpty()) {
             throw new BusinessException(GROUPBUY_STATISTICS_NOT_FOUND);
         }
 
-        return statisticsRepository.findByGroupBuy_SellerId(sellerId)
+        return statisticsList
                 .stream()
                 .map(GroupBuyStatisticsResponse::from)
                 .toList();

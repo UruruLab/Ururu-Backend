@@ -31,7 +31,7 @@ public class GroupBuyBatchScheduler {
     }
 
     /**
-     * 시간별 헬스체크용 (선택사항)
+     * 시간별 헬스체크용
      * 매 시간마다 급하게 처리해야 할 만료된 공동구매가 있는지 확인
      */
     @Scheduled(cron = "0 0 * * * *") // 매시간 정각

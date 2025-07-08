@@ -55,7 +55,7 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
      * @param ids
      * @return
      */
-    @Query("SELECT gbo.id, gbo.productOption.name, gbo.productOption.imageUrl FROM GroupBuyOption gbo WHERE gbo.id IN :ids")
+    @Query("SELECT gbo.id as id, gbo.productOption.name as name, gbo.productOption.imageUrl as imageUrl FROM GroupBuyOption gbo WHERE gbo.id IN :ids")
     List<GroupBuyOptionBasicInfo> findIdAndNameByIdIn(@Param("ids") List<Long> ids);
 
     /**
