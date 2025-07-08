@@ -23,7 +23,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("groupBuyOptionId") Long groupBuyOptionId
     );
 
-
     /**
      * 특정 공동구매의 유효 주문 수량 조회
      * - 공동구매 종료(CLOSED) 시, 최종 할인율 적용을 위한 기준 수량 계산에 사용
@@ -71,13 +70,4 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "AND o.status = 'ORDERED' " +
             "GROUP BY oi.groupBuyOption.id")
     List<Object[]> getOptionQuantitiesByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
-
-    /**
-     * 특정 공동구매의 총 판매 수량 조회 (할인율 계산용)
-     */
-    @Query("SELECT COALESCE(SUM(oi.quantity), 0) FROM OrderItem oi " +
-            "JOIN oi.order o " +
-            "WHERE oi.groupBuyOption.groupBuy.id = :groupBuyId " +
-            "AND o.status = 'ORDERED'")
-    Integer getTotalSalesQuantityByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 }

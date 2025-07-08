@@ -310,7 +310,7 @@ public class MyOrderService {
                     new TypeReference<>() {}
             );
 
-            Integer totalSalesQuantity = orderItemRepository.getTotalSalesQuantityByGroupBuyId(groupBuy.getId());
+            Integer totalSalesQuantity = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuy.getId());
 
             int maxDiscountRate = 0;
             for (Map<String, Object> stage : stages) {

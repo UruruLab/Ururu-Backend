@@ -363,7 +363,7 @@ class MyOrderServiceTest {
 
             given(objectMapper.readValue(eq(discountStages), any(TypeReference.class)))
                     .willReturn(stages);
-            given(orderItemRepository.getTotalSalesQuantityByGroupBuyId(GROUP_BUY_ID))
+            given(orderItemRepository.getTotalQuantityByGroupBuyId(GROUP_BUY_ID))
                     .willReturn(35); // 30개 이상이므로 20% 할인
 
             // when
