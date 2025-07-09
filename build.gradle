@@ -55,6 +55,10 @@ dependencies {
 
     implementation 'com.github.ben-manes.caffeine:caffeine'
 
+    // Spring Retry
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
+
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
     //QueryDSL 의존성
