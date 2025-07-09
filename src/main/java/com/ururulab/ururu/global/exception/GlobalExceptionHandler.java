@@ -140,4 +140,41 @@ public final class GlobalExceptionHandler {
 		}
 		return ErrorCode.INVALID_JWT_TOKEN;
 	}
+	/**
+	 * AI 서비스 연결 타임아웃 예외 처리.
+	 */
+	@ExceptionHandler(java.net.SocketTimeoutException.class)
+	public ResponseEntity<ApiResponseFormat<Void>> handleSocketTimeoutException(final java.net.SocketTimeoutException e) {
+		log.error("AI 서비스 타임아웃 발생: {}", e.getMessage(), e);
+		return ResponseEntity
+				.status(HttpStatus.REQUEST_TIMEOUT)
+				.body(ApiResponseFormat.fail(ErrorCode.AI_SERVICE_TIMEOUT));
+	}
+
+	/**
+	 * Spring RestClient 예외 처리 (AI 서비스 통신 관련).
+	 */
+	@ExceptionHandler(org.springframework.web.client.RestClientException.class)
+	public ResponseEntity<ApiResponseFormat<Void>> handleRestClientException(final org.springframework.web.client.RestClientException e) {
+		log.error("AI 서비스 통신 오류: {}", e.getMessage(), e);
+
+		final String errorMessage = e.getMessage();
+		if (errorMessage != null) {
+			if (errorMessage.contains("timeout")) {
+				return ResponseEntity
+						.status(HttpStatus.REQUEST_TIMEOUT)
+						.body(ApiResponseFormat.fail(ErrorCode.AI_SERVICE_TIMEOUT));
+			}
+
+			if (errorMessage.contains("Connection") || errorMessage.contains("refused")) {
+				return ResponseEntity
+						.status(HttpStatus.BAD_GATEWAY)
+						.body(ApiResponseFormat.fail(ErrorCode.AI_SERVICE_CONNECTION_FAILED));
+			}
+		}
+
+		return ResponseEntity
+				.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.body(ApiResponseFormat.fail(ErrorCode.AI_SERVICE_UNAVAILABLE));
+	}
 }

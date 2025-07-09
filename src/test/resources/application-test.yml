@@ -1,0 +1,71 @@
+spring:
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+      path: /h2-console
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: true
+    show-sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  cache:
+    type: simple
+  sql:
+    init:
+      mode: always
+
+# AI 서비스 테스트 설정 (비활성화)
+ai:
+  service:
+    url: http://localhost:8001
+    timeout: 5000
+    retry-count: 1
+    max-connections: 5
+    enabled: false  # 테스트 환경에서는 AI 서비스 비활성화
+    endpoints:
+      health: /health
+      recommend: /api/recommendations
+
+app:
+  cookie:
+    domain: ""
+  cors:
+    enabled: false
+  frontend:
+    base-url: "http://localhost:3000"
+
+oauth2:
+  kakao:
+    client-id: test-client-id
+    client-secret: test-client-secret
+    redirect-uri: http://localhost:8080/api/auth/oauth/kakao
+    authorization-uri: https://kauth.kakao.com/oauth/authorize
+    token-uri: https://kauth.kakao.com/oauth/token
+    member-info-uri: https://kapi.kakao.com/v2/user/me
+    scope: profile_nickname,profile_image,account_email
+
+  google:
+    client-id: test-client-id
+    client-secret: test-client-secret
+    redirect-uri: http://localhost:8080/api/auth/oauth/google
+    authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    member-info-uri: https://www.googleapis.com/oauth2/v2/userinfo
+    scope: openid email profile
+
+toss:
+  payments:
+    secret-key: test-secret-key
+    client-key: test-client-key
+    base-url: https://api.tosspayments.com
