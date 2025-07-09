@@ -131,6 +131,12 @@ public enum ErrorCode {
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
+	INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "SELLER002", "이메일 또는 비밀번호가 올바르지 않습니다."),
+	INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "SELLER003", "비활성화된 계정입니다."),
+	DUPLICATE_EMAIL(HttpStatus.CONFLICT, "SELLER004", "이미 사용 중인 이메일입니다."),
+	DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "SELLER006", "이미 사용 중인 사업자등록번호입니다."),
+	DUPLICATE_BRAND_NAME(HttpStatus.CONFLICT, "SELLER007", "이미 사용 중인 브랜드명입니다."),
+	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "SELLER005", "현재 비밀번호가 올바르지 않습니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
