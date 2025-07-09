@@ -616,3 +616,11 @@ FodyWeavers.xsd
 /src/main/resources/application-*.yml
 /src/main/resources/application.yml
 /.env
+
+# 민감한 스크립트 및 설정 파일
+scripts/.env
+scripts/*-config.sh
+scripts/secrets/
+*.secret
+*.key
+*-credentials.*
