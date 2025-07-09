@@ -24,13 +24,14 @@ public final class JwtTokenProvider {
     private static final String CLAIM_EMAIL = "email";
     private static final String CLAIM_TYPE = "type";
     private static final String CLAIM_ROLE = "role";
+    private static final String CLAIM_USER_TYPE = "userType"; // 사용자 타입 (MEMBER/SELLER)
     private static final String CLAIM_JTI = "jti"; // jti 고유 토큰ID (표준 클레임)
 
     private final JwtProperties jwtProperties;
 
-    public String generateAccessToken(final Long memberId, final String email, final String role) {
-        if (memberId == null) {
-            throw new IllegalArgumentException("Member ID cannot be null");
+    public String generateAccessToken(final Long userId, final String email, final String role, final String userType) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
         }
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Email cannot be null or blank");
@@ -38,7 +39,15 @@ public final class JwtTokenProvider {
         if (role == null || role.isBlank()) {
             throw new IllegalArgumentException("Role cannot be null or blank");
         }
-        return createToken(memberId, email, role, TokenType.ACCESS, jwtProperties.getAccessTokenExpiry());
+        if (userType == null || userType.isBlank()) {
+            throw new IllegalArgumentException("User type cannot be null or blank");
+        }
+        return createToken(userId, email, role, userType, TokenType.ACCESS, jwtProperties.getAccessTokenExpiry());
+    }
+
+    // 기존 메서드 호환성을 위한 오버로드
+    public String generateAccessToken(final Long memberId, final String email, final String role) {
+        return generateAccessToken(memberId, email, role, "MEMBER");
     }
 
     public String generateRefreshToken(final Long memberId) {
@@ -62,6 +71,11 @@ public final class JwtTokenProvider {
     public String getRole(final String token) {
         final Claims claims = parseToken(token);
         return claims.get(CLAIM_ROLE, String.class);
+    }
+
+    public String getUserType(final String token) {
+        final Claims claims = parseToken(token);
+        return claims.get(CLAIM_USER_TYPE, String.class);
     }
 
     public boolean validateToken(final String token) {
@@ -116,13 +130,13 @@ public final class JwtTokenProvider {
         return Math.max((expiration.getTime() - now) / 1000, 0);
     }
 
-    private String createToken(final Long memberId, final String email, final String role,
+    private String createToken(final Long userId, final String email, final String role, final String userType,
                                final TokenType type, final long expirySeconds) {
         final Date now = new Date();
         final Date expiry = new Date(now.getTime() + expirySeconds * 1000);
 
         final JwtBuilder builder = Jwts.builder()
-                .subject(memberId.toString())
+                .subject(userId.toString())
                 .claim(CLAIM_TYPE, type.name())
                 .issuer(jwtProperties.getIssuer())
                 .audience().add(jwtProperties.getAudience()).and()
@@ -137,8 +151,17 @@ public final class JwtTokenProvider {
         if (role != null) {
             builder.claim(CLAIM_ROLE, role);
         }
+        if (userType != null) {
+            builder.claim(CLAIM_USER_TYPE, userType);
+        }
 
         return builder.compact();
+    }
+
+    // 기존 메서드 호환성을 위한 오버로드
+    private String createToken(final Long memberId, final String email, final String role,
+                               final TokenType type, final long expirySeconds) {
+        return createToken(memberId, email, role, "MEMBER", type, expirySeconds);
     }
 
     private Claims parseToken(final String token) {
