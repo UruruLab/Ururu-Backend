@@ -63,4 +63,44 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
      * @param groupBuyId
      */
     void deleteAllByGroupBuyId(Long groupBuyId);
+
+    /**
+     * 특정 공동구매의 총 판매량 조회
+     * - OrderItem 집계 대신 사용
+     *
+     * @param groupBuyId 공동구매 ID
+     * @return 총 판매량 (모든 옵션의 판매량 합계)
+     */
+    @Query("SELECT COALESCE(SUM(gbo.initialStock - gbo.stock), 0) " +
+            "FROM GroupBuyOption gbo " +
+            "WHERE gbo.groupBuy.id = :groupBuyId")
+    Integer getTotalSoldQuantityByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
+
+    /**
+     * 여러 공동구매의 총 판매량 조회
+     * - 공동구매 목록 조회 시 사용
+     *
+     * @param groupBuyIds 공동구매 ID 리스트
+     * @return [groupBuyId, totalSoldQuantity] 형태의 결과 리스트
+     */
+    @Query("SELECT gbo.groupBuy.id, COALESCE(SUM(gbo.initialStock - gbo.stock), 0) " +
+            "FROM GroupBuyOption gbo " +
+            "WHERE gbo.groupBuy.id IN :groupBuyIds " +
+            "GROUP BY gbo.groupBuy.id")
+    List<Object[]> getTotalSoldQuantitiesByGroupBuyIds(@Param("groupBuyIds") List<Long> groupBuyIds);
+
+
+    /**
+     * 특정 공동구매의 모든 재고가 소진되었는지 확인
+     * - 기존 복잡한 OrderItem 집계 제거
+     * - 단순한 stock 필드 확인
+     *
+     * @param groupBuyId 공동구매 ID
+     * @return 모든 재고가 소진되었으면 true, 아니면 false
+     */
+    @Query("SELECT CASE WHEN COUNT(gbo) = 0 THEN true ELSE false END " +
+            "FROM GroupBuyOption gbo " +
+            "WHERE gbo.groupBuy.id = :groupBuyId " +
+            "AND gbo.stock > 0")
+    boolean isAllStockDepleted(@Param("groupBuyId") Long groupBuyId);
 }

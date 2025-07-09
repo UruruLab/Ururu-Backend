@@ -2,23 +2,21 @@ package com.ururulab.ururu.groupBuy.service;
 
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
+import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyStatistics;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyStatisticsRepository;
-import com.ururulab.ururu.groupBuy.dto.projection.GroupBuyOptionBasicInfo;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyStatisticsDetailResponse;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyStatisticsResponse;
 import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
-import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
@@ -26,6 +24,7 @@ import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class GroupBuyStatisticsService {
     private final GroupBuyStatisticsRepository statisticsRepository;
     private final GroupBuyRepository groupBuyRepository;
@@ -33,7 +32,12 @@ public class GroupBuyStatisticsService {
     private final OrderItemRepository orderItemRepository;
     private final SellerRepository sellerRepository;
 
+    /**
+     * initialStock 기반 공동구매 통계 상세 조회
+     */
     public GroupBuyStatisticsDetailResponse getGroupBuyStatisticsDetail(Long groupBuyId, Long sellerId) {
+        log.debug("Fetching group buy statistics detail - groupBuyId: {}, sellerId: {}", groupBuyId, sellerId);
+
         // 1. 공동구매 조회 및 본인 소유 확인
         GroupBuy groupBuy = groupBuyRepository.findById(groupBuyId)
                 .orElseThrow(() -> new BusinessException(GROUPBUY_NOT_FOUND));
@@ -46,36 +50,29 @@ public class GroupBuyStatisticsService {
         GroupBuyStatistics statistics = statisticsRepository.findByGroupBuyId(groupBuyId)
                 .orElseThrow(() -> new BusinessException(GROUPBUY_STATISTICS_NOT_FOUND));
 
-        // 3. 옵션별 주문 수량 조회
-        List<Object[]> optionQuantities = orderItemRepository.getOptionQuantitiesByGroupBuyId(groupBuyId);
-        List<Long> optionIds = optionQuantities.stream()
-                .map(result -> (Long) result[0])
-                .toList();
+        // initialStock 기반 옵션별 판매량 조회
+        List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
 
-        // 4. 옵션 이름 조회
-        Map<Long, String> optionNameMap = groupBuyOptionRepository.findIdAndNameByIdIn(optionIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        GroupBuyOptionBasicInfo::getId,
-                        GroupBuyOptionBasicInfo::getName
-                ));
+        // 4. 옵션별 판매량 정보 생성 (initialStock - stock 사용)
+        List<GroupBuyStatisticsDetailResponse.GroupBuyOptionOrderInfo> optionOrderInfos = options.stream()
+                .map(option -> {
+                    String optionName = option.getProductOption().getName();
+                    Integer soldQuantity = option.getSoldQuantity(); // initialStock - stock
 
-        // 5. DTO 변환
-        List<GroupBuyStatisticsDetailResponse.GroupBuyOptionOrderInfo> optionOrderInfos = optionQuantities.stream()
-                .map(result -> {
-                    Long optionId = (Long) result[0];
-                    Integer orderCount = ((Number) result[1]).intValue();
-                    String optionName = optionNameMap.getOrDefault(optionId, "알 수 없는 옵션");
+                    log.debug("Option {} sold quantity: {}", option.getId(), soldQuantity);
 
                     return new GroupBuyStatisticsDetailResponse.GroupBuyOptionOrderInfo(
-                            optionId,
+                            option.getId(),
                             optionName,
-                            orderCount
+                            soldQuantity
                     );
                 })
                 .toList();
 
-        // 6. 응답 생성
+        log.info("Successfully fetched statistics for group buy: {} with {} options",
+                groupBuyId, optionOrderInfos.size());
+
+        // 5. 응답 생성
         return GroupBuyStatisticsDetailResponse.from(statistics, optionOrderInfos);
     }
 
@@ -83,6 +80,8 @@ public class GroupBuyStatisticsService {
      * 판매자의 모든 그룹 구매 통계 조회
      */
     public List<GroupBuyStatisticsResponse> getGroupBuyStatisticsBySeller(Long sellerId) {
+        log.debug("Fetching group buy statistics for seller: {}", sellerId);
+
         if (!sellerRepository.existsById(sellerId)) {
             throw new BusinessException(SELLER_NOT_FOUND);
         }
@@ -93,9 +92,13 @@ public class GroupBuyStatisticsService {
             throw new BusinessException(GROUPBUY_STATISTICS_NOT_FOUND);
         }
 
-        return statisticsList
+        List<GroupBuyStatisticsResponse> responses = statisticsList
                 .stream()
                 .map(GroupBuyStatisticsResponse::from)
                 .toList();
+
+        log.info("Successfully fetched {} statistics for seller: {}", responses.size(), sellerId);
+
+        return responses;
     }
 }

@@ -32,7 +32,6 @@ public class GroupBuyListService {
 
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
-    private final GroupBuyRankingService rankingService;
 
     public List<GroupBuyListResponse> getGroupBuyList(Long categoryId, int limit, String sortType) {
         if ("order_count".equals(sortType)) {
@@ -95,10 +94,11 @@ public class GroupBuyListService {
         );
     }
 
-
-
     /**
      * 카테고리별 공동구매 목록 조회 (주문량 기준 정렬)
+     * @param categoryId
+     * @param limit
+     * @return
      */
     public List<GroupBuyListResponse> getGroupBuyListOrderByOrderCount(Long categoryId, int limit) {
         log.debug("Fetching group buy list - categoryId: {}, limit: {}", categoryId, limit);
@@ -116,9 +116,9 @@ public class GroupBuyListService {
             throw new BusinessException(GROUPBUY_NOT_FOUND, message);
         }
 
-        // 2. 각 공동구매의 총 주문량 계산
+        // initialStock 기반 판매량 배치 조회
         List<Long> groupBuyIds = groupBuys.stream().map(GroupBuy::getId).toList();
-        Map<Long, Integer> orderCountMap = getOrderCountMap(groupBuyIds);
+        Map<Long, Integer> orderCountMap = getOrderCountMapFromInitialStock(groupBuyIds);
 
         // 3. 주문량 기준으로 정렬 후 Response 생성
         return groupBuys.stream()
@@ -136,8 +136,22 @@ public class GroupBuyListService {
                 .toList();
     }
 
-    private Map<Long, Integer> getOrderCountMap(List<Long> groupBuyIds) {
-        return rankingService.getOrderCounts(groupBuyIds);
+    /**
+     * 여러 공동구매의 판매량 조회
+     * @param groupBuyIds
+     * @return
+     */
+    private Map<Long, Integer> getOrderCountMapFromInitialStock(List<Long> groupBuyIds) {
+        List<Object[]> results = groupBuyOptionRepository.getTotalSoldQuantitiesByGroupBuyIds(groupBuyIds);
+
+        Map<Long, Integer> orderCountMap = results.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],           // groupBuyId
+                        row -> ((Long) row[1]).intValue() // totalSoldQuantity
+                ));
+
+        log.debug("Retrieved sold quantities for {} group buys using initialStock", groupBuyIds.size());
+        return orderCountMap;
     }
 
     /**
@@ -164,5 +178,4 @@ public class GroupBuyListService {
         return sortType != null &&
                 List.of("deadline", "discount", "latest", "price_low", "price_high").contains(sortType);
     }
-
 }

@@ -4,9 +4,9 @@ import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyStatistics;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
+import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyStatisticsRepository;
-import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,9 +23,10 @@ public class GroupBuyRealtimeCloseService {
     private final GroupBuyStatisticsRepository groupBuyStatisticsRepository;
     private final GroupBuyStatisticsCalculatorService statisticsCalculatorService;
     private final GroupBuyPriceService groupBuyPriceService;
-    private final OrderItemRepository orderItemRepository;
+    private final GroupBuyOptionRepository groupBuyOptionRepository;
 
     /**
+     * initialStock 기반 재고 소진 체크
      * 재고 소진으로 인한 즉시 공동구매 종료
      * 주문 완료 이벤트 리스너에서 호출
      *
@@ -46,8 +47,7 @@ public class GroupBuyRealtimeCloseService {
             return;
         }
 
-        // 재고 소진 여부 확인
-        boolean isStockDepleted = orderItemRepository.isAllStockDepleted(groupBuyId);
+        boolean isStockDepleted = groupBuyOptionRepository.isAllStockDepleted(groupBuyId);
 
         if (!isStockDepleted) {
             log.debug("재고 여전히 남아있음 - groupBuyId: {}", groupBuyId);
@@ -71,11 +71,12 @@ public class GroupBuyRealtimeCloseService {
 
     /**
      * 공동구매 즉시 종료 처리
+     * @param groupBuy
      */
     private void closeGroupBuyImmediately(GroupBuy groupBuy) {
         log.info("공동구매 즉시 종료 처리 시작 - groupBuyId: {}", groupBuy.getId());
 
-        // 통계 계산
+        // 통계 계산 (내부적으로 initialStock 기반으로 처리될 예정)
         GroupBuyStatistics statistics = statisticsCalculatorService.calculateSingleStatistics(groupBuy);
 
         // 상태를 CLOSED로 변경

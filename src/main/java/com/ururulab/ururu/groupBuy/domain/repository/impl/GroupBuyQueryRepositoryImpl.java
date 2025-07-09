@@ -10,7 +10,6 @@ import com.ururulab.ururu.groupBuy.domain.entity.QGroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuySortOption;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyQueryRepository;
-import com.ururulab.ururu.order.domain.entity.QOrderItem;
 import com.ururulab.ururu.product.domain.entity.QProduct;
 import com.ururulab.ururu.product.domain.entity.QProductCategory;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +19,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
+
     private final JPAQueryFactory queryFactory;
 
     @Override
@@ -28,7 +28,6 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
         QProduct p = QProduct.product;
         QProductCategory pc = QProductCategory.productCategory;
         QGroupBuyOption gbo = QGroupBuyOption.groupBuyOption;
-        QOrderItem oi = QOrderItem.orderItem;
 
         BooleanBuilder where = new BooleanBuilder()
                 .and(gb.status.eq(GroupBuyStatus.OPEN))
@@ -45,6 +44,7 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
                         gb.thumbnailUrl,
                         gb.displayFinalPrice,
 
+                        // 최저 시작가 조회 (변경 없음)
                         JPAExpressions.select(gbo.priceOverride.min())
                                 .from(gbo)
                                 .where(gbo.groupBuy.id.eq(gb.id)),
@@ -52,9 +52,11 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
                         gb.discountStages,
                         gb.endsAt,
 
-                        JPAExpressions.select(oi.quantity.sum().coalesce(0))
-                                .from(oi)
-                                .join(gbo).on(oi.groupBuyOption.id.eq(gbo.id))
+                        // initialStock 기반 총 판매량 조회
+                        JPAExpressions.select(
+                                        gbo.initialStock.sum().subtract(gbo.stock.sum()).coalesce(0)
+                                )
+                                .from(gbo)
                                 .where(gbo.groupBuy.id.eq(gb.id)),
 
                         gb.createdAt
@@ -66,7 +68,6 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
                 .orderBy(getOrderSpecifier(sortOption, gb))
                 .limit(limit)
                 .fetch();
-
     }
 
     private OrderSpecifier<?> getOrderSpecifier(GroupBuySortOption sort, QGroupBuy gb) {
@@ -75,7 +76,7 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
             case DEADLINE -> gb.endsAt.asc();
             case PRICE_LOW -> gb.displayFinalPrice.asc();
             case PRICE_HIGH -> gb.displayFinalPrice.desc();
-            case DISCOUNT -> gb.createdAt.desc(); //JSON 형식을 직접 추출 불가 - 계산 위임
+            case DISCOUNT -> gb.createdAt.desc(); // JSON 형식을 직접 추출 불가 - 계산 위임
             default -> gb.createdAt.desc(); // 주문 많은 순 - 계산 위임
         };
     }
