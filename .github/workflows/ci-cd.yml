@@ -128,6 +128,7 @@ jobs:
 
       # 9. 헬스 체크 수행
       - name: Health check on target container
+        id: health-check
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -150,7 +151,7 @@ jobs:
 
       # 11. 롤백 (헬스체크 실패 시)
       - name: Rollback if health check failed
-        if: failure()
+        if: steps.health-check.outcome == 'failure'
         uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }}
