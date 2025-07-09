@@ -99,20 +99,18 @@ jobs:
 
       # 7. 현재 활성 컨테이너 확인 및 타겟 결정
       - name: Determine current active container
-        id: active-container
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ec2-user/app
-            if grep -q ururu-blue .nginx-env; then
-              echo "ACTIVE=ururu-blue" >> $GITHUB_ENV
-              echo "TARGET=ururu-green" >> $GITHUB_ENV
-            else
-              echo "ACTIVE=ururu-green" >> $GITHUB_ENV
-              echo "TARGET=ururu-blue" >> $GITHUB_ENV
+        run: |
+          ACTIVE=$(ssh -o StrictHostKeyChecking=no -i "${{ secrets.EC2_SSH_KEY }}" \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+            "grep -q ururu-blue /home/ec2-user/app/.nginx-env && echo ururu-blue || echo ururu-green")
+
+          echo "ACTIVE=$ACTIVE" >> "$GITHUB_ENV"
+
+          if [[ "$ACTIVE" == "ururu-blue" ]]; then
+            echo "TARGET=ururu-green" >> "$GITHUB_ENV"
+          else
+            echo "TARGET=ururu-blue" >> "$GITHUB_ENV"
+          fi
 
       # 8. 대상 컨테이너 배포
       - name: Deploy to target container
