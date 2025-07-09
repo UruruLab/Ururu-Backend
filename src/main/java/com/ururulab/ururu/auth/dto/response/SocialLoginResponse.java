@@ -81,7 +81,8 @@ public record SocialLoginResponse(
             @JsonProperty("member_id") Long memberId,
             String email,
             String nickname,
-            @JsonProperty("profile_image") String profileImage
+            @JsonProperty("profile_image") String profileImage,
+            @JsonProperty("user_type") String userType
     ) {
 
         /**
@@ -91,6 +92,7 @@ public record SocialLoginResponse(
          * @param email 이메일 (null 가능)
          * @param nickname 닉네임 (null 가능)
          * @param profileImage 프로필 이미지 URL (null 가능)
+         * @param userType 사용자 타입 (MEMBER/SELLER)
          * @return MemberInfo 객체
          * @throws IllegalArgumentException memberId가 null인 경우
          */
@@ -98,22 +100,38 @@ public record SocialLoginResponse(
                 final Long memberId,
                 final String email,
                 final String nickname,
-                final String profileImage
+                final String profileImage,
+                final String userType
         ) {
             if (memberId == null) {
                 throw new IllegalArgumentException("회원 ID는 필수입니다.");
             }
-            return new MemberInfo(memberId, email, nickname, profileImage);
+            return new MemberInfo(memberId, email, nickname, profileImage, userType);
         }
 
         /**
-         * 최소 정보로 MemberInfo 생성 (memberId만 필수).
+         * 최소 정보로 MemberInfo 생성 (memberId와 userType만 필수).
          *
          * @param memberId 회원 ID
+         * @param userType 사용자 타입 (MEMBER/SELLER)
          * @return 최소 정보만 포함된 MemberInfo 객체
          */
+        public static MemberInfo withMinimalInfo(final Long memberId, final String userType) {
+            return of(memberId, null, null, null, userType);
+        }
+
+        // 기존 메서드 호환성을 위한 오버로드
+        public static MemberInfo of(
+                final Long memberId,
+                final String email,
+                final String nickname,
+                final String profileImage
+        ) {
+            return of(memberId, email, nickname, profileImage, "MEMBER");
+        }
+
         public static MemberInfo withMinimalInfo(final Long memberId) {
-            return of(memberId, null, null, null);
+            return withMinimalInfo(memberId, "MEMBER");
         }
     }
 }

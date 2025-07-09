@@ -6,7 +6,6 @@ import com.ururulab.ururu.seller.dto.response.SellerAvailabilityResponse;
 import com.ururulab.ururu.seller.dto.response.SellerResponse;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;

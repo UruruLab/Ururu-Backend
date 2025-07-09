@@ -34,15 +34,17 @@ public abstract class AbstractSocialLoginService {
         final String jwtAccessToken = jwtTokenProvider.generateAccessToken(
                 member.getId(),
                 member.getEmail(),
-                member.getRole().name()
+                member.getRole().name(),
+                "MEMBER"
         );
-        final String refreshToken = jwtTokenProvider.generateRefreshToken(member.getId());
+        final String refreshToken = jwtTokenProvider.generateRefreshToken(member.getId(), "MEMBER");
 
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
                 member.getId(),
                 member.getEmail(),
                 member.getNickname(),
-                member.getProfileImage()
+                member.getProfileImage(),
+                "MEMBER"
         );
 
         return SocialLoginResponse.of(

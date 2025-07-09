@@ -50,8 +50,13 @@ public final class JwtTokenProvider {
         return generateAccessToken(memberId, email, role, "MEMBER");
     }
 
+    public String generateRefreshToken(final Long userId, final String userType) {
+        return createToken(userId, null, null, userType, TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
+    }
+
+    // 기존 메서드 호환성을 위한 오버로드
     public String generateRefreshToken(final Long memberId) {
-        return createToken(memberId, null, null, TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
+        return generateRefreshToken(memberId, "MEMBER");
     }
 
     public Long getMemberId(final String token) {

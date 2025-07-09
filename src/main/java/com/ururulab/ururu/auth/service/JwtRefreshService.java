@@ -60,13 +60,27 @@ public final class JwtRefreshService {
         final String email = jwtTokenProvider.getEmail(refreshToken);
         final String role = jwtTokenProvider.getRole(refreshToken);
 
+        // 새로운 access token 생성
         final String newAccessToken = jwtTokenProvider.generateAccessToken(userId, email, role, userType);
+        
+        // 새로운 refresh token 생성 (토큰 로테이션)
+        final String newRefreshToken = jwtTokenProvider.generateRefreshToken(userId, userType);
+        
+        // 기존 refresh token을 블랙리스트에 추가
+        final long refreshExpiry = jwtTokenProvider.getRemainingExpiry(refreshToken);
+        if (refreshExpiry > 0) {
+            final String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
+            redisTemplate.opsForValue().set(blacklistKey, "1", Duration.ofSeconds(refreshExpiry));
+        }
+        
+        // 새로운 refresh token을 Redis에 저장
+        storeRefreshToken(userId, userType, newRefreshToken);
 
         return SocialLoginResponse.of(
                 newAccessToken,
-                refreshToken,
+                newRefreshToken,
                 jwtProperties.getAccessTokenExpiry(),
-                SocialLoginResponse.MemberInfo.of(userId, email, null, null)
+                SocialLoginResponse.MemberInfo.of(userId, email, null, null, userType)
         );
     }
 

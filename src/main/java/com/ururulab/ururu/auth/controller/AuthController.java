@@ -4,6 +4,7 @@ import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
 import com.ururulab.ururu.auth.service.SocialLoginService;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -14,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.net.URLEncoder;
@@ -48,6 +50,7 @@ public class AuthController {
 
     private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtCookieHelper jwtCookieHelper;
+    private final JwtRefreshService jwtRefreshService;
     private final Environment environment;
 
     /**
@@ -197,6 +200,37 @@ public class AuthController {
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인 설정 디버그 정보", debugInfo)
+        );
+    }
+
+    /**
+     * 토큰 갱신 API.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshToken(
+            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
+            final HttpServletResponse response) {
+        
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
+        }
+        
+        final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
+        
+        // 새로운 토큰을 쿠키로 설정
+        jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
+        if (refreshResponse.refreshToken() != null) {
+            jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
+        }
+        
+        // 보안을 위해 토큰 정보는 마스킹해서 응답
+        final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
+        
+        log.info("Token refresh successful for user: {} (env: {})", 
+                maskSensitiveData(refreshResponse.memberInfo().email()), getCurrentProfile());
+        
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
         );
     }
 
