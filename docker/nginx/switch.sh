@@ -12,7 +12,6 @@ echo "TARGET_CONTAINER=$TARGET" > .nginx-env
 export TARGET_CONTAINER=$TARGET 
 envsubst < nginx/nginx.conf.template > nginx/nginx.conf
 
-docker cp nginx/nginx.conf ururu-nginx:/etc/nginx/nginx.conf
 docker exec ururu-nginx nginx -s reload || {
   echo "[ERROR] Nginx reload 실패"; exit 1;
 }
