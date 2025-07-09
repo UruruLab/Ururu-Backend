@@ -228,7 +228,12 @@ public class ProductSampleDataLoader implements CommandLineRunner{
             savedOptions.add(productOptionRepository.save(productOption));
         }
 
+        log.debug("📂 Linking categories for product: '{}'", savedProduct.getName());
         linkProductCategory(data, savedProduct);
+
+        long categoryCount = productCategoryRepository.findByProductId(savedProduct.getId()).size();
+        log.info("📊 Product '{}' now has {} categories linked", savedProduct.getName(), categoryCount);
+
 
         String imageUrl = (String) data.get("img_url");
         if (imageUrl != null && !imageUrl.trim().isEmpty()) {
@@ -332,16 +337,30 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         String category1 = (String) data.get("category_1");
         String category2 = (String) data.get("category_2");
 
+        log.debug("🔍 Processing product: '{}' with categories: '{}' - '{}'",
+                product.getName(), category1, category2);
+
         String categoryKey = category1 + "-" + category2;
         Long categoryId = CATEGORY_MAPPING.getOrDefault(categoryKey, CATEGORY_MAPPING.get("DEFAULT"));
 
         Category category = categoryRepository.findById(categoryId).orElse(null);
         if (category != null) {
-            ProductCategory productCategory = ProductCategory.of(product, category);
-            productCategoryRepository.save(productCategory);
+            try{
+                ProductCategory productCategory = ProductCategory.of(product, category);
+                ProductCategory savedProductCategory = productCategoryRepository.save(productCategory);
 
-            log.debug("🔗 Linked product '{}' to category '{}'",
-                    product.getName(), category.getName());
+                log.debug("✅ Successfully linked product '{}' (ID: {}) to category '{}' (ID: {}), saved with ID: {}",
+                        product.getName(), product.getId(),
+                        category.getName(), category.getId(),
+                        savedProductCategory.getId());
+
+                boolean exists = productCategoryRepository.existsByProductIdAndCategoryId(
+                        product.getId(), category.getId());
+                log.debug("🔍 Verification - exists in DB: {}", exists);
+            } catch (Exception e){
+                log.error("❌ Failed to link product '{}' to category '{}': {}",
+                        product.getName(), category.getName(), e.getMessage(), e);
+            }
         } else {
             log.warn("⚠️ Category not found for ID: {}, using default", categoryId);
         }

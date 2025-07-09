@@ -1,4 +1,4 @@
-INSERT INTO Categories (id, parent_id, name, depth, order_index, path, created_at, updated_at) VALUES
+INSERT IGNORE INTO categories (id, parent_id, name, depth, order_index, path, created_at, updated_at) VALUES
 (1, NULL, '스킨케어', 0, 1, '/1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (2, 1, '스킨/토너', 1, 1, '/1/2', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (3, 1, '에센스/세럼/앰플', 1, 2, '/1/3', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

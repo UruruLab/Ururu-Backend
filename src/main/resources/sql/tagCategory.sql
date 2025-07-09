@@ -1,4 +1,4 @@
-INSERT INTO tag_category (id, name, display_order, is_active, created_at, updated_at) VALUES
+INSERT IGNORE INTO tag_category (id, name, display_order, is_active, created_at, updated_at) VALUES
 (1, '보습력', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (2, '산뜻함', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (3, '흡수력', 3, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

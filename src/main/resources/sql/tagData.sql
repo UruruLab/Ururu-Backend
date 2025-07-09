@@ -1,4 +1,4 @@
-INSERT INTO tag (id, tag_category_id, tag_value, label, display_order, is_active, created_at, updated_at) VALUES
+INSERT IGNORE INTO tag (id, tag_category_id, tag_value, label, display_order, is_active, created_at, updated_at) VALUES
 (101, 1, 'moisturizing_high', '촉촉함이 오래가요', 101, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (102, 1, 'moisturizing_medium', '무난해요', 102, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 (103, 1, 'moisturizing_low', '건조함이 느껴져요', 103, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
