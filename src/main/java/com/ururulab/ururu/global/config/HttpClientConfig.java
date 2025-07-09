@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
@@ -43,7 +44,8 @@ public class HttpClientConfig {
                 .build();
     }
 
-    @Bean
+    @Bean("httpClient")
+    @Primary
     public HttpClient httpClient(final PoolingHttpClientConnectionManager connectionManager,
                                  final RequestConfig requestConfig) {
         return HttpClientBuilder.create()
@@ -53,7 +55,7 @@ public class HttpClientConfig {
     }
 
     @Bean
-    public HttpComponentsClientHttpRequestFactory httpRequestFactory(final HttpClient httpClient) {
+    public HttpComponentsClientHttpRequestFactory httpRequestFactory(@Qualifier("httpClient") final HttpClient httpClient) {
         final HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
         factory.setHttpClient(httpClient);
         return factory;
