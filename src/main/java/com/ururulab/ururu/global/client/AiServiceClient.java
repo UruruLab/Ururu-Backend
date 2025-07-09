@@ -32,6 +32,9 @@ public final class AiServiceClient {
     @Value("${ai.service.retry-count:3}")
     private int retryCount;
 
+    @Value("${ai.service.max-recommendations:50}")
+    private int maxRecommendations;
+
     /**
      * AI 서비스 기본 헬스체크.
      *
@@ -201,7 +204,7 @@ public final class AiServiceClient {
             throw new BusinessException(ErrorCode.AI_INVALID_REQUEST_FORMAT);
         }
 
-        if (request.topK() == null || request.topK() <= 0 || request.topK() > 50) {
+        if (request.topK() == null || request.topK() <= 0 || request.topK() > maxRecommendations) {
             throw new BusinessException(ErrorCode.AI_INVALID_REQUEST_FORMAT);
         }
     }
