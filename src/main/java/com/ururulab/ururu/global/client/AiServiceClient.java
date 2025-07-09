@@ -2,7 +2,6 @@ package com.ururulab.ururu.global.client;
 
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,10 +22,8 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
-public final class AiServiceClient {
+public class AiServiceClient {
 
-    @Qualifier("aiServiceRestClient")
     private final RestClient aiServiceRestClient;
 
     @Value("${ai.service.retry-count:3}")
@@ -34,6 +31,10 @@ public final class AiServiceClient {
 
     @Value("${ai.service.max-recommendations:50}")
     private int maxRecommendations;
+
+    public AiServiceClient(@Qualifier("aiServiceRestClient") final RestClient aiServiceRestClient) {
+        this.aiServiceRestClient = aiServiceRestClient;
+    }
 
     /**
      * AI 서비스 기본 헬스체크.
