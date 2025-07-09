@@ -2,9 +2,9 @@ package com.ururulab.ururu.seller.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.util.MaskingUtils;
-import com.ururulab.ururu.seller.domain.dto.request.SellerSignupRequest;
-import com.ururulab.ururu.seller.domain.dto.response.SellerAvailabilityResponse;
-import com.ururulab.ururu.seller.domain.dto.response.SellerResponse;
+import com.ururulab.ururu.seller.dto.request.SellerSignupRequest;
+import com.ururulab.ururu.seller.dto.response.SellerAvailabilityResponse;
+import com.ururulab.ururu.seller.dto.response.SellerResponse;
 import com.ururulab.ururu.seller.service.SellerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

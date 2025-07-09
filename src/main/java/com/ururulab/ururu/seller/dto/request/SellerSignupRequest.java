@@ -1,8 +1,8 @@
-package com.ururulab.ururu.seller.domain.dto.request;
+package com.ururulab.ururu.seller.dto.request;
 
-import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationConstants;
-import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationMessages;
-import com.ururulab.ururu.seller.domain.dto.validation.SellerValidationPatterns;
+import com.ururulab.ururu.seller.dto.validation.SellerValidationConstants;
+import com.ururulab.ururu.seller.dto.validation.SellerValidationMessages;
+import com.ururulab.ururu.seller.dto.validation.SellerValidationPatterns;
 import jakarta.validation.constraints.*;
 
 public record SellerSignupRequest(

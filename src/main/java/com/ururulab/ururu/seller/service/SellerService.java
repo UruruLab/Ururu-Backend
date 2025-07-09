@@ -1,9 +1,9 @@
 package com.ururulab.ururu.seller.service;
 
 import com.ururulab.ururu.global.util.MaskingUtils;
-import com.ururulab.ururu.seller.domain.dto.request.SellerSignupRequest;
-import com.ururulab.ururu.seller.domain.dto.response.SellerAvailabilityResponse;
-import com.ururulab.ururu.seller.domain.dto.response.SellerResponse;
+import com.ururulab.ururu.seller.dto.request.SellerSignupRequest;
+import com.ururulab.ururu.seller.dto.response.SellerAvailabilityResponse;
+import com.ururulab.ururu.seller.dto.response.SellerResponse;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import jakarta.persistence.EntityNotFoundException;
