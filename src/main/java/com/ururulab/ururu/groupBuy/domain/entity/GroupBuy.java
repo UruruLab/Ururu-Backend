@@ -15,11 +15,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ururulab.ururu.groupBuy.controller.dto.validation.GroupBuyValidationConstants.*;
+import static com.ururulab.ururu.groupBuy.dto.validation.GroupBuyValidationConstants.*;
 
 @Entity
 @Getter
-@Table(name = "GroupBuys")
+@Table(name = "groupbuys")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupBuy extends BaseEntity {
 
@@ -41,7 +41,7 @@ public class GroupBuy extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description; // 공동구매 상세설명
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String thumbnailUrl; // 대표 이미지
 
     @Column(nullable = true)
@@ -57,6 +57,13 @@ public class GroupBuy extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GroupBuyStatus status; // 공동구매 상태
+
+    /**
+     * 화면 표시용 최종 할인 적용 가격 (성능 최적화를 위한 비정규화)
+     * = 첫 번째 옵션의 priceOverride * (100 - 최고 할인율) / 100
+     */
+    @Column(name = "display_final_price")
+    private Integer displayFinalPrice;
 
     @Column(nullable = false)
     private Instant startAt; // 공동구매 시작일
@@ -87,9 +94,26 @@ public class GroupBuy extends BaseEntity {
         groupBuy.thumbnailUrl = thumbnailUrl;
         groupBuy.discountStages = discountStages;
         groupBuy.limitQuantityPerMember = limitQuantityPerMember;
+        groupBuy.displayFinalPrice = null; // 등록 이후에 계산
         groupBuy.status = status;
         groupBuy.startAt = startAt;
         groupBuy.endsAt = endsAt;
         return groupBuy;
+    }
+
+    public void updateThumbnailInfo(String thumbnailUrl, String thumbnailHash) {
+        this.thumbnailUrl = thumbnailUrl;
+        this.thumbnailHash = thumbnailHash;
+    }
+
+    public void updateStatus(GroupBuyStatus status) {
+        this.status = status;
+    }
+
+    /**
+     * 화면 표시용 최종 가격 업데이트
+     */
+    public void updateDisplayFinalPrice(Integer finalPrice) {
+        this.displayFinalPrice = finalPrice;
     }
 }

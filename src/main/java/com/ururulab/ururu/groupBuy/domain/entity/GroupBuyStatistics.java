@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Table(name = "GroupBuyStatistics")
+@Table(name = "groupbuy_statistics")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupBuyStatistics extends BaseEntity {
 

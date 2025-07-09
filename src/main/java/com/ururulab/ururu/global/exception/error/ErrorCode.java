@@ -6,7 +6,9 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
+	// --- 공통 ---
 	METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "COMMON001", "잘못된 HTTP 메서드를 호출했습니다."),
+	INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "COMMON002", "요청 파라미터가 유효하지 않습니다."),
 
 	// --- 리뷰 ---
 	REVIEW_NOT_FOUND(HttpStatus.BAD_REQUEST, "REVIEW001", "리뷰가 존재하지 않습니다."),
@@ -40,6 +42,21 @@ public enum ErrorCode {
 	ORDER_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "ORDER007", "이미 진행 중인 주문이 있습니다. 잠시 후 다시 시도해주세요."),
 	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
 
+	// --- 결제 ---
+	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT001", "존재하지 않는 결제입니다."),
+	PAYMENT_NOT_PENDING(HttpStatus.CONFLICT, "PAYMENT002", "결제 대기 상태가 아닙니다."),
+	PAYMENT_APPROVAL_FAILED(HttpStatus.BAD_REQUEST, "PAYMENT003", "결제 승인에 실패했습니다."),
+	PAYMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "PAYMENT004", "이미 결제가 진행 중입니다."),
+	ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT005", "존재하지 않는 주문입니다."),
+	ORDER_NOT_PENDING(HttpStatus.CONFLICT, "PAYMENT006", "주문이 결제 대기 상태가 아닙니다."),
+	INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "PAYMENT007", "보유 포인트가 부족합니다."),
+	TOSS_API_CALL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PAYMENT008", "토스 API 호출에 실패했습니다."),
+
+	// --- 웹훅 관련 ---
+	INVALID_SIGNATURE(HttpStatus.FORBIDDEN, "WEBHOOK001", "웹훅 서명이 유효하지 않습니다"),
+	INVALID_JSON(HttpStatus.BAD_REQUEST, "WEBHOOK002", "웹훅 데이터 형식이 올바르지 않습니다"),
+	WEBHOOK_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WEBHOOK003", "웹훅 처리 중 오류가 발생했습니다"),
+
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
@@ -58,6 +75,7 @@ public enum ErrorCode {
 	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
 	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
 	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
+	PRODUCT_NOT_EXIST(HttpStatus.BAD_REQUEST, "PRODUCT005", "공동구매 등록 가능한 상품 없습니다."),
 
 	// --- 공동 구매 ---
 	DISCOUNT_STAGES_PARSING_FAILED(HttpStatus.BAD_REQUEST, "GROUPBUY001", "할인 단계 정보를 파싱하는 데 실패했습니다."),
@@ -81,6 +99,17 @@ public enum ErrorCode {
 	DUPLICATE_DISCOUNT_STAGE(HttpStatus.BAD_REQUEST, "GROUPBUY019", "동일한 최소 수량의 할인 단계가 중복됩니다."),
 	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
+	GROUPBUY_NOT_FOUND(HttpStatus.BAD_REQUEST, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
+	GROUPBUY_DETAIL_IMAGES_TOO_MANY(HttpStatus.BAD_REQUEST, "GROUPBUY023", "상세 페이지 이미지 개수를 초과하였습니다."),
+	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
+	INVALID_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "GROUPBUY025", "허용되지 않은 상태 변경입니다."),
+	INVALID_STATUS_TRANSITION(HttpStatus.BAD_REQUEST, "GROUPBUY026", "현재 상태에서 요청한 상태로 변경할 수 없습니다."),
+	GROUPBUY_NOT_STARTED_YET(HttpStatus.BAD_REQUEST, "GROUPBUY027", "공동구매 시작일이 아직 되지 않았습니다."),
+	GROUPBUY_ALREADY_ENDED(HttpStatus.BAD_REQUEST, "GROUPBUY028", "공동구매 종료일이 지났습니다."),
+	GROUPBUY_NO_OPTIONS(HttpStatus.BAD_REQUEST, "GROUPBUY029", "공동구매에 옵션이 없습니다."),
+	GROUPBUY_NO_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY030", "공동구매에 재고가 없습니다."),
+	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
+	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
 
 	// --- AI 서비스 ---
 
@@ -105,7 +134,6 @@ public enum ErrorCode {
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
-
 
 
 	private final HttpStatus status;

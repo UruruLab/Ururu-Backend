@@ -6,6 +6,7 @@ public enum OrderStatus {
     PENDING,    // 주문서 생성 (재고 예약, 결제 대기)
     ORDERED,    // 주문 완료 (결제 완료, 재고 확정)
     CANCELLED,  // 주문 취소
+    PARTIAL_REFUNDED, // 부분 환불
     REFUNDED;   // 환불 완료
 
     public static OrderStatus from(String value) {

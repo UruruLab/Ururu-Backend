@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     /**
@@ -20,7 +22,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("memberId") Long memberId,
             @Param("groupBuyOptionId") Long groupBuyOptionId
     );
-
 
     /**
      * 특정 공동구매의 유효 주문 수량 조회
@@ -39,4 +40,34 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "AND o.status = 'ORDERED'")
     Integer getTotalQuantityByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 
+    /**
+     * 여러 공동구매 ID에 대해 각 공동구매의 총 주문 수량을 조회합니다.
+     *
+     * - 주문 상태가 'ORDERED'인 항목만 포함됩니다.
+     * - 그룹바이 ID별로 그룹핑되어 각 공동구매의 총 수량이 반환됩니다.
+     * - 공동구매 통계, 현재까지 주문 수량 조회 등에 사용됩니다.
+     * @param groupBuyIds
+     * @return
+     */
+    @Query("SELECT oi.groupBuyOption.groupBuy.id, COALESCE(SUM(oi.quantity), 0) " +
+            "FROM OrderItem oi " +
+            "JOIN oi.order o " +
+            "WHERE oi.groupBuyOption.groupBuy.id IN :groupBuyIds " +
+            "AND o.status = 'ORDERED' " +
+            "GROUP BY oi.groupBuyOption.groupBuy.id")
+    List<Object[]> getTotalQuantitiesByGroupBuyIds(@Param("groupBuyIds") List<Long> groupBuyIds);
+
+    /**
+     * 특정 공동구매의 옵션별 주문량 상세 조회
+     * - 옵션별로 그룹핑된 주문량 반환
+     * - 실시간 재고 계산용
+     * - 'ORDERED' 상태 주문만 포함
+     */
+    @Query("SELECT oi.groupBuyOption.id, COALESCE(SUM(oi.quantity), 0) " +
+            "FROM OrderItem oi " +
+            "JOIN oi.order o " +
+            "WHERE oi.groupBuyOption.groupBuy.id = :groupBuyId " +
+            "AND o.status = 'ORDERED' " +
+            "GROUP BY oi.groupBuyOption.id")
+    List<Object[]> getOptionQuantitiesByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 }

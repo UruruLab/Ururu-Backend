@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "GroupBuyImages")
+@Table(name = "groupbuy_images")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class GroupBuyImage extends BaseEntity {
 
@@ -44,5 +44,10 @@ public class GroupBuyImage extends BaseEntity {
         groupBuyImage.displayOrder = displayOrder;
         groupBuyImage.isDeleted = isDeleted;
         return groupBuyImage;
+    }
+
+    public void updateImageHash(String imageUrl, String detailImageHash) {
+        this.imageUrl = imageUrl;
+        this.detailImageHash = detailImageHash;
     }
 }
