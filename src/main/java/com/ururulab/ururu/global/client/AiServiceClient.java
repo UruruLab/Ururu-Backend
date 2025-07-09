@@ -68,7 +68,11 @@ public final class AiServiceClient {
                     .toEntity(Map.class);
 
             if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
+                final var body = response.getBody();
+                if (body == null) {
+                    throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+                }
+                return body;
             }
             return Map.of("status", "unhealthy", "error", "Non-200 response");
 
@@ -92,7 +96,11 @@ public final class AiServiceClient {
                     .retrieve()
                     .toEntity(Map.class);
 
-            return response.getBody();
+            final var body = response.getBody();
+            if (body == null) {
+                throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+            }
+            return body;
 
         } catch (final RestClientException e) {
             log.error("Spring Boot 연결 상태 확인 실패: {}", e.getMessage());
@@ -172,7 +180,11 @@ public final class AiServiceClient {
                     .toEntity(Map.class);
 
             log.info("Spring Boot 알림 테스트 완료 - memberId: {}", memberId);
-            return response.getBody();
+            final var body = response.getBody();
+            if (body == null) {
+                throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+            }
+            return body;
 
         } catch (final RestClientException e) {
             log.error("Spring Boot 알림 테스트 실패 - memberId: {}", memberId, e);

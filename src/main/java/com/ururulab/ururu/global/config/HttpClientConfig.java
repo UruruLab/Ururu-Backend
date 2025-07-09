@@ -5,6 +5,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -83,10 +84,49 @@ public class HttpClientConfig {
         return restTemplate;
     }
 
+    private static final int AI_SERVICE_READ_TIMEOUT_MILLIS = 45000;
+    private static final int AI_SERVICE_CONNECTION_TIMEOUT_MILLIS = 10000;
+
+    @Bean("aiServiceConnectionManager")
+    public PoolingHttpClientConnectionManager aiServiceConnectionManager() {
+        final PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+        connectionManager.setMaxTotal(MAX_TOTAL_CONNECTIONS);
+        connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
+        return connectionManager;
+    }
+
+    @Bean("aiServiceRequestConfig")
+    public RequestConfig aiServiceRequestConfig() {
+        return RequestConfig.custom()
+                .setConnectionRequestTimeout(Timeout.ofMilliseconds(AI_SERVICE_CONNECTION_TIMEOUT_MILLIS))
+                .setResponseTimeout(Timeout.ofMilliseconds(AI_SERVICE_READ_TIMEOUT_MILLIS))
+                .build();
+    }
+
+    @Bean("aiServiceHttpClient")
+    public HttpClient aiServiceHttpClient(
+            @Qualifier("aiServiceConnectionManager") final PoolingHttpClientConnectionManager connectionManager,
+            @Qualifier("aiServiceRequestConfig") final RequestConfig requestConfig
+    ) {
+        return HttpClientBuilder.create()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+    }
+
+    @Bean("aiServiceHttpRequestFactory")
+    public HttpComponentsClientHttpRequestFactory aiServiceHttpRequestFactory(
+            @Qualifier("aiServiceHttpClient") final HttpClient httpClient
+    ) {
+        final HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        factory.setHttpClient(httpClient);
+        return factory;
+    }
+
     @Bean("aiServiceRestClient")
     public RestClient aiServiceRestClient(
-            @Value("${ai.service.url:http://localhost:8001}") final String aiServiceUrl,
-            final HttpComponentsClientHttpRequestFactory httpRequestFactory
+            @Value("${ai.service.url:http://localhost:8000}") final String aiServiceUrl,
+            @Qualifier("aiServiceHttpRequestFactory") final HttpComponentsClientHttpRequestFactory httpRequestFactory
     ) {
         return RestClient.builder()
                 .baseUrl(aiServiceUrl)
