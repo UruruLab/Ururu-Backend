@@ -29,7 +29,6 @@ public class GroupBuyStatisticsService {
     private final GroupBuyStatisticsRepository statisticsRepository;
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
-    private final OrderItemRepository orderItemRepository;
     private final SellerRepository sellerRepository;
 
     /**
