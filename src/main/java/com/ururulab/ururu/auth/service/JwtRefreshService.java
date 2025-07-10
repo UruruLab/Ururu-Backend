@@ -44,12 +44,7 @@ public final class JwtRefreshService {
         refreshTokenStorage.storeRefreshToken(userId, userType, refreshToken);
     }
 
-    /**
-     * 기존 메서드 호환성을 위한 오버로드
-     */
-    public void storeRefreshToken(final Long memberId, final String refreshToken) {
-        storeRefreshToken(memberId, AuthConstants.USER_TYPE_MEMBER, refreshToken);
-    }
+
 
     /**
      * Access Token을 갱신합니다.

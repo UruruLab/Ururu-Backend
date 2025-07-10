@@ -45,28 +45,15 @@ public final class JwtTokenProvider {
         return createToken(userId, email, role, userType, TokenType.ACCESS, jwtProperties.getAccessTokenExpiry());
     }
 
-    // 기존 메서드 호환성을 위한 오버로드
-    public String generateAccessToken(final Long memberId, final String email, final String role) {
-        return generateAccessToken(memberId, email, role, "MEMBER");
-    }
+
 
     public String generateRefreshToken(final Long userId, final String userType) {
         return createToken(userId, null, null, userType, TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
     }
 
-    // 기존 메서드 호환성을 위한 오버로드
-    public String generateRefreshToken(final Long memberId) {
-        return generateRefreshToken(memberId, "MEMBER");
-    }
 
-    /**
-     * 사용자 정보가 포함된 refresh token 생성 (토큰 갱신 시 사용)
-     * @deprecated 이 메서드는 보안상 권장되지 않습니다. generateRefreshToken()을 사용하세요.
-     */
-    @Deprecated
-    public String generateRefreshTokenWithUserInfo(final Long userId, final String email, final String role, final String userType) {
-        return createToken(userId, email, role, userType, TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
-    }
+
+
 
     public Long getMemberId(final String token) {
         final Claims claims = parseToken(token);
@@ -172,11 +159,7 @@ public final class JwtTokenProvider {
         return builder.compact();
     }
 
-    // 기존 메서드 호환성을 위한 오버로드
-    private String createToken(final Long memberId, final String email, final String role,
-                               final TokenType type, final long expirySeconds) {
-        return createToken(memberId, email, role, "MEMBER", type, expirySeconds);
-    }
+
 
     private Claims parseToken(final String token) {
         return Jwts.parser()
