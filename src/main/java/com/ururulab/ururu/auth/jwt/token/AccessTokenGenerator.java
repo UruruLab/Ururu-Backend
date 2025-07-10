@@ -1,5 +1,7 @@
 package com.ururulab.ururu.auth.jwt.token;
 
+import com.ururulab.ururu.auth.constants.UserRole;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +27,7 @@ public final class AccessTokenGenerator {
      * @param userType 사용자 타입 (MEMBER/SELLER)
      * @return 생성된 Access Token
      */
-    public String generateAccessToken(final Long userId, final String email, final String role, final String userType) {
+    public String generateAccessToken(final Long userId, final String email, final UserRole role, final UserType userType) {
         validateParameters(userId, email, role, userType);
         return jwtTokenProvider.generateAccessToken(userId, email, role, userType);
     }
@@ -39,18 +41,18 @@ public final class AccessTokenGenerator {
         return jwtTokenProvider.getAccessTokenExpiry();
     }
 
-    private void validateParameters(final Long userId, final String email, final String role, final String userType) {
+    private void validateParameters(final Long userId, final String email, final UserRole role, final UserType userType) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID cannot be null");
         }
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Email cannot be null or blank");
         }
-        if (role == null || role.isBlank()) {
-            throw new IllegalArgumentException("Role cannot be null or blank");
+        if (role == null) {
+            throw new IllegalArgumentException("Role cannot be null");
         }
-        if (userType == null || userType.isBlank()) {
-            throw new IllegalArgumentException("User type cannot be null or blank");
+        if (userType == null) {
+            throw new IllegalArgumentException("User type cannot be null");
         }
     }
 } 

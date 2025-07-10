@@ -1,5 +1,6 @@
 package com.ururulab.ururu.auth.jwt.token;
 
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public final class RefreshTokenGenerator {
      * @param userType 사용자 타입 (MEMBER/SELLER)
      * @return 생성된 Refresh Token
      */
-    public String generateRefreshToken(final Long userId, final String userType) {
+    public String generateRefreshToken(final Long userId, final UserType userType) {
         validateParameters(userId, userType);
         return jwtTokenProvider.generateRefreshToken(userId, userType);
     }
@@ -35,12 +36,12 @@ public final class RefreshTokenGenerator {
         return jwtTokenProvider.getRefreshTokenExpirySeconds();
     }
 
-    private void validateParameters(final Long userId, final String userType) {
+    private void validateParameters(final Long userId, final UserType userType) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID cannot be null");
         }
-        if (userType == null || userType.isBlank()) {
-            throw new IllegalArgumentException("User type cannot be null or blank");
+        if (userType == null) {
+            throw new IllegalArgumentException("User type cannot be null");
         }
     }
 } 

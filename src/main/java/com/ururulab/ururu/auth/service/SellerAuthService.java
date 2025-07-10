@@ -1,6 +1,8 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserRole;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.request.SellerLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
@@ -57,17 +59,17 @@ public final class SellerAuthService {
         final String accessToken = accessTokenGenerator.generateAccessToken(
                 seller.getId(),
                 seller.getEmail(),
-                AuthConstants.ROLE_SELLER,
-                AuthConstants.USER_TYPE_SELLER
+                UserRole.SELLER,
+                UserType.SELLER
         );
         
         final String refreshToken = refreshTokenGenerator.generateRefreshToken(
                 seller.getId(), 
-                AuthConstants.USER_TYPE_SELLER
+                UserType.SELLER
         );
         
         // Refresh token을 Redis에 저장
-        jwtRefreshService.storeRefreshToken(seller.getId(), AuthConstants.USER_TYPE_SELLER, refreshToken);
+        jwtRefreshService.storeRefreshToken(seller.getId(), UserType.SELLER.getValue(), refreshToken);
         
         // 응답 생성
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
@@ -75,7 +77,7 @@ public final class SellerAuthService {
                 seller.getEmail(),
                 seller.getName(), // 브랜드명
                 seller.getImage(), // 브랜드 대표 이미지
-                AuthConstants.USER_TYPE_SELLER
+                UserType.SELLER.getValue()
         );
         
         log.info("Seller login successful: {} (ID: {})", seller.getEmail(), seller.getId());

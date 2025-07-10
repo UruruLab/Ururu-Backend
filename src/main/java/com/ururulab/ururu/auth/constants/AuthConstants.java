@@ -9,14 +9,6 @@ public final class AuthConstants {
         // 유틸리티 클래스이므로 인스턴스화 방지
     }
 
-    // 사용자 타입 상수
-    public static final String USER_TYPE_MEMBER = "MEMBER";
-    public static final String USER_TYPE_SELLER = "SELLER";
-
-    // 역할 상수
-    public static final String ROLE_MEMBER = "MEMBER";
-    public static final String ROLE_SELLER = "SELLER";
-
     // Spring Security 권한 상수
     public static final String AUTHORITY_ROLE_MEMBER = "ROLE_MEMBER";
     public static final String AUTHORITY_ROLE_SELLER = "ROLE_SELLER";
@@ -33,6 +25,6 @@ public final class AuthConstants {
     public static final String BLACKLIST_KEY_PREFIX = "blacklist:";
 
     // 기본값
-    public static final String DEFAULT_USER_TYPE = USER_TYPE_MEMBER;
-    public static final String DEFAULT_ROLE = ROLE_MEMBER;
+    public static final UserType DEFAULT_USER_TYPE = UserType.MEMBER;
+    public static final UserRole DEFAULT_ROLE = UserRole.NORMAL;
 } 

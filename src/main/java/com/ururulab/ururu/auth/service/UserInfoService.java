@@ -1,6 +1,8 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserRole;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.Member;
@@ -31,7 +33,7 @@ public final class UserInfoService {
      * @return 사용자 정보 (이메일, 역할)
      */
     public UserInfo getUserInfo(final Long userId, final String userType) {
-        if (AuthConstants.USER_TYPE_SELLER.equals(userType)) {
+                                    if (UserType.SELLER.getValue().equals(userType)) {
             return getSellerInfo(userId);
         } else {
             return getMemberInfo(userId);
@@ -51,7 +53,7 @@ public final class UserInfoService {
         
         return UserInfo.of(
                 seller.getEmail(),
-                AuthConstants.ROLE_SELLER
+                                                    UserRole.SELLER.getValue()
         );
     }
 

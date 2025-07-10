@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.storage;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +59,7 @@ public final class RefreshTokenStorage {
      * @param userId 사용자 ID
      */
     public void deleteAllRefreshTokens(final String userType, final Long userId) {
-        final String prefix = AuthConstants.USER_TYPE_MEMBER.equals(userType) 
+        final String prefix = UserType.MEMBER.getValue().equals(userType) 
             ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
             : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
         final String refreshKeyPattern = prefix + userId + ":*";
@@ -78,7 +79,7 @@ public final class RefreshTokenStorage {
      * @return Refresh Token 개수
      */
     public long getRefreshTokenCount(final String userType, final Long userId) {
-        final String prefix = AuthConstants.USER_TYPE_MEMBER.equals(userType) 
+        final String prefix = UserType.MEMBER.getValue().equals(userType) 
             ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
             : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
         final String refreshKeyPattern = prefix + userId + ":*";
@@ -98,7 +99,7 @@ public final class RefreshTokenStorage {
     }
 
     private String buildRefreshKey(final String userType, final Long userId, final String jti) {
-        final String prefix = AuthConstants.USER_TYPE_MEMBER.equals(userType) 
+        final String prefix = UserType.MEMBER.getValue().equals(userType) 
             ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
             : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
         return prefix + userId + ":" + jti;

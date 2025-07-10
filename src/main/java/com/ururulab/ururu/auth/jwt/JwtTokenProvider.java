@@ -1,5 +1,7 @@
 package com.ururulab.ururu.auth.jwt;
 
+import com.ururulab.ururu.auth.constants.UserRole;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import io.jsonwebtoken.*;
@@ -29,26 +31,32 @@ public final class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    public String generateAccessToken(final Long userId, final String email, final String role, final String userType) {
+    public String generateAccessToken(final Long userId, final String email, final UserRole role, final UserType userType) {
         if (userId == null) {
             throw new IllegalArgumentException("User ID cannot be null");
         }
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("Email cannot be null or blank");
         }
-        if (role == null || role.isBlank()) {
-            throw new IllegalArgumentException("Role cannot be null or blank");
+        if (role == null) {
+            throw new IllegalArgumentException("Role cannot be null");
         }
-        if (userType == null || userType.isBlank()) {
-            throw new IllegalArgumentException("User type cannot be null or blank");
+        if (userType == null) {
+            throw new IllegalArgumentException("User type cannot be null");
         }
-        return createToken(userId, email, role, userType, TokenType.ACCESS, jwtProperties.getAccessTokenExpiry());
+        return createToken(userId, email, role.getValue(), userType.getValue(), TokenType.ACCESS, jwtProperties.getAccessTokenExpiry());
     }
 
 
 
-    public String generateRefreshToken(final Long userId, final String userType) {
-        return createToken(userId, null, null, userType, TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
+    public String generateRefreshToken(final Long userId, final UserType userType) {
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+        if (userType == null) {
+            throw new IllegalArgumentException("User type cannot be null");
+        }
+        return createToken(userId, null, null, userType.getValue(), TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
     }
 
 
@@ -77,6 +85,16 @@ public final class JwtTokenProvider {
     public String getUserType(final String token) {
         final Claims claims = parseToken(token);
         return claims.get(CLAIM_USER_TYPE, String.class);
+    }
+
+    public UserType getUserTypeAsEnum(final String token) {
+        final String userTypeString = getUserType(token);
+        return userTypeString != null ? UserType.fromString(userTypeString) : null;
+    }
+
+    public UserRole getRoleAsEnum(final String token) {
+        final String roleString = getRole(token);
+        return roleString != null ? UserRole.fromString(roleString) : null;
     }
 
     public boolean validateToken(final String token) {

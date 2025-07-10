@@ -1,6 +1,8 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserRole;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
@@ -78,9 +80,9 @@ public final class JwtRefreshService {
 
         // 7. 새로운 토큰 생성
         final String newAccessToken = accessTokenGenerator.generateAccessToken(
-                userId, userInfo.email(), userInfo.role(), userType
+                userId, userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(userType)
         );
-        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, userType);
+        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, UserType.fromString(userType));
 
         // 8. 기존 토큰 블랙리스트 처리
         try {

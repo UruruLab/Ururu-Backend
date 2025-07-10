@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.filter;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -91,13 +92,13 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String role = jwtTokenProvider.getRole(token);
             
             // userType이 null이거나 없는 경우 기본값으로 MEMBER 사용
-            final String actualUserType = (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE;
+            final String actualUserType = (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE.getValue();
             
             // userType에 따라 userId를 다르게 처리
             final Long userId;
             final String authority;
             
-            if (AuthConstants.USER_TYPE_SELLER.equals(actualUserType)) {
+            if (UserType.SELLER.getValue().equals(actualUserType)) {
                 userId = jwtTokenProvider.getMemberId(token); // sellerId로 사용
                 authority = AuthConstants.AUTHORITY_ROLE_SELLER; // 판매자 전용 권한
                 log.debug("판매자 인증 처리 - sellerId: {}, role: {}", userId, role);

@@ -3,6 +3,8 @@ package com.ururulab.ururu.auth.service.social;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserRole;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
 import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
@@ -41,23 +43,23 @@ public abstract class AbstractSocialLoginService {
         final String jwtAccessToken = accessTokenGenerator.generateAccessToken(
                 member.getId(),
                 member.getEmail(),
-                member.getRole().name(),
-                AuthConstants.USER_TYPE_MEMBER
+                UserRole.valueOf(member.getRole().name()),
+                UserType.MEMBER
         );
         final String refreshToken = refreshTokenGenerator.generateRefreshToken(
                 member.getId(), 
-                AuthConstants.USER_TYPE_MEMBER
+                UserType.MEMBER
         );
 
         // Refresh Token을 Redis에 저장
-        jwtRefreshService.storeRefreshToken(member.getId(), AuthConstants.USER_TYPE_MEMBER, refreshToken);
+        jwtRefreshService.storeRefreshToken(member.getId(), UserType.MEMBER.getValue(), refreshToken);
 
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
                 member.getId(),
                 member.getEmail(),
                 member.getNickname(),
                 member.getProfileImage(),
-                AuthConstants.USER_TYPE_MEMBER
+                UserType.MEMBER.getValue()
         );
 
         return SocialLoginResponse.of(
