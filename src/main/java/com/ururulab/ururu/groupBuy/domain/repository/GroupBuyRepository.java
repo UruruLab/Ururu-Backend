@@ -75,6 +75,7 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
         SELECT DISTINCT gb FROM GroupBuy gb
         LEFT JOIN FETCH gb.product p
         LEFT JOIN FETCH gb.seller s
+        LEFT JOIN FETCH gb.options o
         WHERE gb.status = 'OPEN' 
         AND gb.endsAt <= :currentTime
         ORDER BY gb.endsAt ASC

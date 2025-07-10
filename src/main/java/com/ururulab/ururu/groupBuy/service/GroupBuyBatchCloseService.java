@@ -53,9 +53,6 @@ public class GroupBuyBatchCloseService {
 
             updateGroupBuyStatusesAndPrices(expiredGroupBuys, statisticsList);
 
-            // 먼저 상태를 DB에 반영
-            //groupBuyRepository.saveAll(expiredGroupBuys);
-
             // 통계 일괄 저장
             groupBuyStatisticsRepository.saveAll(statisticsList);
 

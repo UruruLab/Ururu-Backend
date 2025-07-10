@@ -75,6 +75,9 @@ public class GroupBuy extends BaseEntity {
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupBuyImage> groupBuyImages = new ArrayList<>();
 
+    @OneToMany(mappedBy = "groupBuy", fetch = FetchType.LAZY)
+    private List<GroupBuyOption> options = new ArrayList<>();
+
     public static GroupBuy of(
             Product product,
             Seller seller,
