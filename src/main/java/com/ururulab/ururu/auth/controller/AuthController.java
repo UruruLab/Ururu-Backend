@@ -183,11 +183,33 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponseFormat<Void>> logout(
             @RequestHeader(name = "Authorization", required = false) final String authorization,
+            @CookieValue(name = "access_token", required = false) final String accessToken,
+            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        // Authorization 헤더가 있으면 Redis 토큰 삭제
+        // Authorization 헤더 또는 쿠키에서 토큰 추출하여 Redis 토큰 삭제
+        String tokenToLogout = null;
         if (authorization != null && !authorization.isBlank()) {
-            jwtRefreshService.logout(authorization);
+            tokenToLogout = authorization;
+        } else if (accessToken != null && !accessToken.isBlank()) {
+            tokenToLogout = "Bearer " + accessToken;
+        }
+        
+        if (tokenToLogout != null) {
+            try {
+                jwtRefreshService.logout(tokenToLogout);
+            } catch (final Exception e) {
+                log.warn("Failed to logout from Redis: {}", e.getMessage());
+                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
+            }
+        } else if (accessToken != null && !accessToken.isBlank()) {
+            // Authorization 헤더가 없어도 쿠키에서 토큰 추출하여 로그아웃 처리
+            try {
+                jwtRefreshService.logoutWithToken(accessToken);
+            } catch (final Exception e) {
+                log.warn("Failed to logout from Redis using cookie token: {}", e.getMessage());
+                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
+            }
         }
         
         // 쿠키 삭제
@@ -229,7 +251,9 @@ public class AuthController {
     }
 
     /**
-     * 현재 인증 상태 확인 API.
+     * 현재 인증 상태 조회 API.
+     * 액세스 토큰이 유효하면 기존 토큰을 그대로 사용하고,
+     * 액세스 토큰이 만료된 경우에만 리프레시 토큰으로 갱신합니다.
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> getCurrentAuthStatus(
@@ -247,10 +271,10 @@ public class AuthController {
                 // 사용자 정보 조회
                 final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
                 
-                // 응답 생성
+                // 기존 토큰을 그대로 사용 (새로운 리프레시 토큰 발급하지 않음)
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,
-                        refreshToken,
+                        refreshToken, // 기존 리프레시 토큰 그대로 사용
                         accessTokenGenerator.getExpirySeconds(),
                         SocialLoginResponse.MemberInfo.of(userId, userInfo.email(), null, null, userType)
                 );
@@ -258,7 +282,7 @@ public class AuthController {
                 // 보안을 위해 토큰 정보는 마스킹해서 응답
                 final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
                 
-                log.debug("Current auth status retrieved for user: {} (type: {})", userId, userType);
+                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing tokens", userId, userType);
                 
                 return ResponseEntity.ok(
                         ApiResponseFormat.success("현재 인증 상태를 조회했습니다.", secureResponse)
@@ -269,7 +293,7 @@ public class AuthController {
             }
         }
         
-        // 리프레시 토큰이 있으면 갱신 시도
+        // 리프레시 토큰이 있으면 갱신 시도 (액세스 토큰이 만료된 경우에만)
         if (refreshToken != null && !refreshToken.isBlank()) {
             try {
                 final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);

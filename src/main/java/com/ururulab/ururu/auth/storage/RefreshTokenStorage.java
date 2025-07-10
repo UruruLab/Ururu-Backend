@@ -34,6 +34,12 @@ public final class RefreshTokenStorage {
         // 토큰 개수 제한 확인 및 정리
         cleanupOldTokensIfNeeded(userType, userId);
         
+        // 저장 전에 다시 한번 개수 체크
+        if (isRefreshTokenLimitExceeded(userType, userId)) {
+            log.warn("Refresh token limit exceeded for user: {} (type: {}), forcing cleanup", userId, userType);
+            forceCleanupOldTokens(userType, userId);
+        }
+        
         final long expirySeconds = jwtTokenProvider.getRefreshTokenExpirySeconds();
         final String jti = jwtTokenProvider.getTokenId(refreshToken);
         final String key = buildRefreshKey(userType, userId, jti);
@@ -135,6 +141,31 @@ public final class RefreshTokenStorage {
                 redisTemplate.delete(oldestKey);
                 log.debug("Deleted oldest refresh token for user: {} (type: {}) due to limit exceeded", userId, userType);
             }
+        }
+    }
+
+    /**
+     * 토큰 개수 제한 초과 시 강제로 오래된 토큰을 삭제합니다.
+     *
+     * @param userType 사용자 타입
+     * @param userId 사용자 ID
+     */
+    public void forceCleanupOldTokens(final String userType, final Long userId) {
+        final String prefix = UserType.MEMBER.getValue().equals(userType) 
+            ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
+            : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
+        final String refreshKeyPattern = prefix + userId + ":*";
+        final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
+        
+        if (keys != null && keys.size() > 1) {
+            // 최대 개수보다 1개 적게 유지하도록 오래된 토큰들을 삭제
+            final int tokensToDelete = (int) (keys.size() - AuthConstants.MAX_REFRESH_TOKENS_PER_USER + 1);
+            final Set<String> keysToDelete = keys.stream()
+                .limit(tokensToDelete)
+                .collect(java.util.stream.Collectors.toSet());
+            
+            redisTemplate.delete(keysToDelete);
+            log.warn("Force deleted {} old refresh tokens for user: {} (type: {})", tokensToDelete, userId, userType);
         }
     }
 

@@ -69,10 +69,25 @@ public class SellerAuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResponseFormat<Void>> logout(
             @RequestHeader(name = "Authorization", required = false) final String authorization,
+            @CookieValue(name = "access_token", required = false) final String accessToken,
+            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
+        // Authorization 헤더 또는 쿠키에서 토큰 추출하여 Redis 토큰 삭제
+        String tokenToLogout = null;
         if (authorization != null && !authorization.isBlank()) {
-            sellerAuthService.logout(authorization);
+            tokenToLogout = authorization;
+        } else if (accessToken != null && !accessToken.isBlank()) {
+            tokenToLogout = "Bearer " + accessToken;
+        }
+        
+        if (tokenToLogout != null) {
+            try {
+                sellerAuthService.logout(tokenToLogout);
+            } catch (final Exception e) {
+                log.warn("Failed to logout seller from Redis: {}", e.getMessage());
+                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
+            }
         }
         
         // 쿠키 삭제

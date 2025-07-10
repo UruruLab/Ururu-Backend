@@ -43,6 +43,12 @@ public final class JwtRefreshService {
      * @param refreshToken 저장할 Refresh Token
      */
     public void storeRefreshToken(final Long userId, final String userType, final String refreshToken) {
+        // 토큰 개수 제한 확인 및 강제 정리
+        if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
+            log.warn("Refresh token limit exceeded for user: {} (type: {}), forcing cleanup", userId, userType);
+            refreshTokenStorage.forceCleanupOldTokens(userType, userId);
+        }
+        
         refreshTokenStorage.storeRefreshToken(userId, userType, refreshToken);
     }
 
@@ -84,8 +90,7 @@ public final class JwtRefreshService {
             log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", userId, userType);
         } catch (final BusinessException e) {
             log.warn("Failed to invalidate previous refresh token during RTR: {}", e.getMessage());
-            // 토큰 무효화 실패 시 갱신 중단 (보안상 중요)
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+            // 토큰 무효화 실패 시에도 갱신 계속 진행 (기존 토큰은 만료되면 자동 삭제됨)
         }
 
         // 7. 새로운 토큰 생성
@@ -114,18 +119,38 @@ public final class JwtRefreshService {
      */
     public void logout(final String authorization) {
         final String accessToken = extractTokenFromBearer(authorization);
-        final Long userId = jwtTokenProvider.getMemberId(accessToken);
-        final String userType = jwtTokenProvider.getUserType(accessToken);
+        logoutWithToken(accessToken);
+    }
 
-        // Refresh Token 삭제
-        refreshTokenStorage.deleteAllRefreshTokens(userType, userId);
+    /**
+     * 토큰으로 로그아웃 처리를 합니다.
+     *
+     * @param accessToken 액세스 토큰
+     */
+    public void logoutWithToken(final String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            log.warn("Logout attempted with null or blank access token");
+            return;
+        }
 
-        // Access Token 블랙리스트 처리
         try {
-            tokenBlacklistStorage.blacklistAccessToken(accessToken);
-        } catch (final BusinessException e) {
-            log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
-            // 블랙리스트 실패는 로그아웃을 중단시키지 않음
+            final Long userId = jwtTokenProvider.getMemberId(accessToken);
+            final String userType = jwtTokenProvider.getUserType(accessToken);
+
+            // Refresh Token 삭제
+            refreshTokenStorage.deleteAllRefreshTokens(userType, userId);
+
+            // Access Token 블랙리스트 처리
+            try {
+                tokenBlacklistStorage.blacklistAccessToken(accessToken);
+                log.info("Logout successful for user: {} (type: {})", userId, userType);
+            } catch (final BusinessException e) {
+                log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
+                // 블랙리스트 실패는 로그아웃을 중단시키지 않음
+            }
+        } catch (final Exception e) {
+            log.warn("Logout failed due to invalid token: {}", e.getMessage());
+            // 토큰이 유효하지 않아도 로그아웃은 성공으로 처리
         }
     }
 
@@ -146,9 +171,24 @@ public final class JwtRefreshService {
     }
 
     private void validateRefreshTokenLimit(final String userType, final Long userId) {
+        // 토큰 개수 제한 확인
         if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
             log.warn("Refresh token 개수 제한 초과. userId: {}, userType: {}", userId, userType);
-            throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
+            
+            // 강제 정리 시도
+            try {
+                refreshTokenStorage.forceCleanupOldTokens(userType, userId);
+                log.info("Forced cleanup completed for user: {} (type: {})", userId, userType);
+                
+                // 정리 후 다시 확인
+                if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
+                    log.error("Refresh token limit still exceeded after cleanup for user: {} (type: {})", userId, userType);
+                    throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
+                }
+            } catch (final Exception e) {
+                log.error("Failed to cleanup old tokens for user: {} (type: {}): {}", userId, userType, e.getMessage());
+                throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
+            }
         }
     }
 
