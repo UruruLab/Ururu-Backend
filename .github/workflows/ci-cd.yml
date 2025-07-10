@@ -53,25 +53,24 @@ jobs:
             if [ -f /home/ec2-user/app/.nginx-env ] && grep -q ururu-blue /home/ec2-user/app/.nginx-env; then
               ACTIVE="ururu-blue"
             fi
-            echo "$ACTIVE" > active.txt
+            echo "$ACTIVE" > /home/ec2-user/active.txt
 
-      # 5.2 해당 파일을 로컬로 복사
-      - name: Download ACTIVE file from EC2
-        uses: appleboy/scp-action@v1
+      # 5.2 ACTIVE 값 읽기
+      - name: Read ACTIVE value from EC2
+        id: read-active
+        uses: appleboy/ssh-action@v0.1.6
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: active.txt
-          target: .
-          strip_components: 0
-          overwrite: true
+          script: cat /home/ec2-user/active.txt
 
-      # 5.3 환경 변수에 ACTIVE, TARGET 세팅
-      - name: Export active/target variables
+      # 5.3 환경 변수 설정
+      - name: Export ACTIVE to GitHub Env
         run: |
-          ACTIVE=$(cat active.txt)
-          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
+          ACTIVE=$(echo "${{ steps.read-active.outputs.stdout }}" | tr -d '\r')
+          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV          
+            
           if [ "$ACTIVE" == "ururu-blue" ]; then
             echo "TARGET=ururu-green" >> $GITHUB_ENV
             echo "TARGET_TAG=green" >> $GITHUB_ENV
@@ -117,14 +116,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            docker/nginx/nginx.conf.template
-            docker/nginx/switch.sh
-            docker/nginx/rollback.sh
-            docker/nginx/healthcheck.sh
+          source: "docker/nginx/nginx.conf.template,docker/nginx/switch.sh,docker/nginx/rollback.sh,docker/nginx/healthcheck.sh"
           target: /home/ec2-user/app/nginx/
           strip_components: 2
           overwrite: true
+          debug: true
 
       - name: Upload .env to EC2 (from config repo)
         uses: appleboy/scp-action@v1
@@ -221,8 +217,3 @@ jobs:
             docker rm -f $ACTIVE || true
         env:
           ACTIVE: ${{ env.ACTIVE }}
-
-      # 13. 임시 파일 제거
-      - name: Clean up temporary files
-        if: always()
-        run: rm -f active.txt
