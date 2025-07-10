@@ -1,5 +1,8 @@
 package com.ururulab.ururu.auth.constants;
 
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
+
 /**
  * 사용자 역할 enum.
  * 타입 안전성을 보장하고 허용된 값만 사용할 수 있도록 합니다.
@@ -27,6 +30,6 @@ public enum UserRole {
                 return role;
             }
         }
-        throw new IllegalArgumentException("Unknown user role: " + value);
+        throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "Unknown user role: " + value);
     }
 } 

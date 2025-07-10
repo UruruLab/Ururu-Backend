@@ -141,6 +141,34 @@ public enum ErrorCode {
 	DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "SELLER006", "이미 사용 중인 사업자등록번호입니다."),
 	DUPLICATE_BRAND_NAME(HttpStatus.CONFLICT, "SELLER007", "이미 사용 중인 브랜드명입니다."),
 	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "SELLER005", "현재 비밀번호가 올바르지 않습니다."),
+	
+	// 판매자 검증 관련 에러
+	SELLER_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER008", "브랜드명은 필수입니다."),
+	SELLER_BUSINESS_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER009", "사업자명은 필수입니다."),
+	SELLER_OWNER_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER010", "대표자명은 필수입니다."),
+	SELLER_BUSINESS_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER011", "사업자등록번호는 필수입니다."),
+	SELLER_BUSINESS_NUMBER_PATTERN_ERROR(HttpStatus.BAD_REQUEST, "SELLER012", "사업자등록번호 형식이 올바르지 않습니다."),
+	SELLER_EMAIL_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER013", "이메일은 필수입니다."),
+	SELLER_EMAIL_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "SELLER014", "이메일 형식이 올바르지 않습니다."),
+	SELLER_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER015", "비밀번호는 필수입니다."),
+	SELLER_PASSWORD_SIZE_ERROR(HttpStatus.BAD_REQUEST, "SELLER016", "비밀번호는 8자 이상 20자 이하여야 합니다."),
+	SELLER_PASSWORD_PATTERN_ERROR(HttpStatus.BAD_REQUEST, "SELLER017", "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다."),
+	SELLER_PHONE_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER018", "전화번호는 필수입니다."),
+	SELLER_PHONE_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "SELLER019", "전화번호 형식이 올바르지 않습니다."),
+	SELLER_ADDRESS1_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER020", "기본주소는 필수입니다."),
+	SELLER_ADDRESS2_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER021", "상세주소는 필수입니다."),
+	SELLER_MAIL_ORDER_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER022", "통신판매업 신고번호는 필수입니다."),
+	
+	// 판매자 길이 검증 관련 에러
+	SELLER_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER023", "브랜드명은 %d자 이하여야 합니다."),
+	SELLER_BUSINESS_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER024", "사업자명은 %d자 이하여야 합니다."),
+	SELLER_OWNER_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER025", "대표자명은 %d자 이하여야 합니다."),
+	SELLER_BUSINESS_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER026", "사업자등록번호는 %d자여야 합니다."),
+	SELLER_EMAIL_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER027", "이메일은 %d자 이하여야 합니다."),
+	SELLER_PHONE_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER028", "전화번호는 %d자 이하여야 합니다."),
+	SELLER_ADDRESS1_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER029", "기본주소는 %d자 이하여야 합니다."),
+	SELLER_ADDRESS2_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER030", "상세주소는 %d자 이하여야 합니다."),
+	SELLER_MAIL_ORDER_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER031", "통신판매업 신고번호는 %d자 이하여야 합니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");

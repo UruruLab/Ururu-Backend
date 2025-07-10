@@ -76,7 +76,7 @@ public class Seller extends BaseEntity {
         SellerValidator.validateBusinessName(businessName);
         SellerValidator.validateOwnerName(ownerName);
         SellerValidator.validateBusinessNumber(businessNumber);
-        SellerValidator.validateEmail(email);
+        String normalizedEmail = SellerValidator.normalizeAndValidateEmail(email);
         SellerValidator.validatePhone(phone);
         SellerValidator.validateAddress1(address1);
         SellerValidator.validateAddress2(address2);
@@ -87,7 +87,7 @@ public class Seller extends BaseEntity {
         seller.businessName = businessName.trim();
         seller.ownerName = ownerName.trim();
         seller.businessNumber = businessNumber.trim();
-        seller.email = email.trim();
+        seller.email = normalizedEmail;
         seller.password = password; // 암호화는 Service 레이어에서 처리
         seller.phone = phone.trim();
         seller.image = image;
@@ -110,6 +110,11 @@ public class Seller extends BaseEntity {
     public void updateOwnerName(final String ownerName) {
         SellerValidator.validateOwnerName(ownerName);
         this.ownerName = ownerName.trim();
+    }
+
+    public void updateEmail(final String email) {
+        String normalizedEmail = SellerValidator.normalizeAndValidateEmail(email);
+        this.email = normalizedEmail;
     }
 
     public void updatePhone(final String phone) {
