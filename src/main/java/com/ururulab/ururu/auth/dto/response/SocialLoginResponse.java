@@ -108,30 +108,5 @@ public record SocialLoginResponse(
             }
             return new MemberInfo(memberId, email, nickname, profileImage, userType);
         }
-
-        /**
-         * 최소 정보로 MemberInfo 생성 (memberId와 userType만 필수).
-         *
-         * @param memberId 회원 ID
-         * @param userType 사용자 타입 (MEMBER/SELLER)
-         * @return 최소 정보만 포함된 MemberInfo 객체
-         */
-        public static MemberInfo withMinimalInfo(final Long memberId, final String userType) {
-            return of(memberId, null, null, null, userType);
-        }
-
-        // 기존 메서드 호환성을 위한 오버로드
-        public static MemberInfo of(
-                final Long memberId,
-                final String email,
-                final String nickname,
-                final String profileImage
-        ) {
-            return of(memberId, email, nickname, profileImage, "MEMBER");
-        }
-
-        public static MemberInfo withMinimalInfo(final Long memberId) {
-            return withMinimalInfo(memberId, "MEMBER");
-        }
     }
 }
