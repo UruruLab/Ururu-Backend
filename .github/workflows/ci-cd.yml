@@ -57,7 +57,7 @@ jobs:
 
       # 5.2 해당 파일을 로컬로 복사
       - name: Download ACTIVE file from EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -93,7 +93,7 @@ jobs:
 
       # 7. EC2에 파일 업로드
       - name: Ensure remote app directory exists
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -101,7 +101,7 @@ jobs:
           script: mkdir -p /home/ec2-user/app
 
       - name: Upload docker-compose-prod.yml to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -112,7 +112,7 @@ jobs:
           overwrite: true
 
       - name: Upload nginx configs and scripts to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -127,7 +127,7 @@ jobs:
           overwrite: true
 
       - name: Upload .env to EC2 (from config repo)
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -138,7 +138,7 @@ jobs:
           overwrite: true
 
       - name: Ensure nginx shell scripts are executable
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
