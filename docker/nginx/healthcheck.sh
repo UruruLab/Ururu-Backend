@@ -1,8 +1,12 @@
 #!/bin/bash
 
 PORT=$1
+INITIAL_DELAY=20
 RETRIES=10
-SLEEP_SECONDS=3
+SLEEP_SECONDS=5
+
+echo "[INFO] 초기 지연 ${INITIAL_DELAY}초"
+sleep $INITIAL_DELAY
 
 if [ -z "$PORT" ]; then
   echo "[ERROR] 포트 번호를 입력해주세요. 예: ./healthcheck.sh 8082"

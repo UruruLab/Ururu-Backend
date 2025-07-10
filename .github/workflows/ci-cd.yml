@@ -40,22 +40,44 @@ jobs:
       - name: Build Spring Boot JAR
         run: ./gradlew clean bootJar --no-daemon
 
-      # 5. 현재 활성 컨테이너 확인 및 타겟 결정
-      - name: Determine current active container
+      # 5. 현재 활성 컨테이너 확인 및 타겟 결정 (SSH 직접 방식)
+      - name: Setup SSH key and determine ACTIVE container
         run: |
-          ACTIVE=$(ssh -o StrictHostKeyChecking=no -i "${{ secrets.EC2_SSH_KEY }}" \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            "grep -q ururu-blue /home/ec2-user/app/.nginx-env && echo ururu-blue || echo ururu-green")
+          echo "=== 단계 1: SSH 키 설정 시작 ==="
+          mkdir -p ~/.ssh
+          echo "mkdir 완료"
 
-          echo "ACTIVE=$ACTIVE" >> "$GITHUB_ENV"
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/private_key
+          echo "키 파일 생성 완료"
 
-          if [[ "$ACTIVE" == "ururu-blue" ]]; then
-            echo "TARGET=ururu-green" >> "$GITHUB_ENV"
-            echo "TARGET_TAG=green" >> "$GITHUB_ENV"
+          chmod 600 ~/.ssh/private_key
+          echo "권한 설정 완료"
+
+          echo "=== 단계 2: SSH 연결 테스트 ==="
+          ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH 테스트 성공'"
+          echo "SSH 연결 완료"
+
+          echo "=== 단계 3: nginx 내용 읽기 ==="
+          NGINX_CONTENT=$(ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cat /home/ec2-user/app/.nginx-env")
+          echo "nginx 내용: $NGINX_CONTENT"
+
+          echo "=== 단계 4: ACTIVE 결정 ==="
+          if [[ "$NGINX_CONTENT" == *"ururu-blue"* ]]; then
+            ACTIVE="ururu-blue"
+            TARGET="ururu-green"
+            TARGET_TAG="green"
           else
-            echo "TARGET=ururu-blue" >> "$GITHUB_ENV"
-            echo "TARGET_TAG=blue" >> "$GITHUB_ENV"
+            ACTIVE="ururu-green" 
+            TARGET="ururu-blue"
+            TARGET_TAG="blue"
           fi
+
+          echo "=== 단계 5: 환경 변수 설정 ==="
+          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
+          echo "TARGET=$TARGET" >> $GITHUB_ENV
+          echo "TARGET_TAG=$TARGET_TAG" >> $GITHUB_ENV
+
+          echo "최종 결과: ACTIVE=$ACTIVE, TARGET=$TARGET, TARGET_TAG=$TARGET_TAG"
 
       # 6. DockerHub 로그인 및 푸시
       - name: Login to DockerHub
@@ -63,14 +85,14 @@ jobs:
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build Docker image
-        run: docker build -t juwon0909/ururu:${{ env.TARGET_TAG }} -f app/Dockerfile .
+        run: docker build -t juwon0909/ururu:${{ env.TARGET_TAG }} -f docker/Dockerfile .
 
       - name: Push image to DockerHub
         run: docker push juwon0909/ururu:${{ env.TARGET_TAG }}
 
       # 7. EC2에 파일 업로드
       - name: Ensure remote app directory exists
-        uses: appleboy/ssh-action@v0.1.6
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -78,7 +100,7 @@ jobs:
           script: mkdir -p /home/ec2-user/app
 
       - name: Upload docker-compose-prod.yml to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -89,22 +111,19 @@ jobs:
           overwrite: true
 
       - name: Upload nginx configs and scripts to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            docker/nginx/nginx.conf.template
-            docker/nginx/switch.sh
-            docker/nginx/rollback.sh
-            docker/nginx/healthcheck.sh
+          source: "docker/nginx/nginx.conf.template,docker/nginx/switch.sh,docker/nginx/rollback.sh,docker/nginx/healthcheck.sh"
           target: /home/ec2-user/app/nginx/
           strip_components: 2
           overwrite: true
+          debug: true
 
       - name: Upload .env to EC2 (from config repo)
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -114,6 +133,15 @@ jobs:
           strip_components: 1
           overwrite: true
 
+      - name: Ensure nginx shell scripts are executable
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            chmod +x /home/ec2-user/app/nginx/*.sh
+
       # 8. 대상 컨테이너 배포
       - name: Deploy to target container
         uses: appleboy/ssh-action@v0.1.6
@@ -121,10 +149,13 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TARGET
           script: |
             cd /home/ec2-user/app
-            docker compose -f docker-compose-prod.yml pull ${{ env.TARGET }}
-            docker compose -f docker-compose-prod.yml up -d --no-deps ${{ env.TARGET }}
+            docker compose -f docker-compose-prod.yml pull $TARGET
+            docker compose -f docker-compose-prod.yml up -d --no-deps $TARGET
+        env:
+          TARGET: ${{ env.TARGET }}
 
       # 9. 헬스 체크 수행
       - name: Health check on target container
@@ -136,7 +167,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
-            bash nginx/healthcheck.sh $(if [ "${{ env.TARGET }}" = "ururu-blue" ]; then echo 8081; else echo 8082; fi)
+
+            TARGET_PORT=8081
+            if [ -f .nginx-env ] && grep -q ururu-blue .nginx-env; then
+              TARGET_PORT=8082
+            fi
+            bash nginx/healthcheck.sh $TARGET_PORT
 
       # 10. Nginx 트래픽 전환
       - name: Switch Nginx traffic to target
@@ -145,9 +181,12 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TARGET
           script: |
             cd /home/ec2-user/app
-            bash nginx/switch.sh ${{ env.TARGET }}
+            bash nginx/switch.sh $TARGET
+        env:
+          TARGET: ${{ env.TARGET }}
 
       # 11. 롤백 (헬스체크 실패 시)
       - name: Rollback if health check failed
@@ -157,9 +196,12 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TARGET
           script: |
             cd /home/ec2-user/app
-            bash nginx/rollback.sh ${{ env.TARGET }}
+            bash nginx/rollback.sh $TARGET
+        env:
+          TARGET: ${{ env.TARGET }}
 
       # 12. 이전 컨테이너 제거
       - name: Remove old container
@@ -169,6 +211,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ACTIVE
           script: |
             cd /home/ec2-user/app
-            docker rm -f ${{ env.ACTIVE }} || true
+            docker rm -f $ACTIVE || true
+        env:
+          ACTIVE: ${{ env.ACTIVE }}
