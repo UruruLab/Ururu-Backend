@@ -2,6 +2,8 @@ package com.ururulab.ururu.auth.storage;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,16 +28,22 @@ public final class TokenBlacklistStorage {
      *
      * @param tokenId 블랙리스트에 추가할 토큰 ID
      * @param expirySeconds 블랙리스트 유지 시간 (초)
+     * @throws BusinessException 블랙리스트 추가 실패 시
      */
     public void addToBlacklist(final String tokenId, final long expirySeconds) {
         if (tokenId == null || expirySeconds <= 0) {
-            log.warn("Invalid blacklist parameters - tokenId: {}, expirySeconds: {}", tokenId, expirySeconds);
-            return;
+            log.error("Invalid blacklist parameters - tokenId: {}, expirySeconds: {}", tokenId, expirySeconds);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
         }
 
-        final String blacklistKey = AuthConstants.BLACKLIST_KEY_PREFIX + tokenId;
-        redisTemplate.opsForValue().set(blacklistKey, "1", Duration.ofSeconds(expirySeconds));
-        log.debug("Token added to blacklist: {}, expiry: {} seconds", tokenId, expirySeconds);
+        try {
+            final String blacklistKey = AuthConstants.BLACKLIST_KEY_PREFIX + tokenId;
+            redisTemplate.opsForValue().set(blacklistKey, "1", Duration.ofSeconds(expirySeconds));
+            log.debug("Token added to blacklist: {}, expiry: {} seconds", tokenId, expirySeconds);
+        } catch (final Exception e) {
+            log.error("Failed to add token to blacklist: {}, error: {}", tokenId, e.getMessage());
+            throw new BusinessException(ErrorCode.TOKEN_BLACKLIST_OPERATION_FAILED);
+        }
     }
 
     /**
@@ -57,13 +65,29 @@ public final class TokenBlacklistStorage {
      * Access Token을 블랙리스트에 추가합니다.
      *
      * @param accessToken 블랙리스트에 추가할 Access Token
+     * @throws BusinessException 블랙리스트 추가 실패 시
      */
     public void blacklistAccessToken(final String accessToken) {
-        final String tokenId = jwtTokenProvider.getTokenId(accessToken);
-        final long expiry = jwtTokenProvider.getRemainingExpiry(accessToken);
+        if (accessToken == null || accessToken.isBlank()) {
+            log.error("Access token is null or blank for blacklisting");
+            throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
+        }
         
-        if (tokenId != null && expiry > 0) {
+        try {
+            final String tokenId = jwtTokenProvider.getTokenId(accessToken);
+            final long expiry = jwtTokenProvider.getRemainingExpiry(accessToken);
+            
+            if (tokenId == null || expiry <= 0) {
+                log.error("Invalid access token for blacklisting - tokenId: {}, expiry: {}", tokenId, expiry);
+                throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
+            }
+            
             addToBlacklist(tokenId, expiry);
+        } catch (final BusinessException e) {
+            throw e;
+        } catch (final Exception e) {
+            log.error("Failed to blacklist access token: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.TOKEN_BLACKLIST_OPERATION_FAILED);
         }
     }
 
@@ -71,13 +95,29 @@ public final class TokenBlacklistStorage {
      * Refresh Token을 블랙리스트에 추가합니다.
      *
      * @param refreshToken 블랙리스트에 추가할 Refresh Token
+     * @throws BusinessException 블랙리스트 추가 실패 시
      */
     public void blacklistRefreshToken(final String refreshToken) {
-        final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
-        final long expiry = jwtTokenProvider.getRemainingExpiry(refreshToken);
+        if (refreshToken == null || refreshToken.isBlank()) {
+            log.error("Refresh token is null or blank for blacklisting");
+            throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
+        }
         
-        if (tokenId != null && expiry > 0) {
+        try {
+            final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
+            final long expiry = jwtTokenProvider.getRemainingExpiry(refreshToken);
+            
+            if (tokenId == null || expiry <= 0) {
+                log.error("Invalid refresh token for blacklisting - tokenId: {}, expiry: {}", tokenId, expiry);
+                throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
+            }
+            
             addToBlacklist(tokenId, expiry);
+        } catch (final BusinessException e) {
+            throw e;
+        } catch (final Exception e) {
+            log.error("Failed to blacklist refresh token: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.TOKEN_BLACKLIST_OPERATION_FAILED);
         }
     }
 } 

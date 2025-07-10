@@ -71,6 +71,8 @@ public enum ErrorCode {
 	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH011", "일시적인 서버 오류입니다."),
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH012", "접근 권한이 없습니다."),
 	TOO_MANY_REFRESH_TOKENS(HttpStatus.TOO_MANY_REQUESTS, "AUTH013", "리프레시 토큰 개수가 제한을 초과했습니다. 다시 로그인해주세요."),
+	INVALID_TOKEN_BLACKLIST_PARAMETERS(HttpStatus.BAD_REQUEST, "AUTH014", "토큰 블랙리스트 파라미터가 유효하지 않습니다."),
+	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),

@@ -88,7 +88,12 @@ public final class JwtRefreshService {
         final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, userType);
 
         // 8. 기존 토큰 블랙리스트 처리
-        tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
+        try {
+            tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
+        } catch (final BusinessException e) {
+            log.warn("Failed to blacklist refresh token during refresh: {}", e.getMessage());
+            // 블랙리스트 실패는 토큰 갱신을 중단시키지 않음
+        }
 
         // 9. 새로운 Refresh Token 저장
         storeRefreshToken(userId, userType, newRefreshToken);
@@ -115,7 +120,12 @@ public final class JwtRefreshService {
         refreshTokenStorage.deleteAllRefreshTokens(userType, userId);
 
         // Access Token 블랙리스트 처리
-        tokenBlacklistStorage.blacklistAccessToken(accessToken);
+        try {
+            tokenBlacklistStorage.blacklistAccessToken(accessToken);
+        } catch (final BusinessException e) {
+            log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
+            // 블랙리스트 실패는 로그아웃을 중단시키지 않음
+        }
     }
 
     /**
