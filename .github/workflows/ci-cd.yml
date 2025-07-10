@@ -53,7 +53,7 @@ jobs:
             if [ -f /home/ec2-user/app/.nginx-env ] && grep -q ururu-blue /home/ec2-user/app/.nginx-env; then
               ACTIVE="ururu-blue"
             fi
-            echo "$ACTIVE" > /tmp/active.txt
+            echo "$ACTIVE" > active.txt
 
       # 5.2 해당 파일을 로컬로 복사
       - name: Download ACTIVE file from EC2
@@ -62,7 +62,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: /tmp/active.txt
+          source: active.txt
           target: .
           strip_components: 0
           overwrite: true
