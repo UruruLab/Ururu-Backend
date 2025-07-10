@@ -7,7 +7,6 @@ import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
-import com.ururulab.ururu.groupBuy.util.TimeCalculator;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,7 +26,6 @@ public record GroupBuyDetailResponse(
         Integer limitQuantityPerMember,
         GroupBuyStatus status,
         Instant endsAt,
-        Long remainingTimeSeconds, // 남은 시간 (초 단위)
         Integer currentOrderCount,
 
         // 상품 정보
@@ -51,7 +49,6 @@ public record GroupBuyDetailResponse(
     ) {
 
         List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
-        Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
         Integer maxDiscountRate = parsedStages.get(parsedStages.size() - 1).discountRate();
         Integer startPrice = options.stream()
                 .map(GroupBuyOption::getPriceOverride)
@@ -70,7 +67,6 @@ public record GroupBuyDetailResponse(
                 groupBuy.getLimitQuantityPerMember(),
                 groupBuy.getStatus(),
                 groupBuy.getEndsAt(),
-                remainingSeconds,
                 currentOrderCount,
 
                 ProductInfoResponse.from(groupBuy.getProduct()),

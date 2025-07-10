@@ -10,7 +10,6 @@ import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
-import com.ururulab.ururu.groupBuy.util.TimeCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -82,7 +81,6 @@ public class GroupBuyListService {
         Integer startPrice = row.get(4, Integer.class);
         String discountStages = row.get(5, String.class);
         Instant endsAt = row.get(6, Instant.class);
-        Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(endsAt);
         Integer orderCount = row.get(7, Long.class).intValue();
         Instant createdAt = row.get(8, Instant.class);
         Integer maxDiscountRate = calculateMaxDiscountRate(discountStages);
@@ -90,7 +88,7 @@ public class GroupBuyListService {
         return new GroupBuyListResponse(
                 id, title, thumbnailUrl, displayFinalPrice,
                 startPrice, maxDiscountRate, endsAt,
-                remainingSeconds, orderCount, createdAt
+                orderCount, createdAt
         );
     }
 
