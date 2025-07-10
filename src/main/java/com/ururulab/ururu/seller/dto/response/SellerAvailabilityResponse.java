@@ -1,4 +1,4 @@
-package com.ururulab.ururu.seller.domain.dto.response;
+package com.ururulab.ururu.seller.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

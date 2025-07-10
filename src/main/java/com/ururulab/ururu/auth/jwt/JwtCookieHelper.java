@@ -1,5 +1,6 @@
 package com.ururulab.ururu.auth.jwt;
 
+import com.ururulab.ururu.auth.constants.AuthConstants;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +23,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public final class JwtCookieHelper {
 
-    private static final String ACCESS_TOKEN_COOKIE_NAME = "access_token";
-    private static final String REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
     private static final String COOKIE_PATH = "/";
 
     private static final String SAME_SITE_DEV = "Lax";
@@ -34,7 +33,7 @@ public final class JwtCookieHelper {
 
     public void setAccessTokenCookie(final HttpServletResponse response, final String accessToken) {
         final long maxAgeSeconds = jwtProperties.getAccessTokenExpiry() / 1000;
-        setCookie(response, ACCESS_TOKEN_COOKIE_NAME, accessToken, (int) maxAgeSeconds);
+        setCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME, accessToken, (int) maxAgeSeconds);
 
         log.debug("Access token cookie set with expiry: {} seconds for domain: {}",
                 maxAgeSeconds, getCookieDomain());
@@ -42,15 +41,15 @@ public final class JwtCookieHelper {
 
     public void setRefreshTokenCookie(final HttpServletResponse response, final String refreshToken) {
         final long maxAgeSeconds = jwtProperties.getRefreshTokenExpiry() / 1000;
-        setCookie(response, REFRESH_TOKEN_COOKIE_NAME, refreshToken, (int) maxAgeSeconds);
+        setCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken, (int) maxAgeSeconds);
 
         log.debug("Refresh token cookie set with expiry: {} seconds for domain: {}",
                 maxAgeSeconds, getCookieDomain());
     }
 
     public void clearTokenCookies(final HttpServletResponse response) {
-        clearCookie(response, ACCESS_TOKEN_COOKIE_NAME);
-        clearCookie(response, REFRESH_TOKEN_COOKIE_NAME);
+        clearCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME);
+        clearCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME);
 
         log.info("All JWT token cookies cleared for domain: {}", getCookieDomain());
     }

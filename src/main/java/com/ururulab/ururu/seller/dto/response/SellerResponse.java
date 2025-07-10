@@ -1,6 +1,8 @@
-package com.ururulab.ururu.seller.domain.dto.response;
+package com.ururulab.ururu.seller.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 
 import java.time.Instant;
@@ -34,7 +36,7 @@ public record SellerResponse(
      */
     public static SellerResponse from(final Seller seller) {
         if (seller == null) {
-            throw new IllegalArgumentException("Seller는 필수입니다.");
+            throw new BusinessException(ErrorCode.SELLER_NOT_FOUND);
         }
 
         return new SellerResponse(
@@ -62,7 +64,7 @@ public record SellerResponse(
      */
     public static SellerResponse forSignup(final Seller seller) {
         if (seller == null) {
-            throw new IllegalArgumentException("Seller는 필수입니다.");
+            throw new BusinessException(ErrorCode.SELLER_NOT_FOUND);
         }
 
         return new SellerResponse(

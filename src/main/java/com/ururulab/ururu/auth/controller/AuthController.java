@@ -4,9 +4,11 @@ import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
 import com.ururulab.ururu.auth.service.SocialLoginService;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.net.URLEncoder;
@@ -26,11 +29,7 @@ import java.util.List;
 /**
  * 인증 관련 API 컨트롤러.
  * 
- * ALB + Route53 + https://www.ururu.shop 배포 환경 최적화:
- * - 쿠키 기반 JWT 토큰 관리 (URL 노출 없음)
- * - yml 설정 기반 환경별 자동 처리
- * - GlobalExceptionHandler 연동으로 간소화된 예외 처리
- * - OAuth 표준 플로우 준수
+ * OAuth 콜백 처리, 토큰 갱신, 로그아웃 등의 인증 관련 기능을 제공합니다.
  */
 @Slf4j
 @RestController
@@ -48,15 +47,11 @@ public class AuthController {
 
     private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtCookieHelper jwtCookieHelper;
+    private final JwtRefreshService jwtRefreshService;
     private final Environment environment;
 
     /**
      * 카카오 OAuth 콜백 처리.
-     * 
-     * OAuth 표준 플로우:
-     * 1. 소셜 플랫폼 → 백엔드 콜백 (인증 코드 전달)
-     * 2. 백엔드에서 토큰 발급 및 쿠키 설정
-     * 3. 프론트엔드로 안전한 리다이렉트 (토큰 노출 없음)
      */
     @GetMapping("/oauth/kakao")
     public RedirectView handleKakaoCallback(
@@ -93,12 +88,7 @@ public class AuthController {
         log.info("Processing social login for provider: {} with code", provider);
         
         // 소셜 제공자 확인
-        final SocialProvider socialProvider;
-        try {
-            socialProvider = SocialProvider.valueOf(provider.toUpperCase());
-        } catch (final IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
-        }
+        final SocialProvider socialProvider = validateSocialProvider(provider);
         
         // 소셜 로그인 처리
         final SocialLoginService loginService = socialLoginServiceFactory.getService(socialProvider);
@@ -111,7 +101,7 @@ public class AuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("{} login successful for user: {} (env: {})", 
-                provider, maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
+                provider, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인이 완료되었습니다.", secureResponse)
@@ -126,12 +116,7 @@ public class AuthController {
         log.info("Generating auth URL for provider: {}", provider);
         
         // 소셜 제공자 확인
-        final SocialProvider socialProvider;
-        try {
-            socialProvider = SocialProvider.valueOf(provider.toUpperCase());
-        } catch (final IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
-        }
+        final SocialProvider socialProvider = validateSocialProvider(provider);
         
         // 인증 URL 생성
         final String authUrl = generateAuthUrl(socialProvider);
@@ -151,52 +136,34 @@ public class AuthController {
         );
     }
 
-    @GetMapping("/debug/clear-used-codes")
-    public ResponseEntity<ApiResponseFormat<Object>> clearUsedCodes() {
-        if (isProductionEnvironment()) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+    /**
+     * 토큰 갱신 API.
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshToken(
+            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
+            final HttpServletResponse response) {
+        
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
         
-        final int clearedCount = USED_CODES.size();
-        USED_CODES.clear();
+        final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
         
-        final Object response = java.util.Map.of(
-            "clearedCount", clearedCount,
-            "message", "사용된 OAuth 코드 캐시가 정리되었습니다."
-        );
-        
-        log.info("Cleared {} used OAuth codes from cache", clearedCount);
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("OAuth 코드 캐시 정리 완료", response)
-        );
-    }
-    @GetMapping("/debug/social-config")
-    public ResponseEntity<ApiResponseFormat<Object>> debugSocialConfig() {
-        if (isProductionEnvironment()) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        // 새로운 토큰을 쿠키로 설정
+        jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
+        if (refreshResponse.refreshToken() != null) {
+            jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
         }
         
-        final Object debugInfo = java.util.Map.of(
-            "environment", getCurrentProfile(),
-            "kakao", java.util.Map.of(
-                "clientId", environment.getProperty("oauth2.kakao.client-id", "NOT_SET"),
-                "redirectUri", environment.getProperty("oauth2.kakao.redirect-uri", "NOT_SET"),
-                "authUri", environment.getProperty("oauth2.kakao.authorization-uri", "NOT_SET")
-            ),
-            "google", java.util.Map.of(
-                "clientId", environment.getProperty("oauth2.google.client-id", "NOT_SET"),
-                "redirectUri", environment.getProperty("oauth2.google.redirect-uri", "NOT_SET"),
-                "authUri", environment.getProperty("oauth2.google.authorization-uri", "NOT_SET")
-            ),
-            "cors", java.util.Map.of(
-                "allowedOrigins", environment.getProperty("app.cors.allowed-origins[0]", "NOT_SET"),
-                "frontendUrl", getFrontendBaseUrl()
-            )
-        );
+        // 보안을 위해 토큰 정보는 마스킹해서 응답
+        final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
+        
+        log.info("Token refresh successful for user: {} (env: {})", 
+                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
-                ApiResponseFormat.success("소셜 로그인 설정 디버그 정보", debugInfo)
+                ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
         );
     }
 
@@ -292,7 +259,7 @@ public class AuthController {
             redirectView.setUrl(redirectUrl);
 
             log.info("{} login successful for user: {} (env: {})", 
-                    providerName, maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
+                    providerName, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
             log.info("Redirecting to: {}", redirectUrl);
 
             return redirectView;
@@ -300,6 +267,17 @@ public class AuthController {
             // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
             USED_CODES.remove(code);
             throw e;
+        }
+    }
+
+    /**
+     * 소셜 제공자 유효성 검증
+     */
+    private SocialProvider validateSocialProvider(final String provider) {
+        try {
+            return SocialProvider.valueOf(provider.toUpperCase());
+        } catch (final IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
         }
     }
 
@@ -322,8 +300,8 @@ public class AuthController {
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
         return SocialLoginResponse.of(
-                maskSensitiveData(original.accessToken()),
-                original.refreshToken() != null ? maskSensitiveData(original.refreshToken()) : null,
+                maskToken(original.accessToken()),
+                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
                 original.expiresIn(),
                 original.memberInfo()
         );
@@ -398,6 +376,16 @@ public class AuthController {
         final byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
         return BASE64_ENCODER.encodeToString(randomBytes);
+    }
+
+    /**
+     * 토큰 마스킹 (보안용)
+     */
+    private String maskToken(final String token) {
+        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
+            return MASKED_DATA_PLACEHOLDER;
+        }
+        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**

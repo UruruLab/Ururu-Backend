@@ -61,14 +61,18 @@ public enum ErrorCode {
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
 	MISSING_AUTHORIZATION_HEADER(HttpStatus.BAD_REQUEST, "AUTH003", "인증 헤더가 누락되었습니다."),
-	EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH004", "만료된 토큰입니다."),
-	MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH005", "잘못된 형식의 토큰입니다."),
-	UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH006", "지원하지 않는 소셜 제공자입니다: %s"),
-	SOCIAL_TOKEN_EXCHANGE_FAILED(HttpStatus.UNAUTHORIZED, "AUTH007", "소셜 로그인 인증에 실패했습니다."),
-	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "회원 정보를 가져올 수 없습니다."),
-	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH009", "소셜 로그인 처리 중 오류가 발생했습니다."),
-	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "일시적인 서버 오류입니다."),
-	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH011", "접근 권한이 없습니다."),
+	MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "AUTH004", "리프레시 토큰이 누락되었습니다."),
+	EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH005", "만료된 토큰입니다."),
+	MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH006", "잘못된 형식의 토큰입니다."),
+	UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH007", "지원하지 않는 소셜 제공자입니다: %s"),
+	SOCIAL_TOKEN_EXCHANGE_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "소셜 로그인 인증에 실패했습니다."),
+	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH009", "회원 정보를 가져올 수 없습니다."),
+	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "소셜 로그인 처리 중 오류가 발생했습니다."),
+	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH011", "일시적인 서버 오류입니다."),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH012", "접근 권한이 없습니다."),
+	TOO_MANY_REFRESH_TOKENS(HttpStatus.TOO_MANY_REQUESTS, "AUTH013", "리프레시 토큰 개수가 제한을 초과했습니다. 다시 로그인해주세요."),
+	INVALID_TOKEN_BLACKLIST_PARAMETERS(HttpStatus.BAD_REQUEST, "AUTH014", "토큰 블랙리스트 파라미터가 유효하지 않습니다."),
+	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
@@ -139,6 +143,40 @@ public enum ErrorCode {
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
+	INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "SELLER002", "이메일 또는 비밀번호가 올바르지 않습니다."),
+	INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "SELLER003", "비활성화된 계정입니다."),
+	DUPLICATE_EMAIL(HttpStatus.CONFLICT, "SELLER004", "이미 사용 중인 이메일입니다."),
+	DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "SELLER006", "이미 사용 중인 사업자등록번호입니다."),
+	DUPLICATE_BRAND_NAME(HttpStatus.CONFLICT, "SELLER007", "이미 사용 중인 브랜드명입니다."),
+	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "SELLER005", "현재 비밀번호가 올바르지 않습니다."),
+	
+	// 판매자 검증 관련 에러
+	SELLER_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER008", "브랜드명은 필수입니다."),
+	SELLER_BUSINESS_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER009", "사업자명은 필수입니다."),
+	SELLER_OWNER_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER010", "대표자명은 필수입니다."),
+	SELLER_BUSINESS_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER011", "사업자등록번호는 필수입니다."),
+	SELLER_BUSINESS_NUMBER_PATTERN_ERROR(HttpStatus.BAD_REQUEST, "SELLER012", "사업자등록번호 형식이 올바르지 않습니다."),
+	SELLER_EMAIL_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER013", "이메일은 필수입니다."),
+	SELLER_EMAIL_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "SELLER014", "이메일 형식이 올바르지 않습니다."),
+	SELLER_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER015", "비밀번호는 필수입니다."),
+	SELLER_PASSWORD_SIZE_ERROR(HttpStatus.BAD_REQUEST, "SELLER016", "비밀번호는 8자 이상 20자 이하여야 합니다."),
+	SELLER_PASSWORD_PATTERN_ERROR(HttpStatus.BAD_REQUEST, "SELLER017", "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다."),
+	SELLER_PHONE_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER018", "전화번호는 필수입니다."),
+	SELLER_PHONE_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "SELLER019", "전화번호 형식이 올바르지 않습니다."),
+	SELLER_ADDRESS1_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER020", "기본주소는 필수입니다."),
+	SELLER_ADDRESS2_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER021", "상세주소는 필수입니다."),
+	SELLER_MAIL_ORDER_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER022", "통신판매업 신고번호는 필수입니다."),
+	
+	// 판매자 길이 검증 관련 에러
+	SELLER_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER023", "브랜드명은 %d자 이하여야 합니다."),
+	SELLER_BUSINESS_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER024", "사업자명은 %d자 이하여야 합니다."),
+	SELLER_OWNER_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER025", "대표자명은 %d자 이하여야 합니다."),
+	SELLER_BUSINESS_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER026", "사업자등록번호는 %d자여야 합니다."),
+	SELLER_EMAIL_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER027", "이메일은 %d자 이하여야 합니다."),
+	SELLER_PHONE_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER028", "전화번호는 %d자 이하여야 합니다."),
+	SELLER_ADDRESS1_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER029", "기본주소는 %d자 이하여야 합니다."),
+	SELLER_ADDRESS2_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER030", "상세주소는 %d자 이하여야 합니다."),
+	SELLER_MAIL_ORDER_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER031", "통신판매업 신고번호는 %d자 이하여야 합니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
