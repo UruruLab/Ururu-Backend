@@ -59,6 +59,15 @@ public final class JwtTokenProvider {
         return generateRefreshToken(memberId, "MEMBER");
     }
 
+    /**
+     * 사용자 정보가 포함된 refresh token 생성 (토큰 갱신 시 사용)
+     * @deprecated 이 메서드는 보안상 권장되지 않습니다. generateRefreshToken()을 사용하세요.
+     */
+    @Deprecated
+    public String generateRefreshTokenWithUserInfo(final Long userId, final String email, final String role, final String userType) {
+        return createToken(userId, email, role, userType, TokenType.REFRESH, jwtProperties.getRefreshTokenExpiry());
+    }
+
     public Long getMemberId(final String token) {
         final Claims claims = parseToken(token);
         try {

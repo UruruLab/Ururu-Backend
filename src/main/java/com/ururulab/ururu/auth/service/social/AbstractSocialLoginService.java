@@ -2,16 +2,14 @@ package com.ururulab.ururu.auth.service.social;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.jwt.JwtProperties;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
+import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.service.MemberService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
-
-import java.time.Duration;
 
 /**
  * 소셜 로그인 서비스의 공통 기능을 제공하는 추상 클래스.
@@ -19,59 +17,53 @@ import java.time.Duration;
 @Slf4j
 public abstract class AbstractSocialLoginService {
 
-    protected final JwtTokenProvider jwtTokenProvider;
-    protected final JwtProperties jwtProperties;
+    protected final AccessTokenGenerator accessTokenGenerator;
+    protected final RefreshTokenGenerator refreshTokenGenerator;
     protected final ObjectMapper objectMapper;
     protected final MemberService memberService;
     protected final JwtRefreshService jwtRefreshService;
-    protected final StringRedisTemplate redisTemplate;
 
     protected AbstractSocialLoginService(
-            final JwtTokenProvider jwtTokenProvider,
-            final JwtProperties jwtProperties,
+            final AccessTokenGenerator accessTokenGenerator,
+            final RefreshTokenGenerator refreshTokenGenerator,
             final ObjectMapper objectMapper,
             final MemberService memberService,
-            final JwtRefreshService jwtRefreshService,
-            final StringRedisTemplate redisTemplate
+            final JwtRefreshService jwtRefreshService
     ) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.jwtProperties = jwtProperties;
+        this.accessTokenGenerator = accessTokenGenerator;
+        this.refreshTokenGenerator = refreshTokenGenerator;
         this.objectMapper = objectMapper;
         this.memberService = memberService;
         this.jwtRefreshService = jwtRefreshService;
-        this.redisTemplate = redisTemplate;
     }
 
     protected final SocialLoginResponse createLoginResponse(final Member member) {
-        final String jwtAccessToken = jwtTokenProvider.generateAccessToken(
+        final String jwtAccessToken = accessTokenGenerator.generateAccessToken(
                 member.getId(),
                 member.getEmail(),
                 member.getRole().name(),
-                "MEMBER"
+                AuthConstants.USER_TYPE_MEMBER
         );
-        final String refreshToken = jwtTokenProvider.generateRefreshToken(member.getId(), "MEMBER");
+        final String refreshToken = refreshTokenGenerator.generateRefreshToken(
+                member.getId(), 
+                AuthConstants.USER_TYPE_MEMBER
+        );
 
         // Refresh Token을 Redis에 저장
-        jwtRefreshService.storeRefreshToken(member.getId(), "MEMBER", refreshToken);
-        
-        // 사용자 정보를 Redis에 저장 (토큰 갱신 시 사용)
-        final String userInfoKey = "user_info:MEMBER:" + member.getId();
-        final String userInfo = String.format("{\"email\":\"%s\",\"role\":\"%s\"}", 
-                member.getEmail(), member.getRole().name());
-        redisTemplate.opsForValue().set(userInfoKey, userInfo, Duration.ofSeconds(jwtProperties.getRefreshTokenExpiry()));
+        jwtRefreshService.storeRefreshToken(member.getId(), AuthConstants.USER_TYPE_MEMBER, refreshToken);
 
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
                 member.getId(),
                 member.getEmail(),
                 member.getNickname(),
                 member.getProfileImage(),
-                "MEMBER"
+                AuthConstants.USER_TYPE_MEMBER
         );
 
         return SocialLoginResponse.of(
                 jwtAccessToken,
                 refreshToken,
-                jwtProperties.getAccessTokenExpiry(),
+                accessTokenGenerator.getExpirySeconds(),
                 memberInfo
         );
     }

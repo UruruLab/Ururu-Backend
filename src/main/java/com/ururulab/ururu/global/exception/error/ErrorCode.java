@@ -70,6 +70,7 @@ public enum ErrorCode {
 	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "소셜 로그인 처리 중 오류가 발생했습니다."),
 	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH011", "일시적인 서버 오류입니다."),
 	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH012", "접근 권한이 없습니다."),
+	TOO_MANY_REFRESH_TOKENS(HttpStatus.TOO_MANY_REQUESTS, "AUTH013", "리프레시 토큰 개수가 제한을 초과했습니다. 다시 로그인해주세요."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),

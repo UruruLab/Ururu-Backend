@@ -28,11 +28,7 @@ import java.util.List;
 /**
  * 인증 관련 API 컨트롤러.
  * 
- * ALB + Route53 + https://www.ururu.shop 배포 환경 최적화:
- * - 쿠키 기반 JWT 토큰 관리 (URL 노출 없음)
- * - yml 설정 기반 환경별 자동 처리
- * - GlobalExceptionHandler 연동으로 간소화된 예외 처리
- * - OAuth 표준 플로우 준수
+ * OAuth 콜백 처리, 토큰 갱신, 로그아웃 등의 인증 관련 기능을 제공합니다.
  */
 @Slf4j
 @RestController
@@ -55,11 +51,6 @@ public class AuthController {
 
     /**
      * 카카오 OAuth 콜백 처리.
-     * 
-     * OAuth 표준 플로우:
-     * 1. 소셜 플랫폼 → 백엔드 콜백 (인증 코드 전달)
-     * 2. 백엔드에서 토큰 발급 및 쿠키 설정
-     * 3. 프론트엔드로 안전한 리다이렉트 (토큰 노출 없음)
      */
     @GetMapping("/oauth/kakao")
     public RedirectView handleKakaoCallback(
@@ -96,12 +87,7 @@ public class AuthController {
         log.info("Processing social login for provider: {} with code", provider);
         
         // 소셜 제공자 확인
-        final SocialProvider socialProvider;
-        try {
-            socialProvider = SocialProvider.valueOf(provider.toUpperCase());
-        } catch (final IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
-        }
+        final SocialProvider socialProvider = validateSocialProvider(provider);
         
         // 소셜 로그인 처리
         final SocialLoginService loginService = socialLoginServiceFactory.getService(socialProvider);
@@ -129,12 +115,7 @@ public class AuthController {
         log.info("Generating auth URL for provider: {}", provider);
         
         // 소셜 제공자 확인
-        final SocialProvider socialProvider;
-        try {
-            socialProvider = SocialProvider.valueOf(provider.toUpperCase());
-        } catch (final IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
-        }
+        final SocialProvider socialProvider = validateSocialProvider(provider);
         
         // 인증 URL 생성
         final String authUrl = generateAuthUrl(socialProvider);
@@ -151,55 +132,6 @@ public class AuthController {
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인 URL이 생성되었습니다.", response)
-        );
-    }
-
-    @GetMapping("/debug/clear-used-codes")
-    public ResponseEntity<ApiResponseFormat<Object>> clearUsedCodes() {
-        if (isProductionEnvironment()) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-        
-        final int clearedCount = USED_CODES.size();
-        USED_CODES.clear();
-        
-        final Object response = java.util.Map.of(
-            "clearedCount", clearedCount,
-            "message", "사용된 OAuth 코드 캐시가 정리되었습니다."
-        );
-        
-        log.info("Cleared {} used OAuth codes from cache", clearedCount);
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("OAuth 코드 캐시 정리 완료", response)
-        );
-    }
-    @GetMapping("/debug/social-config")
-    public ResponseEntity<ApiResponseFormat<Object>> debugSocialConfig() {
-        if (isProductionEnvironment()) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-        
-        final Object debugInfo = java.util.Map.of(
-            "environment", getCurrentProfile(),
-            "kakao", java.util.Map.of(
-                "clientId", environment.getProperty("oauth2.kakao.client-id", "NOT_SET"),
-                "redirectUri", environment.getProperty("oauth2.kakao.redirect-uri", "NOT_SET"),
-                "authUri", environment.getProperty("oauth2.kakao.authorization-uri", "NOT_SET")
-            ),
-            "google", java.util.Map.of(
-                "clientId", environment.getProperty("oauth2.google.client-id", "NOT_SET"),
-                "redirectUri", environment.getProperty("oauth2.google.redirect-uri", "NOT_SET"),
-                "authUri", environment.getProperty("oauth2.google.authorization-uri", "NOT_SET")
-            ),
-            "cors", java.util.Map.of(
-                "allowedOrigins", environment.getProperty("app.cors.allowed-origins[0]", "NOT_SET"),
-                "frontendUrl", getFrontendBaseUrl()
-            )
-        );
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("소셜 로그인 설정 디버그 정보", debugInfo)
         );
     }
 
@@ -231,35 +163,6 @@ public class AuthController {
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
-        );
-    }
-
-    /**
-     * 토큰 갱신 API (디버그용 - 토큰 마스킹 없음).
-     */
-    @PostMapping("/refresh/debug")
-    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshTokenDebug(
-            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
-            final HttpServletResponse response) {
-        
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
-        }
-        
-        final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
-        
-        // 새로운 토큰을 쿠키로 설정
-        jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
-        if (refreshResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
-        }
-        
-        // 디버그용: 토큰을 마스킹하지 않고 그대로 반환
-        log.info("Token refresh debug successful for user: {} (env: {})", 
-                refreshResponse.memberInfo().email(), getCurrentProfile());
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("토큰이 갱신되었습니다. (디버그 모드)", refreshResponse)
         );
     }
 
@@ -363,6 +266,17 @@ public class AuthController {
             // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
             USED_CODES.remove(code);
             throw e;
+        }
+    }
+
+    /**
+     * 소셜 제공자 유효성 검증
+     */
+    private SocialProvider validateSocialProvider(final String provider) {
+        try {
+            return SocialProvider.valueOf(provider.toUpperCase());
+        } catch (final IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
         }
     }
 

@@ -1,157 +1,158 @@
 package com.ururulab.ururu.auth.service;
 
+import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
+import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
+import com.ururulab.ururu.auth.jwt.validator.JwtTokenValidator;
+import com.ururulab.ururu.auth.storage.RefreshTokenStorage;
+import com.ururulab.ururu.auth.storage.TokenBlacklistStorage;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.Set;
-
+/**
+ * JWT 토큰 갱신 서비스.
+ * Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급하는 역할을 담당합니다.
+ */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public final class JwtRefreshService {
-    private static final String REFRESH_KEY_PREFIX = "refresh:";
-    private static final String BLACKLIST_KEY_PREFIX = "blacklist:";
-    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
-    private final StringRedisTemplate redisTemplate;
+    private final AccessTokenGenerator accessTokenGenerator;
+    private final RefreshTokenGenerator refreshTokenGenerator;
+    private final JwtTokenValidator jwtTokenValidator;
+    private final RefreshTokenStorage refreshTokenStorage;
+    private final TokenBlacklistStorage tokenBlacklistStorage;
+    private final UserInfoService userInfoService;
 
+    /**
+     * Refresh Token을 저장합니다.
+     *
+     * @param userId 사용자 ID
+     * @param userType 사용자 타입
+     * @param refreshToken 저장할 Refresh Token
+     */
     public void storeRefreshToken(final Long userId, final String userType, final String refreshToken) {
-        final long expirySeconds = jwtTokenProvider.getRefreshTokenExpirySeconds();
-        final String jti = jwtTokenProvider.getTokenId(refreshToken);
-        final String key = buildRefreshKey(userType, userId, jti);
-        redisTemplate.opsForValue().set(key, refreshToken, Duration.ofSeconds(expirySeconds));
+        refreshTokenStorage.storeRefreshToken(userId, userType, refreshToken);
     }
 
-    // 기존 메서드 호환성을 위한 오버로드
+    /**
+     * 기존 메서드 호환성을 위한 오버로드
+     */
     public void storeRefreshToken(final Long memberId, final String refreshToken) {
-        storeRefreshToken(memberId, "MEMBER", refreshToken);
+        storeRefreshToken(memberId, AuthConstants.USER_TYPE_MEMBER, refreshToken);
     }
 
+    /**
+     * Access Token을 갱신합니다.
+     *
+     * @param refreshToken 갱신에 사용할 Refresh Token
+     * @return 새로운 토큰 정보가 포함된 응답
+     * @throws BusinessException 토큰이 유효하지 않은 경우
+     */
     public SocialLoginResponse refreshAccessToken(final String refreshToken) {
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
-        if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
+        // 1. Refresh Token 검증
+        validateRefreshToken(refreshToken);
 
-        final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
-        if (isTokenBlacklisted(tokenId)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
-
+        // 2. 토큰에서 정보 추출
         final Long userId = jwtTokenProvider.getMemberId(refreshToken);
         final String userType = jwtTokenProvider.getUserType(refreshToken);
-        final String key = buildRefreshKey(userType, userId, tokenId);
-        final String storedToken = redisTemplate.opsForValue().get(key);
+        final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
 
-        if (storedToken == null || !storedToken.equals(refreshToken)) {
+        // 3. 블랙리스트 확인
+        if (tokenBlacklistStorage.isTokenBlacklisted(tokenId)) {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        // Redis에서 사용자 정보 가져오기 (이메일, 역할 등)
-        final String userInfoKey = "user_info:" + userType + ":" + userId;
-        final String userInfo = redisTemplate.opsForValue().get(userInfoKey);
-        
-        String email = null;
-        String role = null;
-        
-        // 판매자 로그인의 경우 Redis에서 사용자 정보 가져오기
-        if ("SELLER".equals(userType) && userInfo != null && !userInfo.isEmpty()) {
-            // 안전한 JSON 파싱
-            try {
-                // "email":"sample@ururu.com" 부분 추출
-                if (userInfo.contains("\"email\":")) {
-                    String emailPart = userInfo.split("\"email\":")[1];
-                    email = emailPart.split(",")[0].replace("\"", "").trim();
-                }
-                
-                // "role":"SELLER" 부분 추출
-                if (userInfo.contains("\"role\":")) {
-                    String rolePart = userInfo.split("\"role\":")[1];
-                    role = rolePart.split("}")[0].replace("\"", "").trim();
-                }
-            } catch (Exception e) {
-                // log.warn("Failed to parse user info from Redis: {}", userInfo, e);
-            }
-        }
-        
-        // 소셜 로그인의 경우 또는 Redis에서 정보를 가져오지 못한 경우 기본값 사용
-        if (email == null || email.isEmpty()) {
-            // 소셜 로그인의 경우 기본 이메일 사용
-            email = "social@ururu.com";
-        }
-        if (role == null || role.isEmpty()) {
-            role = userType.equals("SELLER") ? "SELLER" : "MEMBER";
-        }
+        // 4. Redis에서 저장된 토큰 확인
+        validateStoredRefreshToken(userType, userId, tokenId, refreshToken);
 
-        // 새로운 access token 생성
-        final String newAccessToken = jwtTokenProvider.generateAccessToken(userId, email, role, userType);
-        
-        // 새로운 refresh token 생성 (토큰 로테이션)
-        final String newRefreshToken = jwtTokenProvider.generateRefreshToken(userId, userType);
-        
-        // 기존 refresh token을 블랙리스트에 추가
-        final long refreshExpiry = jwtTokenProvider.getRemainingExpiry(refreshToken);
-        if (refreshExpiry > 0) {
-            final String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
-            redisTemplate.opsForValue().set(blacklistKey, "1", Duration.ofSeconds(refreshExpiry));
-        }
-        
-        // 새로운 refresh token을 Redis에 저장
+        // 5. Refresh Token 개수 제한 확인
+        validateRefreshTokenLimit(userType, userId);
+
+        // 6. 사용자 정보 조회
+        final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
+
+        // 7. 새로운 토큰 생성
+        final String newAccessToken = accessTokenGenerator.generateAccessToken(
+                userId, userInfo.email(), userInfo.role(), userType
+        );
+        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, userType);
+
+        // 8. 기존 토큰 블랙리스트 처리
+        tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
+
+        // 9. 새로운 Refresh Token 저장
         storeRefreshToken(userId, userType, newRefreshToken);
 
         return SocialLoginResponse.of(
                 newAccessToken,
                 newRefreshToken,
-                jwtProperties.getAccessTokenExpiry(),
-                SocialLoginResponse.MemberInfo.of(userId, email, null, null, userType)
+                accessTokenGenerator.getExpirySeconds(),
+                SocialLoginResponse.MemberInfo.of(userId, userInfo.email(), null, null, userType)
         );
     }
 
+    /**
+     * 로그아웃 처리를 합니다.
+     *
+     * @param authorization Authorization 헤더 값
+     */
     public void logout(final String authorization) {
         final String accessToken = extractTokenFromBearer(authorization);
         final Long userId = jwtTokenProvider.getMemberId(accessToken);
         final String userType = jwtTokenProvider.getUserType(accessToken);
-        final String tokenId = jwtTokenProvider.getTokenId(accessToken);
 
-        // Redis에서 해당 사용자의 모든 refresh token 삭제
-        final String refreshKeyPattern = REFRESH_KEY_PREFIX + userType + ":" + userId + ":*";
-        final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
-        }
+        // Refresh Token 삭제
+        refreshTokenStorage.deleteAllRefreshTokens(userType, userId);
 
-        // Access token을 블랙리스트에 추가
-        final long expiry = jwtTokenProvider.getRemainingExpiry(accessToken);
-        if (tokenId != null && expiry > 0) {
-            final String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
-            redisTemplate.opsForValue().set(blacklistKey, "1", Duration.ofSeconds(expiry));
-        }
+        // Access Token 블랙리스트 처리
+        tokenBlacklistStorage.blacklistAccessToken(accessToken);
     }
 
+    /**
+     * 토큰이 블랙리스트에 있는지 확인합니다.
+     *
+     * @param tokenId 확인할 토큰 ID
+     * @return 블랙리스트에 있으면 true
+     */
     public boolean isTokenBlacklisted(final String tokenId) {
-        if (tokenId == null) return false;
-        final String blacklistKey = BLACKLIST_KEY_PREFIX + tokenId;
-        return Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey));
+        return tokenBlacklistStorage.isTokenBlacklisted(tokenId);
     }
 
-    private String buildRefreshKey(final String userType, final Long userId, final String jti) {
-        return REFRESH_KEY_PREFIX + userType + ":" + userId + ":" + jti;
+    // Private Helper Methods
+
+    private void validateRefreshToken(final String refreshToken) {
+        jwtTokenValidator.validateRefreshToken(refreshToken);
+    }
+
+    private void validateStoredRefreshToken(final String userType, final Long userId, 
+                                          final String tokenId, final String refreshToken) {
+        final String storedToken = refreshTokenStorage.getRefreshToken(userType, userId, tokenId);
+        if (storedToken == null || !storedToken.equals(refreshToken)) {
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+    }
+
+    private void validateRefreshTokenLimit(final String userType, final Long userId) {
+        if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
+            log.warn("Refresh token 개수 제한 초과. userId: {}, userType: {}", userId, userType);
+            throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
+        }
     }
 
     private String extractTokenFromBearer(final String bearerToken) {
-        if (bearerToken == null || !bearerToken.startsWith(BEARER_PREFIX)) {
+        if (bearerToken == null || !bearerToken.startsWith(AuthConstants.BEARER_PREFIX)) {
             throw new BusinessException(ErrorCode.MISSING_AUTHORIZATION_HEADER);
         }
-        return bearerToken.substring(BEARER_PREFIX.length());
+        return bearerToken.substring(AuthConstants.BEARER_PREFIX.length());
     }
 }

@@ -6,8 +6,8 @@ import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
-import com.ururulab.ururu.auth.jwt.JwtProperties;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
+import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.auth.oauth.KakaoOAuthProperties;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
@@ -20,7 +20,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
-import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Slf4j
 @Service
@@ -33,15 +32,14 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
 
     public KakaoLoginService(
             final KakaoOAuthProperties kakaoOAuthProperties,
-            final JwtTokenProvider jwtTokenProvider,
-            final JwtProperties jwtProperties,
+            final AccessTokenGenerator accessTokenGenerator,
+            final RefreshTokenGenerator refreshTokenGenerator,
             @Qualifier("socialLoginRestClient") final RestClient socialLoginRestClient,
             final ObjectMapper objectMapper,
             final MemberService memberService,
-            final JwtRefreshService jwtRefreshService,
-            final StringRedisTemplate stringRedisTemplate
+            final JwtRefreshService jwtRefreshService
     ) {
-        super(jwtTokenProvider, jwtProperties, objectMapper, memberService, jwtRefreshService, stringRedisTemplate);
+        super(accessTokenGenerator, refreshTokenGenerator, objectMapper, memberService, jwtRefreshService);
         this.kakaoOAuthProperties = kakaoOAuthProperties;
         this.socialLoginRestClient = socialLoginRestClient;
     }

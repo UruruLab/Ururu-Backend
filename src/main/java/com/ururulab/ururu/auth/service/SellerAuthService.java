@@ -1,20 +1,18 @@
 package com.ururulab.ururu.auth.service;
 
+import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.dto.request.SellerLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.jwt.JwtProperties;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
+import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.service.SellerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
 
 /**
  * 판매자 인증 서비스.
@@ -27,11 +25,10 @@ import java.time.Duration;
 public final class SellerAuthService {
 
     private final SellerService sellerService;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final JwtProperties jwtProperties;
+    private final AccessTokenGenerator accessTokenGenerator;
+    private final RefreshTokenGenerator refreshTokenGenerator;
     private final JwtRefreshService jwtRefreshService;
     private final PasswordEncoder passwordEncoder;
-    private final StringRedisTemplate redisTemplate;
 
     /**
      * 판매자 로그인 처리.
@@ -57,22 +54,20 @@ public final class SellerAuthService {
         }
         
         // JWT 토큰 생성 (판매자는 SELLER 역할)
-        final String accessToken = jwtTokenProvider.generateAccessToken(
+        final String accessToken = accessTokenGenerator.generateAccessToken(
                 seller.getId(),
                 seller.getEmail(),
-                "SELLER", // 판매자 역할
-                "SELLER"
+                AuthConstants.ROLE_SELLER,
+                AuthConstants.USER_TYPE_SELLER
         );
         
-        final String refreshToken = jwtTokenProvider.generateRefreshToken(seller.getId(), "SELLER");
+        final String refreshToken = refreshTokenGenerator.generateRefreshToken(
+                seller.getId(), 
+                AuthConstants.USER_TYPE_SELLER
+        );
         
         // Refresh token을 Redis에 저장
-        jwtRefreshService.storeRefreshToken(seller.getId(), "SELLER", refreshToken);
-        
-        // 사용자 정보를 Redis에 저장 (토큰 갱신 시 사용)
-        final String userInfoKey = "user_info:SELLER:" + seller.getId();
-        final String userInfo = String.format("{\"email\":\"%s\",\"role\":\"SELLER\"}", seller.getEmail());
-        redisTemplate.opsForValue().set(userInfoKey, userInfo, Duration.ofSeconds(jwtProperties.getRefreshTokenExpiry()));
+        jwtRefreshService.storeRefreshToken(seller.getId(), AuthConstants.USER_TYPE_SELLER, refreshToken);
         
         // 응답 생성
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
@@ -80,7 +75,7 @@ public final class SellerAuthService {
                 seller.getEmail(),
                 seller.getName(), // 브랜드명
                 seller.getImage(), // 브랜드 대표 이미지
-                "SELLER"
+                AuthConstants.USER_TYPE_SELLER
         );
         
         log.info("Seller login successful: {} (ID: {})", seller.getEmail(), seller.getId());
@@ -88,7 +83,7 @@ public final class SellerAuthService {
         return SocialLoginResponse.of(
                 accessToken,
                 refreshToken,
-                jwtProperties.getAccessTokenExpiry(),
+                accessTokenGenerator.getExpirySeconds(),
                 memberInfo
         );
     }
