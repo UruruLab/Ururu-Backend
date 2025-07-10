@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.service.MemberService;
 
@@ -17,17 +18,20 @@ public abstract class AbstractSocialLoginService {
     protected final JwtProperties jwtProperties;
     protected final ObjectMapper objectMapper;
     protected final MemberService memberService;
+    protected final JwtRefreshService jwtRefreshService;
 
     protected AbstractSocialLoginService(
             final JwtTokenProvider jwtTokenProvider,
             final JwtProperties jwtProperties,
             final ObjectMapper objectMapper,
-            final MemberService memberService
+            final MemberService memberService,
+            final JwtRefreshService jwtRefreshService
     ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.jwtProperties = jwtProperties;
         this.objectMapper = objectMapper;
         this.memberService = memberService;
+        this.jwtRefreshService = jwtRefreshService;
     }
 
     protected final SocialLoginResponse createLoginResponse(final Member member) {
@@ -38,6 +42,9 @@ public abstract class AbstractSocialLoginService {
                 "MEMBER"
         );
         final String refreshToken = jwtTokenProvider.generateRefreshToken(member.getId(), "MEMBER");
+
+        // Refresh Token을 Redis에 저장
+        jwtRefreshService.storeRefreshToken(member.getId(), "MEMBER", refreshToken);
 
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
                 member.getId(),

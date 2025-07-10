@@ -19,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 
 @Slf4j
 @Service
@@ -35,9 +36,10 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
             final JwtProperties jwtProperties,
             @Qualifier("socialLoginRestClient") final RestClient socialLoginRestClient,
             final ObjectMapper objectMapper,
-            final MemberService memberService
+            final MemberService memberService,
+            final JwtRefreshService jwtRefreshService
     ) {
-        super(jwtTokenProvider, jwtProperties, objectMapper, memberService);
+        super(jwtTokenProvider, jwtProperties, objectMapper, memberService, jwtRefreshService);
         this.kakaoOAuthProperties = kakaoOAuthProperties;
         this.socialLoginRestClient = socialLoginRestClient;
     }

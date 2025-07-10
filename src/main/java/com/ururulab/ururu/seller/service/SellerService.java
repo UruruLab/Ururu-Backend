@@ -146,6 +146,20 @@ public class SellerService {
         }
     }
 
+    /**
+     * 이메일로 판매자 조회
+     *
+     * @param email 판매자 이메일
+     * @return 판매자 엔티티
+     * @throws BusinessException 판매자가 존재하지 않는 경우
+     */
+    public Seller findByEmail(final String email) {
+        final String normalizedEmail = email.toLowerCase().trim();
+        return sellerRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new com.ururulab.ururu.global.exception.BusinessException(
+                    com.ururulab.ururu.global.exception.error.ErrorCode.SELLER_NOT_FOUND));
+    }
+
     // 활성 판매자 조회
     private Seller findActiveSellerById(final Long sellerId) {
         return sellerRepository.findActiveSeller(sellerId)
