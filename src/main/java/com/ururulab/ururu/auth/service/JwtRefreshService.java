@@ -57,8 +57,41 @@ public final class JwtRefreshService {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        final String email = jwtTokenProvider.getEmail(refreshToken);
-        final String role = jwtTokenProvider.getRole(refreshToken);
+        // Redis에서 사용자 정보 가져오기 (이메일, 역할 등)
+        final String userInfoKey = "user_info:" + userType + ":" + userId;
+        final String userInfo = redisTemplate.opsForValue().get(userInfoKey);
+        
+        String email = null;
+        String role = null;
+        
+        // 판매자 로그인의 경우 Redis에서 사용자 정보 가져오기
+        if ("SELLER".equals(userType) && userInfo != null && !userInfo.isEmpty()) {
+            // 안전한 JSON 파싱
+            try {
+                // "email":"sample@ururu.com" 부분 추출
+                if (userInfo.contains("\"email\":")) {
+                    String emailPart = userInfo.split("\"email\":")[1];
+                    email = emailPart.split(",")[0].replace("\"", "").trim();
+                }
+                
+                // "role":"SELLER" 부분 추출
+                if (userInfo.contains("\"role\":")) {
+                    String rolePart = userInfo.split("\"role\":")[1];
+                    role = rolePart.split("}")[0].replace("\"", "").trim();
+                }
+            } catch (Exception e) {
+                // log.warn("Failed to parse user info from Redis: {}", userInfo, e);
+            }
+        }
+        
+        // 소셜 로그인의 경우 또는 Redis에서 정보를 가져오지 못한 경우 기본값 사용
+        if (email == null || email.isEmpty()) {
+            // 소셜 로그인의 경우 기본 이메일 사용
+            email = "social@ururu.com";
+        }
+        if (role == null || role.isEmpty()) {
+            role = userType.equals("SELLER") ? "SELLER" : "MEMBER";
+        }
 
         // 새로운 access token 생성
         final String newAccessToken = jwtTokenProvider.generateAccessToken(userId, email, role, userType);

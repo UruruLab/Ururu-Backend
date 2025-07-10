@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Slf4j
 @Service
@@ -37,9 +38,10 @@ public final class GoogleLoginService extends AbstractSocialLoginService impleme
             @Qualifier("socialLoginRestClient") final RestClient socialLoginRestClient,
             final ObjectMapper objectMapper,
             final MemberService memberService,
-            final JwtRefreshService jwtRefreshService
+            final JwtRefreshService jwtRefreshService,
+            final StringRedisTemplate stringRedisTemplate
     ) {
-        super(jwtTokenProvider, jwtProperties, objectMapper, memberService, jwtRefreshService);
+        super(jwtTokenProvider, jwtProperties, objectMapper, memberService, jwtRefreshService, stringRedisTemplate);
         this.googleOAuthProperties = googleOAuthProperties;
         this.socialLoginRestClient = socialLoginRestClient;
     }

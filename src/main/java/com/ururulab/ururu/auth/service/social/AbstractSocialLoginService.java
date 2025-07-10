@@ -8,10 +8,15 @@ import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.service.MemberService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.time.Duration;
 
 /**
  * 소셜 로그인 서비스의 공통 기능을 제공하는 추상 클래스.
  */
+@Slf4j
 public abstract class AbstractSocialLoginService {
 
     protected final JwtTokenProvider jwtTokenProvider;
@@ -19,19 +24,22 @@ public abstract class AbstractSocialLoginService {
     protected final ObjectMapper objectMapper;
     protected final MemberService memberService;
     protected final JwtRefreshService jwtRefreshService;
+    protected final StringRedisTemplate redisTemplate;
 
     protected AbstractSocialLoginService(
             final JwtTokenProvider jwtTokenProvider,
             final JwtProperties jwtProperties,
             final ObjectMapper objectMapper,
             final MemberService memberService,
-            final JwtRefreshService jwtRefreshService
+            final JwtRefreshService jwtRefreshService,
+            final StringRedisTemplate redisTemplate
     ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.jwtProperties = jwtProperties;
         this.objectMapper = objectMapper;
         this.memberService = memberService;
         this.jwtRefreshService = jwtRefreshService;
+        this.redisTemplate = redisTemplate;
     }
 
     protected final SocialLoginResponse createLoginResponse(final Member member) {
@@ -45,6 +53,12 @@ public abstract class AbstractSocialLoginService {
 
         // Refresh Token을 Redis에 저장
         jwtRefreshService.storeRefreshToken(member.getId(), "MEMBER", refreshToken);
+        
+        // 사용자 정보를 Redis에 저장 (토큰 갱신 시 사용)
+        final String userInfoKey = "user_info:MEMBER:" + member.getId();
+        final String userInfo = String.format("{\"email\":\"%s\",\"role\":\"%s\"}", 
+                member.getEmail(), member.getRole().name());
+        redisTemplate.opsForValue().set(userInfoKey, userInfo, Duration.ofSeconds(jwtProperties.getRefreshTokenExpiry()));
 
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
                 member.getId(),

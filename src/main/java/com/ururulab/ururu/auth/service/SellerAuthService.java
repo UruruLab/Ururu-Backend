@@ -10,8 +10,11 @@ import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.service.SellerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 /**
  * 판매자 인증 서비스.
@@ -28,6 +31,7 @@ public final class SellerAuthService {
     private final JwtProperties jwtProperties;
     private final JwtRefreshService jwtRefreshService;
     private final PasswordEncoder passwordEncoder;
+    private final StringRedisTemplate redisTemplate;
 
     /**
      * 판매자 로그인 처리.
@@ -64,6 +68,11 @@ public final class SellerAuthService {
         
         // Refresh token을 Redis에 저장
         jwtRefreshService.storeRefreshToken(seller.getId(), "SELLER", refreshToken);
+        
+        // 사용자 정보를 Redis에 저장 (토큰 갱신 시 사용)
+        final String userInfoKey = "user_info:SELLER:" + seller.getId();
+        final String userInfo = String.format("{\"email\":\"%s\",\"role\":\"SELLER\"}", seller.getEmail());
+        redisTemplate.opsForValue().set(userInfoKey, userInfo, Duration.ofSeconds(jwtProperties.getRefreshTokenExpiry()));
         
         // 응답 생성
         final SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
