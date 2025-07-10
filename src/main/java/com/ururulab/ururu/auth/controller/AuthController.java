@@ -171,7 +171,16 @@ public class AuthController {
      * 로그아웃 처리 API.
      */
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponseFormat<Void>> logout(final HttpServletResponse response) {
+    public ResponseEntity<ApiResponseFormat<Void>> logout(
+            @RequestHeader(name = "Authorization", required = false) final String authorization,
+            final HttpServletResponse response) {
+        
+        // Authorization 헤더가 있으면 Redis 토큰 삭제
+        if (authorization != null && !authorization.isBlank()) {
+            jwtRefreshService.logout(authorization);
+        }
+        
+        // 쿠키 삭제
         jwtCookieHelper.clearTokenCookies(response);
         
         log.info("User logged out successfully, cookies cleared (env: {})", getCurrentProfile());

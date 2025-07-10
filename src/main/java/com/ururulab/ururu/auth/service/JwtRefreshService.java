@@ -49,7 +49,7 @@ public final class JwtRefreshService {
 
 
     /**
-     * Access Token을 갱신합니다.
+     * Access Token을 갱신합니다. (RTR 방식)
      *
      * @param refreshToken 갱신에 사용할 Refresh Token
      * @return 새로운 토큰 정보가 포함된 응답
@@ -78,22 +78,29 @@ public final class JwtRefreshService {
         // 6. 사용자 정보 조회
         final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
 
-        // 7. 새로운 토큰 생성
+        // 7. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
+        try {
+            // 기존 토큰을 블랙리스트에 추가
+            tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
+            // 기존 토큰을 Redis에서 삭제
+            refreshTokenStorage.deleteRefreshToken(userType, userId, tokenId);
+            log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", userId, userType);
+        } catch (final BusinessException e) {
+            log.warn("Failed to invalidate previous refresh token during RTR: {}", e.getMessage());
+            // 토큰 무효화 실패 시 갱신 중단 (보안상 중요)
+            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // 8. 새로운 토큰 생성
         final String newAccessToken = accessTokenGenerator.generateAccessToken(
                 userId, userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(userType)
         );
         final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, UserType.fromString(userType));
 
-        // 8. 기존 토큰 블랙리스트 처리
-        try {
-            tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
-        } catch (final BusinessException e) {
-            log.warn("Failed to blacklist refresh token during refresh: {}", e.getMessage());
-            // 블랙리스트 실패는 토큰 갱신을 중단시키지 않음
-        }
-
         // 9. 새로운 Refresh Token 저장
         storeRefreshToken(userId, userType, newRefreshToken);
+
+        log.info("RTR: Token refresh completed successfully for user: {} (type: {})", userId, userType);
 
         return SocialLoginResponse.of(
                 newAccessToken,
