@@ -10,7 +10,7 @@ fi
 echo "[INFO] Nginx 설정을 ${TARGET}으로 전환합니다..."
 echo "TARGET_CONTAINER=$TARGET" > .nginx-env
 export TARGET_CONTAINER=$TARGET 
-envsubst < nginx/nginx.conf.template > nginx/nginx.conf
+envsubst '$TARGET_CONTAINER' < nginx/nginx.conf.template > nginx/nginx.conf
 
 docker exec ururu-nginx nginx -s reload || {
   echo "[ERROR] Nginx reload 실패"; exit 1;

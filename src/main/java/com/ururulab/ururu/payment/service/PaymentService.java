@@ -280,14 +280,6 @@
          * @param payment 결제 정보
          */
         private void completePaymentProcessing(Payment payment) {
-            // 재고가 0이 될 공동구매 ID 수집용
-            Set<Long> groupBuyIdsToCheck = new HashSet<>();
-
-            // 옵션 ID 수집
-            List<Long> optionIds = payment.getOrder().getOrderItems().stream()
-                    .map(item -> item.getGroupBuyOption().getId())
-                    .collect(Collectors.toList());
-
             // 재고 차감 + 예약 해제
             payment.getOrder().getOrderItems().forEach(item -> {
                 Long optionId = item.getGroupBuyOption().getId();
@@ -303,20 +295,38 @@
                 stockReservationService.releaseReservation(optionId, payment.getMember().getId());
             });
 
-            // 재고 상태와 groupBuyId를 한 번에 조회
-            List<StockCheckDto> stockResults =
-                    groupBuyOptionRepository.getStockAndGroupBuyIdsByOptionIds(optionIds);
-
-            // 재고가 0이 된 공동구매 ID만 수집
-            stockResults.stream()
-                    .filter(dto -> dto.stock() != null && dto.stock() == 0)
-                    .map(StockCheckDto::groupBuyId)
-                    .forEach(groupBuyIdsToCheck::add);
-
             // 포인트 차감
             processPointUsage(payment.getMember(), payment.getPoint());
 
             removeOrderedItemsFromCart(payment);
+
+            // 재고 소진 체크 및 이벤트 발행
+            handleStockDepletionCheck(payment);
+
+            log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
+                    payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());
+        }
+
+        /**
+         * 재고 소진 체크 및 이벤트 발행 처리
+         *
+         * @param payment 결제 정보
+         */
+        private void handleStockDepletionCheck(Payment payment) {
+            // 옵션 ID 수집
+            List<Long> optionIds = payment.getOrder().getOrderItems().stream()
+                    .map(item -> item.getGroupBuyOption().getId())
+                    .collect(Collectors.toList());
+
+            // 재고 상태와 groupBuyId를 한 번에 조회
+            List<StockCheckDto> stockResults =
+                    groupBuyOptionRepository.getStockAndGroupBuyIdsByOptionIds(optionIds);
+
+            // 재고가 0이 된 공동구매 ID 수집
+            Set<Long> groupBuyIdsToCheck = stockResults.stream()
+                    .filter(dto -> dto.stock() != null && dto.stock() == 0)
+                    .map(StockCheckDto::groupBuyId)
+                    .collect(Collectors.toSet());
 
             // 재고가 0이 된 공동구매가 있을 때만 이벤트 발행
             if (!groupBuyIdsToCheck.isEmpty()) {
@@ -325,9 +335,6 @@
                 log.info("재고 소진 이벤트 발행 - paymentId: {}, 대상 공동구매: {}",
                         payment.getId(), groupBuyIdsToCheck);
             }
-
-            log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
-                    payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());
         }
 
 
