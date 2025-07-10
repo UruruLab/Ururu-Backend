@@ -73,11 +73,4 @@ public class GroupBuyOption extends BaseEntity {
         return initialStock - stock;
     }
 
-    /**
-     * 재고가 있는지 확인
-     * @return 현재 재고 > 0
-     */
-    public boolean hasStock() {
-        return stock > 0;
-    }
 }

@@ -4,7 +4,8 @@
     import com.ururulab.ururu.global.exception.BusinessException;
     import com.ururulab.ururu.global.exception.error.ErrorCode;
     import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
-    import com.ururulab.ururu.groupBuy.event.OrderCompletedEvent;
+    import com.ururulab.ururu.groupBuy.dto.common.StockCheckDto;
+    import com.ururulab.ururu.groupBuy.event.StockDepletedEvent;
     import com.ururulab.ururu.member.domain.entity.Member;
     import com.ururulab.ururu.member.domain.repository.MemberRepository;
     import com.ururulab.ururu.order.domain.entity.Cart;
@@ -42,9 +43,8 @@
     import java.nio.charset.StandardCharsets;
     import java.time.Instant;
     import java.time.ZonedDateTime;
-    import java.util.Base64;
-    import java.util.Map;
-    import java.util.Optional;
+    import java.util.*;
+    import java.util.stream.Collectors;
 
     @Slf4j
     @Service
@@ -280,6 +280,14 @@
          * @param payment 결제 정보
          */
         private void completePaymentProcessing(Payment payment) {
+            // 재고가 0이 될 공동구매 ID 수집용
+            Set<Long> groupBuyIdsToCheck = new HashSet<>();
+
+            // 옵션 ID 수집
+            List<Long> optionIds = payment.getOrder().getOrderItems().stream()
+                    .map(item -> item.getGroupBuyOption().getId())
+                    .collect(Collectors.toList());
+
             // 재고 차감 + 예약 해제
             payment.getOrder().getOrderItems().forEach(item -> {
                 Long optionId = item.getGroupBuyOption().getId();
@@ -295,15 +303,28 @@
                 stockReservationService.releaseReservation(optionId, payment.getMember().getId());
             });
 
+            // 재고 상태와 groupBuyId를 한 번에 조회
+            List<StockCheckDto> stockResults =
+                    groupBuyOptionRepository.getStockAndGroupBuyIdsByOptionIds(optionIds);
+
+            // 재고가 0이 된 공동구매 ID만 수집
+            stockResults.stream()
+                    .filter(dto -> dto.stock() != null && dto.stock() == 0)
+                    .map(StockCheckDto::groupBuyId)
+                    .forEach(groupBuyIdsToCheck::add);
+
             // 포인트 차감
             processPointUsage(payment.getMember(), payment.getPoint());
 
             removeOrderedItemsFromCart(payment);
 
-            //결제 완료 후 이벤트 발행 추가
-            OrderCompletedEvent event = OrderCompletedEvent.from(payment.getOrder().getOrderItems());
-            eventPublisher.publishEvent(event);
-            log.info("결제 완료 및 재고 체크 이벤트 발행 - paymentId: {}", payment.getId());
+            // 재고가 0이 된 공동구매가 있을 때만 이벤트 발행
+            if (!groupBuyIdsToCheck.isEmpty()) {
+                StockDepletedEvent event = new StockDepletedEvent(groupBuyIdsToCheck);
+                eventPublisher.publishEvent(event);
+                log.info("재고 소진 이벤트 발행 - paymentId: {}, 대상 공동구매: {}",
+                        payment.getId(), groupBuyIdsToCheck);
+            }
 
             log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
                     payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());

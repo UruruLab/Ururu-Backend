@@ -2,6 +2,7 @@ package com.ururulab.ururu.groupBuy.domain.repository;
 
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
+import com.ururulab.ururu.groupBuy.dto.common.StockCheckDto;
 import com.ururulab.ururu.groupBuy.dto.projection.GroupBuyOptionBasicInfo;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -103,4 +104,21 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
             "WHERE gbo.groupBuy.id = :groupBuyId " +
             "AND gbo.stock > 0")
     boolean isAllStockDepleted(@Param("groupBuyId") Long groupBuyId);
+
+    /**
+     * 여러 옵션 ID로 재고와 공동구매 ID를 한번에 조회
+     * Payment 도메인에서 재고 차감 후 재고가 0이 된 옵션들을 한번에 확인할 때 사용
+     *
+     * @param optionIds 옵션 ID 리스트
+     * @return [optionId, stock, groupBuyId] 형태의 결과 리스트
+     */
+    @Query("""
+    SELECT new com.ururulab.ururu.groupBuy.dto.common.StockCheckDto(
+        gbo.id, gbo.stock, gbo.groupBuy.id
+    )
+    FROM GroupBuyOption gbo
+    WHERE gbo.id IN :optionIds
+    """)
+    List<StockCheckDto> getStockAndGroupBuyIdsByOptionIds(@Param("optionIds") List<Long> optionIds);
+
 }
