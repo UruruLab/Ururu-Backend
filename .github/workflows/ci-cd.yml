@@ -2,7 +2,7 @@ name: CI/CD - DockerHub Push & Blue-Green Deploy
 
 on:
   push:
-    branches: [main, fix/141-pemKeyIssue]
+    branches: [main]
 
 jobs:
   build-and-deploy:
@@ -40,44 +40,44 @@ jobs:
       - name: Build Spring Boot JAR
         run: ./gradlew clean bootJar --no-daemon
 
-      # 5. 현재 활성 컨테이너 확인 및 타겟 결정
-      # 5.1 ACTIVE 값을 EC2에서 판단 후 파일로 저장
-      - name: Write ACTIVE to file in EC2
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            ACTIVE="ururu-green"
-            if [ -f /home/ec2-user/app/.nginx-env ] && grep -q ururu-blue /home/ec2-user/app/.nginx-env; then
-              ACTIVE="ururu-blue"
-            fi
-            echo "$ACTIVE" > /home/ec2-user/active.txt
-
-      # 5.2 ACTIVE 값 읽기
-      - name: Read ACTIVE value from EC2
-        id: read-active
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: cat /home/ec2-user/active.txt
-
-      # 5.3 환경 변수 설정
-      - name: Export ACTIVE to GitHub Env
+      # 5. 현재 활성 컨테이너 확인 및 타겟 결정 (SSH 직접 방식)
+      - name: Setup SSH key and determine ACTIVE container
         run: |
-          ACTIVE=$(echo "${{ steps.read-active.outputs.stdout }}" | tr -d '\r')
-          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV          
-            
-          if [ "$ACTIVE" == "ururu-blue" ]; then
-            echo "TARGET=ururu-green" >> $GITHUB_ENV
-            echo "TARGET_TAG=green" >> $GITHUB_ENV
+          echo "=== 단계 1: SSH 키 설정 시작 ==="
+          mkdir -p ~/.ssh
+          echo "mkdir 완료"
+
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/private_key
+          echo "키 파일 생성 완료"
+
+          chmod 600 ~/.ssh/private_key
+          echo "권한 설정 완료"
+
+          echo "=== 단계 2: SSH 연결 테스트 ==="
+          ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH 테스트 성공'"
+          echo "SSH 연결 완료"
+
+          echo "=== 단계 3: nginx 내용 읽기 ==="
+          NGINX_CONTENT=$(ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "cat /home/ec2-user/app/.nginx-env")
+          echo "nginx 내용: $NGINX_CONTENT"
+
+          echo "=== 단계 4: ACTIVE 결정 ==="
+          if [[ "$NGINX_CONTENT" == *"ururu-blue"* ]]; then
+            ACTIVE="ururu-blue"
+            TARGET="ururu-green"
+            TARGET_TAG="green"
           else
-            echo "TARGET=ururu-blue" >> $GITHUB_ENV
-            echo "TARGET_TAG=blue" >> $GITHUB_ENV
+            ACTIVE="ururu-green" 
+            TARGET="ururu-blue"
+            TARGET_TAG="blue"
           fi
+
+          echo "=== 단계 5: 환경 변수 설정 ==="
+          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
+          echo "TARGET=$TARGET" >> $GITHUB_ENV
+          echo "TARGET_TAG=$TARGET_TAG" >> $GITHUB_ENV
+
+          echo "최종 결과: ACTIVE=$ACTIVE, TARGET=$TARGET, TARGET_TAG=$TARGET_TAG"
 
       # 6. DockerHub 로그인 및 푸시
       - name: Login to DockerHub
