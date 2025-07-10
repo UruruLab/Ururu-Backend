@@ -1,5 +1,6 @@
 package com.ururulab.ururu.groupBuy.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
@@ -8,6 +9,7 @@ import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import java.time.Instant;
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record GroupBuyCreateResponse(
         Long id,
         String title,

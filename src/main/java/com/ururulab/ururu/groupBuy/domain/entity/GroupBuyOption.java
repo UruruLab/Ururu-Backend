@@ -27,6 +27,9 @@ public class GroupBuyOption extends BaseEntity {
     private ProductOption productOption;
 
     @Column(nullable = false)
+    private Integer initialStock;  // 초기 재고
+
+    @Column(nullable = false)
     @Min(0)
     private Integer stock; //재고
 
@@ -51,6 +54,7 @@ public class GroupBuyOption extends BaseEntity {
         GroupBuyOption groupBuyOption = new GroupBuyOption();
         groupBuyOption.groupBuy = groupBuy;
         groupBuyOption.productOption = productOption;
+        groupBuyOption.initialStock = stock;  // 초기 재고 판매량 계산을 위해
         groupBuyOption.stock = stock;
         groupBuyOption.priceOverride = priceOverride;
         groupBuyOption.salePrice = salePrice;
@@ -60,4 +64,13 @@ public class GroupBuyOption extends BaseEntity {
     public void updateSalePrice(int salePrice) {
         this.salePrice = salePrice;
     }
+
+    /**
+     * 판매량 계산 메서드 추가
+     * @return
+     */
+    public Integer getSoldQuantity() {
+        return initialStock - stock;
+    }
+
 }

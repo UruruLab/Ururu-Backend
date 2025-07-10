@@ -1,5 +1,6 @@
 package com.ururulab.ururu.groupBuy.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.product.domain.entity.Product;
@@ -65,7 +66,7 @@ public class GroupBuy extends BaseEntity {
     @Column(name = "display_final_price")
     private Integer displayFinalPrice;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Instant startAt; // 공동구매 시작일
 
     @Column(nullable = false)
@@ -73,6 +74,9 @@ public class GroupBuy extends BaseEntity {
 
     @OneToMany(mappedBy = "groupBuy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GroupBuyImage> groupBuyImages = new ArrayList<>();
+
+    @OneToMany(mappedBy = "groupBuy", fetch = FetchType.LAZY)
+    private List<GroupBuyOption> options = new ArrayList<>();
 
     public static GroupBuy of(
             Product product,
@@ -108,6 +112,14 @@ public class GroupBuy extends BaseEntity {
 
     public void updateStatus(GroupBuyStatus status) {
         this.status = status;
+    }
+
+    /**
+     * 공동구매 시작 - DRAFT → OPEN 전환 시 호출
+     */
+    public void startGroupBuy(GroupBuyStatus status) {
+        this.status = status;
+        this.startAt = Instant.now();
     }
 
     /**
