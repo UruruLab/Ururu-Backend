@@ -8,6 +8,7 @@ import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class SellerAuthController {
             @Valid @RequestBody final SellerLoginRequest request,
             final HttpServletResponse response) {
         
-        log.info("Seller login attempt: {}", maskSensitiveData(request.email()));
+        log.info("Seller login attempt: {}", MaskingUtils.maskEmail(request.email()));
         
         // 판매자 로그인 처리
         final SocialLoginResponse loginResponse = sellerAuthService.login(request);
@@ -55,7 +56,7 @@ public class SellerAuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("Seller login successful: {} (env: {})", 
-                maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
+                MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("판매자 로그인이 완료되었습니다.", secureResponse)
@@ -110,7 +111,7 @@ public class SellerAuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
         
         log.info("Seller token refresh successful for user: {} (env: {})", 
-                maskSensitiveData(refreshResponse.memberInfo().email()), getCurrentProfile());
+                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
@@ -138,11 +139,21 @@ public class SellerAuthController {
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
         return SocialLoginResponse.of(
-                maskSensitiveData(original.accessToken()),
-                original.refreshToken() != null ? maskSensitiveData(original.refreshToken()) : null,
+                maskToken(original.accessToken()),
+                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
                 original.expiresIn(),
                 original.memberInfo()
         );
+    }
+
+    /**
+     * 토큰 마스킹 (보안용)
+     */
+    private String maskToken(final String token) {
+        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
+            return MASKED_DATA_PLACEHOLDER;
+        }
+        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**

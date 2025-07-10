@@ -58,7 +58,10 @@ public final class RefreshTokenStorage {
      * @param userId 사용자 ID
      */
     public void deleteAllRefreshTokens(final String userType, final Long userId) {
-        final String refreshKeyPattern = AuthConstants.REFRESH_KEY_PREFIX + userType + ":" + userId + ":*";
+        final String prefix = AuthConstants.USER_TYPE_MEMBER.equals(userType) 
+            ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
+            : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
+        final String refreshKeyPattern = prefix + userId + ":*";
         final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
         
         if (keys != null && !keys.isEmpty()) {
@@ -75,7 +78,10 @@ public final class RefreshTokenStorage {
      * @return Refresh Token 개수
      */
     public long getRefreshTokenCount(final String userType, final Long userId) {
-        final String refreshKeyPattern = AuthConstants.REFRESH_KEY_PREFIX + userType + ":" + userId + ":*";
+        final String prefix = AuthConstants.USER_TYPE_MEMBER.equals(userType) 
+            ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
+            : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
+        final String refreshKeyPattern = prefix + userId + ":*";
         final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
         return keys != null ? keys.size() : 0;
     }
@@ -92,6 +98,9 @@ public final class RefreshTokenStorage {
     }
 
     private String buildRefreshKey(final String userType, final Long userId, final String jti) {
-        return AuthConstants.REFRESH_KEY_PREFIX + userType + ":" + userId + ":" + jti;
+        final String prefix = AuthConstants.USER_TYPE_MEMBER.equals(userType) 
+            ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
+            : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
+        return prefix + userId + ":" + jti;
     }
 } 

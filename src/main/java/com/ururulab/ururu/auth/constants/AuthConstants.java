@@ -28,7 +28,8 @@ public final class AuthConstants {
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
 
     // Redis 키 접두사
-    public static final String REFRESH_KEY_PREFIX = "refresh:";
+    public static final String REFRESH_MEMBER_KEY_PREFIX = "refresh:member:";
+    public static final String REFRESH_SELLER_KEY_PREFIX = "refresh:seller:";
     public static final String BLACKLIST_KEY_PREFIX = "blacklist:";
 
     // 기본값

@@ -8,6 +8,7 @@ import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -100,7 +101,7 @@ public class AuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("{} login successful for user: {} (env: {})", 
-                provider, maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
+                provider, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인이 완료되었습니다.", secureResponse)
@@ -159,7 +160,7 @@ public class AuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
         
         log.info("Token refresh successful for user: {} (env: {})", 
-                maskSensitiveData(refreshResponse.memberInfo().email()), getCurrentProfile());
+                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
@@ -258,7 +259,7 @@ public class AuthController {
             redirectView.setUrl(redirectUrl);
 
             log.info("{} login successful for user: {} (env: {})", 
-                    providerName, maskSensitiveData(loginResponse.memberInfo().email()), getCurrentProfile());
+                    providerName, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
             log.info("Redirecting to: {}", redirectUrl);
 
             return redirectView;
@@ -299,8 +300,8 @@ public class AuthController {
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
         return SocialLoginResponse.of(
-                maskSensitiveData(original.accessToken()),
-                original.refreshToken() != null ? maskSensitiveData(original.refreshToken()) : null,
+                maskToken(original.accessToken()),
+                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
                 original.expiresIn(),
                 original.memberInfo()
         );
@@ -375,6 +376,16 @@ public class AuthController {
         final byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
         return BASE64_ENCODER.encodeToString(randomBytes);
+    }
+
+    /**
+     * 토큰 마스킹 (보안용)
+     */
+    private String maskToken(final String token) {
+        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
+            return MASKED_DATA_PLACEHOLDER;
+        }
+        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**
