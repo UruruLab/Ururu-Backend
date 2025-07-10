@@ -88,18 +88,35 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void setAuthentication(final String token) {
         try {
-            final Long memberId = jwtTokenProvider.getMemberId(token);
+            final String userType = jwtTokenProvider.getUserType(token);
             final String role = jwtTokenProvider.getRole(token);
+            
+            // userType이 null이거나 없는 경우 기본값으로 MEMBER 사용
+            final String actualUserType = (userType != null && !userType.isBlank()) ? userType : "MEMBER";
+            
+            // userType에 따라 userId를 다르게 처리
+            final Long userId;
+            final String authority;
+            
+            if ("SELLER".equals(actualUserType)) {
+                userId = jwtTokenProvider.getMemberId(token); // sellerId로 사용
+                authority = "ROLE_SELLER"; // 판매자 전용 권한
+                log.debug("판매자 인증 처리 - sellerId: {}, role: {}", userId, role);
+            } else {
+                userId = jwtTokenProvider.getMemberId(token); // memberId로 사용
+                authority = "ROLE_MEMBER"; // 회원 전용 권한
+                log.debug("회원 인증 처리 - memberId: {}, role: {}", userId, role);
+            }
 
             final Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    memberId,
+                    userId,
                     null,
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                    Collections.singletonList(new SimpleGrantedAuthority(authority))
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("JWT 토큰으로 인증 완료 - memberId: {}, role: {}",
-                    memberId, role);
+            log.debug("JWT 토큰으로 인증 완료 - userId: {}, role: {}, userType: {}, authority: {}",
+                    userId, role, actualUserType, authority);
 
         } catch (final JwtException e) { // 3. JwtException 구체적으로 처리
             log.warn("JWT 토큰 인증 처리 중 오류 발생: {}", e.getMessage());

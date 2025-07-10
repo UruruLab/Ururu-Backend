@@ -235,6 +235,35 @@ public class AuthController {
     }
 
     /**
+     * 토큰 갱신 API (디버그용 - 토큰 마스킹 없음).
+     */
+    @PostMapping("/refresh/debug")
+    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshTokenDebug(
+            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
+            final HttpServletResponse response) {
+        
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
+        }
+        
+        final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
+        
+        // 새로운 토큰을 쿠키로 설정
+        jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
+        if (refreshResponse.refreshToken() != null) {
+            jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
+        }
+        
+        // 디버그용: 토큰을 마스킹하지 않고 그대로 반환
+        log.info("Token refresh debug successful for user: {} (env: {})", 
+                refreshResponse.memberInfo().email(), getCurrentProfile());
+        
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("토큰이 갱신되었습니다. (디버그 모드)", refreshResponse)
+        );
+    }
+
+    /**
      * 로그아웃 처리 API.
      */
     @PostMapping("/logout")
