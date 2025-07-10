@@ -117,6 +117,8 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 인증이 필요 없는 경로들
         return path.startsWith("/api/auth/") ||
                path.startsWith("/api/public/") ||
+               path.equals("/api/sellers/signup") ||  
+               path.startsWith("/api/sellers/check/") ||  
                path.equals("/health") ||
                path.startsWith("/swagger-ui/") ||
                path.startsWith("/v3/api-docs/");
