@@ -56,7 +56,7 @@ public final class JwtRefreshService {
      * @throws BusinessException 토큰이 유효하지 않은 경우
      */
     public SocialLoginResponse refreshAccessToken(final String refreshToken) {
-        // 1. Refresh Token 검증
+        // 1. Refresh Token 검증 (JWT 서명 + 만료시간)
         validateRefreshToken(refreshToken);
 
         // 2. 토큰에서 정보 추출
@@ -69,16 +69,13 @@ public final class JwtRefreshService {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        // 4. Redis에서 저장된 토큰 확인
-        validateStoredRefreshToken(userType, userId, tokenId, refreshToken);
-
-        // 5. Refresh Token 개수 제한 확인
+        // 4. Refresh Token 개수 제한 확인
         validateRefreshTokenLimit(userType, userId);
 
-        // 6. 사용자 정보 조회
+        // 5. 사용자 정보 조회
         final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
 
-        // 7. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
+        // 6. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
         try {
             // 기존 토큰을 블랙리스트에 추가
             tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
@@ -91,13 +88,13 @@ public final class JwtRefreshService {
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        // 8. 새로운 토큰 생성
+        // 7. 새로운 토큰 생성
         final String newAccessToken = accessTokenGenerator.generateAccessToken(
                 userId, userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(userType)
         );
         final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, UserType.fromString(userType));
 
-        // 9. 새로운 Refresh Token 저장
+        // 8. 새로운 Refresh Token 저장
         storeRefreshToken(userId, userType, newRefreshToken);
 
         log.info("RTR: Token refresh completed successfully for user: {} (type: {})", userId, userType);
@@ -146,14 +143,6 @@ public final class JwtRefreshService {
 
     private void validateRefreshToken(final String refreshToken) {
         jwtTokenValidator.validateRefreshToken(refreshToken);
-    }
-
-    private void validateStoredRefreshToken(final String userType, final Long userId, 
-                                          final String tokenId, final String refreshToken) {
-        final String storedToken = refreshTokenStorage.getRefreshToken(userType, userId, tokenId);
-        if (storedToken == null || !storedToken.equals(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
     }
 
     private void validateRefreshTokenLimit(final String userType, final Long userId) {

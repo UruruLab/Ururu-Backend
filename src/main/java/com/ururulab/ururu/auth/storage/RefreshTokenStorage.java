@@ -130,16 +130,10 @@ public final class RefreshTokenStorage {
             final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
             
             if (keys != null && keys.size() > 1) {
-                // 가장 오래된 토큰 하나를 삭제 (최소 1개는 유지)
-                final String oldestKey = keys.stream()
-                    .sorted()
-                    .findFirst()
-                    .orElse(null);
-                
-                if (oldestKey != null) {
-                    redisTemplate.delete(oldestKey);
-                    log.debug("Deleted oldest refresh token for user: {} (type: {}) due to limit exceeded", userId, userType);
-                }
+                // 효율적인 방법: 첫 번째 키만 삭제 (Redis 키는 시간순으로 정렬됨)
+                final String oldestKey = keys.iterator().next();
+                redisTemplate.delete(oldestKey);
+                log.debug("Deleted oldest refresh token for user: {} (type: {}) due to limit exceeded", userId, userType);
             }
         }
     }
