@@ -52,20 +52,8 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
     /**
      * 공동구매 상세 조회 (DRAFT, CLOSED 제외) - 구매자용
      */
-    //@Query("SELECT gb FROM GroupBuy gb WHERE gb.id = :groupBuyId AND gb.status IN ('OPEN', 'CLOSED')")
     @Query("SELECT gb FROM GroupBuy gb WHERE gb.id = :groupBuyId AND gb.status ='OPEN'")
     Optional<GroupBuy> findPublicGroupBuyWithDetails(@Param("groupBuyId") Long groupBuyId);
-
-    // 카테고리별 공동구매 조회
-    @Query("SELECT gb FROM GroupBuy gb " +
-            "JOIN gb.product p " +
-            "JOIN p.productCategories pc " +
-            "WHERE pc.category.id = :categoryId AND gb.status ='OPEN'")
-    List<GroupBuy> findByProductCategoryId(@Param("categoryId") Long categoryId);
-
-    // 전체 공동구매 조회 (DRAFT 제외)
-    @Query("SELECT gb FROM GroupBuy gb WHERE gb.status ='OPEN'")
-    List<GroupBuy> findAllPublic();
 
     /**
      * 만료된 공동구매 조회 (OPEN 상태이면서 종료일이 지난 것들)
@@ -81,4 +69,29 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
         ORDER BY gb.endsAt ASC
         """)
     List<GroupBuy> findExpiredGroupBuys(@Param("currentTime") Instant currentTime);
+
+    @Query("""
+    SELECT DISTINCT gb FROM GroupBuy gb
+    LEFT JOIN FETCH gb.options gbo
+    LEFT JOIN FETCH gbo.productOption po
+    JOIN gb.product p
+    JOIN p.productCategories pc
+    WHERE (:categoryId IS NULL OR pc.category.id = :categoryId)
+      AND gb.status = 'OPEN'
+      AND gb.endsAt > CURRENT_TIMESTAMP
+    """)
+    List<GroupBuy> findByProductCategoryIdWithOptions(@Param("categoryId") Long categoryId);
+
+    /**
+     * 전체 공개 공동구매 조회 (옵션 정보 포함)
+     * N+1 쿼리 방지를 위해 FETCH JOIN 사용
+     */
+    @Query("""
+        SELECT DISTINCT gb FROM GroupBuy gb
+        LEFT JOIN FETCH gb.options gbo
+        LEFT JOIN FETCH gbo.productOption po
+        WHERE gb.status = 'OPEN'
+          AND gb.endsAt > CURRENT_TIMESTAMP
+        """)
+    List<GroupBuy> findAllPublicWithOptions();
 }
