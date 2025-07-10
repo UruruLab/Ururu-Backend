@@ -2,7 +2,7 @@ name: CI/CD - DockerHub Push & Blue-Green Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/141-pemKeyIssue]
 
 jobs:
   build-and-deploy:
@@ -41,20 +41,43 @@ jobs:
         run: ./gradlew clean bootJar --no-daemon
 
       # 5. 현재 활성 컨테이너 확인 및 타겟 결정
-      - name: Determine current active container
+      # 5.1 ACTIVE 값을 EC2에서 판단 후 파일로 저장
+      - name: Write ACTIVE to file in EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            ACTIVE="ururu-green"
+            if [ -f /home/ec2-user/app/.nginx-env ] && grep -q ururu-blue /home/ec2-user/app/.nginx-env; then
+              ACTIVE="ururu-blue"
+            fi
+            echo "$ACTIVE" > /tmp/active.txt
+
+      # 5.2 해당 파일을 로컬로 복사
+      - name: Download ACTIVE file from EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: /tmp/active.txt
+          target: .
+          strip_components: 0
+          overwrite: true
+
+      # 5.3 환경 변수에 ACTIVE, TARGET 세팅
+      - name: Export active/target variables
         run: |
-          ACTIVE=$(ssh -o StrictHostKeyChecking=no -i "${{ secrets.EC2_SSH_KEY }}" \
-            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
-            "grep -q ururu-blue /home/ec2-user/app/.nginx-env && echo ururu-blue || echo ururu-green")
-
-          echo "ACTIVE=$ACTIVE" >> "$GITHUB_ENV"
-
-          if [[ "$ACTIVE" == "ururu-blue" ]]; then
-            echo "TARGET=ururu-green" >> "$GITHUB_ENV"
-            echo "TARGET_TAG=green" >> "$GITHUB_ENV"
+          ACTIVE=$(cat active.txt)
+          echo "ACTIVE=$ACTIVE" >> $GITHUB_ENV
+          if [ "$ACTIVE" == "ururu-blue" ]; then
+            echo "TARGET=ururu-green" >> $GITHUB_ENV
+            echo "TARGET_TAG=green" >> $GITHUB_ENV
           else
-            echo "TARGET=ururu-blue" >> "$GITHUB_ENV"
-            echo "TARGET_TAG=blue" >> "$GITHUB_ENV"
+            echo "TARGET=ururu-blue" >> $GITHUB_ENV
+            echo "TARGET_TAG=blue" >> $GITHUB_ENV
           fi
 
       # 6. DockerHub 로그인 및 푸시
@@ -63,7 +86,7 @@ jobs:
           echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build Docker image
-        run: docker build -t juwon0909/ururu:${{ env.TARGET_TAG }} -f app/Dockerfile .
+        run: docker build -t juwon0909/ururu:${{ env.TARGET_TAG }} -f docker/Dockerfile .
 
       - name: Push image to DockerHub
         run: docker push juwon0909/ururu:${{ env.TARGET_TAG }}
@@ -114,6 +137,15 @@ jobs:
           strip_components: 1
           overwrite: true
 
+      - name: Ensure nginx shell scripts are executable
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            chmod +x /home/ec2-user/app/nginx/*.sh
+
       # 8. 대상 컨테이너 배포
       - name: Deploy to target container
         uses: appleboy/ssh-action@v0.1.6
@@ -121,10 +153,13 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TARGET
           script: |
             cd /home/ec2-user/app
-            docker compose -f docker-compose-prod.yml pull ${{ env.TARGET }}
-            docker compose -f docker-compose-prod.yml up -d --no-deps ${{ env.TARGET }}
+            docker compose -f docker-compose-prod.yml pull $TARGET
+            docker compose -f docker-compose-prod.yml up -d --no-deps $TARGET
+        env:
+          TARGET: ${{ env.TARGET }}
 
       # 9. 헬스 체크 수행
       - name: Health check on target container
@@ -136,7 +171,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
-            bash nginx/healthcheck.sh $(if [ "${{ env.TARGET }}" = "ururu-blue" ]; then echo 8081; else echo 8082; fi)
+
+            TARGET_PORT=8081
+            if [ -f .nginx-env ] && grep -q ururu-blue .nginx-env; then
+              TARGET_PORT=8082
+            fi
+            bash nginx/healthcheck.sh $TARGET_PORT
 
       # 10. Nginx 트래픽 전환
       - name: Switch Nginx traffic to target
@@ -145,9 +185,12 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TARGET
           script: |
             cd /home/ec2-user/app
-            bash nginx/switch.sh ${{ env.TARGET }}
+            bash nginx/switch.sh $TARGET
+        env:
+          TARGET: ${{ env.TARGET }}
 
       # 11. 롤백 (헬스체크 실패 시)
       - name: Rollback if health check failed
@@ -157,9 +200,12 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: TARGET
           script: |
             cd /home/ec2-user/app
-            bash nginx/rollback.sh ${{ env.TARGET }}
+            bash nginx/rollback.sh $TARGET
+        env:
+          TARGET: ${{ env.TARGET }}
 
       # 12. 이전 컨테이너 제거
       - name: Remove old container
@@ -169,6 +215,14 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: ACTIVE
           script: |
             cd /home/ec2-user/app
-            docker rm -f ${{ env.ACTIVE }} || true
+            docker rm -f $ACTIVE || true
+        env:
+          ACTIVE: ${{ env.ACTIVE }}
+
+      # 13. 임시 파일 제거
+      - name: Clean up temporary files
+        if: always()
+        run: rm -f active.txt
