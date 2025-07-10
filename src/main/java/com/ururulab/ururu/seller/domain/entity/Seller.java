@@ -1,8 +1,8 @@
 package com.ururulab.ururu.seller.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
-import com.ururulab.ururu.seller.dto.validation.SellerValidationConstants;
-import com.ururulab.ururu.seller.domain.policy.SellerPolicy;
+import com.ururulab.ururu.seller.domain.constant.SellerConstants;
+import com.ururulab.ururu.seller.domain.validator.SellerValidator;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,37 +22,37 @@ public class Seller extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = SellerValidationConstants.NAME_COLUMN_LENGTH, nullable = false)
+    @Column(length = SellerConstants.NAME_MAX_LENGTH, nullable = false)
     private String name; // 브랜드명
 
-    @Column(length = SellerValidationConstants.BUSINESS_NAME_COLUMN_LENGTH, nullable = false)
+    @Column(length = SellerConstants.BUSINESS_NAME_MAX_LENGTH, nullable = false)
     private String businessName; // 사업자명
 
-    @Column(length = SellerValidationConstants.OWNER_NAME_COLUMN_LENGTH, nullable = false)
+    @Column(length = SellerConstants.OWNER_NAME_MAX_LENGTH, nullable = false)
     private String ownerName; // 대표 CEO명
 
-    @Column(length = SellerValidationConstants.BUSINESS_NUMBER_COLUMN_LENGTH, nullable = false)
+    @Column(length = SellerConstants.BUSINESS_NUMBER_LENGTH, nullable = false)
     private String businessNumber; // 사업자등록번호
 
-    @Column(length = SellerValidationConstants.EMAIL_COLUMN_LENGTH, nullable = false, unique = true)
+    @Column(length = SellerConstants.EMAIL_MAX_LENGTH, nullable = false, unique = true)
     private String email;
 
-    @Column(length = SellerValidationConstants.PASSWORD_COLUMN_LENGTH, nullable = false)
+    @Column(length = 255, nullable = false) // 암호화된 비밀번호는 고정 길이
     private String password; // 암호화된 비밀번호
 
-    @Column(length = SellerValidationConstants.PHONE_COLUMN_LENGTH, nullable = false)
+    @Column(length = SellerConstants.PHONE_MAX_LENGTH, nullable = false)
     private String phone;
 
-    @Column(length = SellerValidationConstants.IMAGE_COLUMN_LENGTH)
+    @Column(length = 255) // 이미지 URL은 고정 길이
     private String image; // 브랜드 대표 이미지
 
-    @Column(length = SellerValidationConstants.ADDRESS_COLUMN_LENGTH, nullable = false)
+    @Column(length = 255, nullable = false) // 주소는 고정 길이
     private String address1;
 
-    @Column(length = SellerValidationConstants.ADDRESS_COLUMN_LENGTH, nullable = false)
+    @Column(length = 255, nullable = false) // 주소는 고정 길이
     private String address2;
 
-    @Column(length = SellerValidationConstants.MAIL_ORDER_NUMBER_COLUMN_LENGTH, nullable = false)
+    @Column(length = SellerConstants.MAIL_ORDER_NUMBER_MAX_LENGTH, nullable = false)
     private String mailOrderNumber; // 통신판매업 신고번호
 
     @Column(nullable = false)
@@ -72,15 +72,15 @@ public class Seller extends BaseEntity {
             String mailOrderNumber
     ) {
         // 도메인 무결성 검증
-        SellerPolicy.validateName(name);
-        SellerPolicy.validateBusinessName(businessName);
-        SellerPolicy.validateOwnerName(ownerName);
-        SellerPolicy.validateBusinessNumber(businessNumber);
-        SellerPolicy.validateEmail(email);
-        SellerPolicy.validatePhone(phone);
-        SellerPolicy.validateAddress1(address1);
-        SellerPolicy.validateAddress2(address2);
-        SellerPolicy.validateMailOrderNumber(mailOrderNumber);
+        SellerValidator.validateName(name);
+        SellerValidator.validateBusinessName(businessName);
+        SellerValidator.validateOwnerName(ownerName);
+        SellerValidator.validateBusinessNumber(businessNumber);
+        SellerValidator.validateEmail(email);
+        SellerValidator.validatePhone(phone);
+        SellerValidator.validateAddress1(address1);
+        SellerValidator.validateAddress2(address2);
+        SellerValidator.validateMailOrderNumber(mailOrderNumber);
 
         Seller seller = new Seller();
         seller.name = name.trim();
@@ -98,22 +98,22 @@ public class Seller extends BaseEntity {
     }
 
     public void updateName(final String name) {
-        SellerPolicy.validateName(name);
+        SellerValidator.validateName(name);
         this.name = name.trim();
     }
 
     public void updateBusinessName(final String businessName) {
-        SellerPolicy.validateBusinessName(businessName);
+        SellerValidator.validateBusinessName(businessName);
         this.businessName = businessName.trim();
     }
 
     public void updateOwnerName(final String ownerName) {
-        SellerPolicy.validateOwnerName(ownerName);
+        SellerValidator.validateOwnerName(ownerName);
         this.ownerName = ownerName.trim();
     }
 
     public void updatePhone(final String phone) {
-        SellerPolicy.validatePhone(phone);
+        SellerValidator.validatePhone(phone);
         this.phone = phone.trim();
     }
 
@@ -122,14 +122,14 @@ public class Seller extends BaseEntity {
     }
 
     public void updateAddress(final String address1, final String address2) {
-        SellerPolicy.validateAddress1(address1);
-        SellerPolicy.validateAddress2(address2);
+        SellerValidator.validateAddress1(address1);
+        SellerValidator.validateAddress2(address2);
         this.address1 = address1.trim();
         this.address2 = address2 != null ? address2.trim() : "";
     }
 
     public void updateMailOrderNumber(final String mailOrderNumber) {
-        SellerPolicy.validateMailOrderNumber(mailOrderNumber);
+        SellerValidator.validateMailOrderNumber(mailOrderNumber);
         this.mailOrderNumber = mailOrderNumber.trim();
     }
 

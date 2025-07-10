@@ -1,69 +1,67 @@
 package com.ururulab.ururu.seller.dto.request;
 
-import com.ururulab.ururu.seller.dto.validation.SellerValidationConstants;
-import com.ururulab.ururu.seller.dto.validation.SellerValidationMessages;
-import com.ururulab.ururu.seller.dto.validation.SellerValidationPatterns;
+import com.ururulab.ururu.seller.domain.constant.SellerConstants;
 import jakarta.validation.constraints.*;
 
 public record SellerSignupRequest(
-        @NotBlank(message = SellerValidationMessages.NAME_REQUIRED)
-        @Size(max = SellerValidationConstants.NAME_MAX_LENGTH,
-                message = SellerValidationMessages.NAME_SIZE)
+        @NotBlank(message = SellerConstants.NAME_REQUIRED)
+        @Size(max = SellerConstants.NAME_MAX_LENGTH,
+                message = SellerConstants.NAME_SIZE)
         String name,
 
-        @NotBlank(message = SellerValidationMessages.BUSINESS_NAME_REQUIRED)
-        @Size(max = SellerValidationConstants.BUSINESS_NAME_MAX_LENGTH,
-                message = SellerValidationMessages.BUSINESS_NAME_SIZE)
+        @NotBlank(message = SellerConstants.BUSINESS_NAME_REQUIRED)
+        @Size(max = SellerConstants.BUSINESS_NAME_MAX_LENGTH,
+                message = SellerConstants.BUSINESS_NAME_SIZE)
         String businessName,
 
-        @NotBlank(message = SellerValidationMessages.OWNER_NAME_REQUIRED)
-        @Size(max = SellerValidationConstants.OWNER_NAME_MAX_LENGTH,
-                message = SellerValidationMessages.OWNER_NAME_SIZE)
+        @NotBlank(message = SellerConstants.OWNER_NAME_REQUIRED)
+        @Size(max = SellerConstants.OWNER_NAME_MAX_LENGTH,
+                message = SellerConstants.OWNER_NAME_SIZE)
         String ownerName,
 
-        @NotBlank(message = SellerValidationMessages.BUSINESS_NUMBER_REQUIRED)
-        @Size(min = SellerValidationConstants.BUSINESS_NUMBER_LENGTH,
-                max = SellerValidationConstants.BUSINESS_NUMBER_LENGTH,
-                message = SellerValidationMessages.BUSINESS_NUMBER_SIZE)
-        @Pattern(regexp = SellerValidationPatterns.BUSINESS_NUMBER_PATTERN,
-                message = SellerValidationMessages.BUSINESS_NUMBER_PATTERN)
+        @NotBlank(message = SellerConstants.BUSINESS_NUMBER_REQUIRED)
+        @Size(min = SellerConstants.BUSINESS_NUMBER_LENGTH,
+                max = SellerConstants.BUSINESS_NUMBER_LENGTH,
+                message = SellerConstants.BUSINESS_NUMBER_SIZE)
+        @Pattern(regexp = SellerConstants.BUSINESS_NUMBER_PATTERN,
+                message = SellerConstants.BUSINESS_NUMBER_PATTERN_ERROR)
         String businessNumber,
 
-        @NotBlank(message = SellerValidationMessages.EMAIL_REQUIRED)
-        @Size(max = SellerValidationConstants.EMAIL_MAX_LENGTH,
-                message = SellerValidationMessages.EMAIL_SIZE)
-        @Email(message = SellerValidationMessages.EMAIL_FORMAT)
+        @NotBlank(message = SellerConstants.EMAIL_REQUIRED)
+        @Size(max = SellerConstants.EMAIL_MAX_LENGTH,
+                message = SellerConstants.EMAIL_SIZE)
+        @Email(message = SellerConstants.EMAIL_FORMAT)
         String email,
 
-        @NotBlank(message = SellerValidationMessages.PASSWORD_REQUIRED)
-        @Size(max = SellerValidationConstants.PASSWORD_MAX_LENGTH,
-                message = SellerValidationMessages.PASSWORD_SIZE)
-        @Pattern(regexp = SellerValidationPatterns.PASSWORD_PATTERN,
-                message = SellerValidationMessages.PASSWORD_PATTERN)
+        @NotBlank(message = SellerConstants.PASSWORD_REQUIRED)
+        @Size(max = SellerConstants.PASSWORD_MAX_LENGTH,
+                message = SellerConstants.PASSWORD_SIZE)
+        @Pattern(regexp = SellerConstants.PASSWORD_PATTERN,
+                message = SellerConstants.PASSWORD_PATTERN_ERROR)
         String password,
 
-        @Size(max = SellerValidationConstants.PHONE_MAX_LENGTH,
-                message = SellerValidationMessages.PHONE_SIZE)
-        @Pattern(regexp = SellerValidationPatterns.PHONE_PATTERN,
-                message = SellerValidationMessages.PHONE_FORMAT)
-        @NotBlank(message = SellerValidationMessages.PHONE_REQUIRED)
+        @Size(max = SellerConstants.PHONE_MAX_LENGTH,
+                message = SellerConstants.PHONE_SIZE)
+        @Pattern(regexp = SellerConstants.PHONE_PATTERN,
+                message = SellerConstants.PHONE_FORMAT)
+        @NotBlank(message = SellerConstants.PHONE_REQUIRED)
         String phone,
 
         String image,
 
-        @NotBlank(message = SellerValidationMessages.ADDRESS1_REQUIRED)
-        @Size(max = SellerValidationConstants.ADDRESS_MAX_LENGTH,
-                message = SellerValidationMessages.ADDRESS1_SIZE)
+        @NotBlank(message = SellerConstants.ADDRESS1_REQUIRED)
+        @Size(max = SellerConstants.ADDRESS_MAX_LENGTH,
+                message = SellerConstants.ADDRESS1_SIZE)
         String address1,
 
-        @NotBlank(message = SellerValidationMessages.ADDRESS2_REQUIRED)
-        @Size(max = SellerValidationConstants.ADDRESS_MAX_LENGTH,
-                message = SellerValidationMessages.ADDRESS2_SIZE)
+        @NotBlank(message = SellerConstants.ADDRESS2_REQUIRED)
+        @Size(max = SellerConstants.ADDRESS_MAX_LENGTH,
+                message = SellerConstants.ADDRESS2_SIZE)
         String address2,
 
-        @NotBlank(message = SellerValidationMessages.MAIL_ORDER_NUMBER_REQUIRED)
-        @Size(max = SellerValidationConstants.MAIL_ORDER_NUMBER_MAX_LENGTH,
-                message = SellerValidationMessages.MAIL_ORDER_NUMBER_SIZE)
+        @NotBlank(message = SellerConstants.MAIL_ORDER_NUMBER_REQUIRED)
+        @Size(max = SellerConstants.MAIL_ORDER_NUMBER_MAX_LENGTH,
+                message = SellerConstants.MAIL_ORDER_NUMBER_SIZE)
         String mailOrderNumber
 ) {
 } 
