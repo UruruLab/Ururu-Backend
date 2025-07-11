@@ -84,7 +84,7 @@ public class ProductService {
         // 7. 응답 생성 - 기존과 동일
         ProductResponse response = createProductResponseOptimized(savedProduct, categories, savedOptions, savedNotice, savedProductTags);
 
-        log.info("Product created successfully with ID: {} for seller: {} | Performance: {}",
+        log.info("Product created successfully with ID: {} for seller: {}",
                 savedProduct.getId(), sellerId);
 
         return response;
@@ -141,7 +141,7 @@ public class ProductService {
 
         Page<ProductListResponse> result = new PageImpl<>(content, pageable, productPage.getTotalElements());
 
-        log.info("Product list retrieved successfully for seller: {} - {} products | Performance: {}",
+        log.info("Product list retrieved successfully for seller: {} - {} products",
                 sellerId, content.size());
 
         return result;
@@ -200,7 +200,7 @@ public class ProductService {
                 tagResponses
         );
 
-        log.info("Product detail retrieved for productId: {}, sellerId: {} | Performance: {}",
+        log.info("Product detail retrieved for productId: {}, sellerId: {}",
                 productId, sellerId);
         return response;
     }
@@ -282,7 +282,7 @@ public class ProductService {
         // 9. 응답 생성 (기존과 동일)
         ProductResponse response = ProductResponse.from(existingProduct, categoryResponses, optionResponses, noticeResponse, tagResponses);
 
-        log.info("Product update completed for ID: {} | Performance: {}", productId);
+        log.info("Product update completed for ID: {}", productId);
         return response;
     }
 
