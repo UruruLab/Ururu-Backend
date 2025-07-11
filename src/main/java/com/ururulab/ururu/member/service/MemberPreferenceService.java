@@ -1,15 +1,16 @@
 package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.global.domain.entity.enumerated.EnumParser;
-import com.ururulab.ururu.member.dto.request.MemberPreferenceRequest;
-import com.ururulab.ururu.member.dto.response.MemberPreferenceResponse;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberPreference;
 import com.ururulab.ururu.member.domain.entity.enumerated.PurchaseFrequency;
 import com.ururulab.ururu.member.domain.repository.MemberPreferenceRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import com.ururulab.ururu.member.dto.request.MemberPreferenceRequest;
+import com.ururulab.ururu.member.dto.response.MemberPreferenceResponse;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,18 +29,17 @@ public class MemberPreferenceService {
     @Transactional
     public MemberPreferenceResponse createPreference(Long memberId, final MemberPreferenceRequest request) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "회원을 찾을 수 없습니다. ID: " + memberId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_EXIST));
 
         if (request.sellerId() == null || request.sellerId() <= 0) {
-            throw new IllegalArgumentException("유효하지 않은 판매자 ID입니다. ID: " +request.sellerId());
+            throw new BusinessException(ErrorCode.SELLER_NOT_FOUND);
         }
 
         validateSellerExists(request.sellerId());
 
         final boolean exists = memberPreferenceRepository.existsByMemberIdAndSellerId(memberId, request.sellerId());
         if (exists) {
-            throw new IllegalStateException("해당 판매자에 대한 선호도가 이미 존재합니다.");
+            throw new BusinessException(ErrorCode.MEMBER_PREFERENCE_ALREADY_EXISTS);
         }
 
         final PurchaseFrequency purchaseFrequency = parsePurchaseFrequency(request.purchaseFrequency());
@@ -61,7 +61,7 @@ public class MemberPreferenceService {
     @Transactional(readOnly = true)
     public List<MemberPreferenceResponse> getMemberPreferences(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
-            throw new EntityNotFoundException("회원을 찾을 수 없습니다. ID: " + memberId);
+            throw new BusinessException(ErrorCode.MEMBER_NOT_EXIST);
         }
 
         final List<MemberPreference> preferences = memberPreferenceRepository.findByMemberId(memberId);
@@ -72,18 +72,18 @@ public class MemberPreferenceService {
 
     private void validateSellerExists(final Long sellerId) {
         if (!sellerRepository.existsByIdAndIsDeletedFalse(sellerId)) {
-            throw new EntityNotFoundException("판매자를 찾을 수 없습니다. ID :" + sellerId);
+            throw new BusinessException(ErrorCode.SELLER_NOT_FOUND);
         }
     }
 
     private PurchaseFrequency parsePurchaseFrequency(final String purchaseFrequencyString) {
         if (purchaseFrequencyString == null) {
-            throw new IllegalArgumentException("구매 빈도는 필수입니다.");
+            throw new BusinessException(ErrorCode.PURCHASE_FREQUENCY_REQUIRED);
         }
         try {
             return EnumParser.fromString(PurchaseFrequency.class, purchaseFrequencyString, "PurchaseFrequency");
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("올바른 구매 빈도 값이 아닙니다: " + purchaseFrequencyString, e);
+            throw new BusinessException(ErrorCode.INVALID_PURCHASE_FREQUENCY);
         }
     }
 }
