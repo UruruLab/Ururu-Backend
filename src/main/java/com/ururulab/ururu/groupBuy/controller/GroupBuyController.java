@@ -152,10 +152,12 @@ public class GroupBuyController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit,
             @RequestParam(defaultValue = "order_count") String sort,
-            @RequestParam(required = false) String cursor) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String cursor
+            ) {
 
-        GroupBuyPageResponse responses = groupBuyListService.getGroupBuyList(categoryId, limit, sort, cursor);
-
+        GroupBuyPageResponse responses = groupBuyListService.getGroupBuyList(categoryId, limit, sort, cursor, keyword);
+        log.info("GET /groupbuy keyword param = '{}'", keyword);
         return ResponseEntity.ok(ApiResponseFormat.success("공동 구매 목록 조회에 성공하였습니다.", responses));
     }
 

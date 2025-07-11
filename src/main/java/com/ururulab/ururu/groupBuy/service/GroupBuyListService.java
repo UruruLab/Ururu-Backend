@@ -44,15 +44,17 @@ public class GroupBuyListService {
      * @param cursor
      * @return
      */
-    public GroupBuyPageResponse getGroupBuyList(Long categoryId, int limit, String sortType, String cursor) {
+    public GroupBuyPageResponse getGroupBuyList(Long categoryId, int limit, String sortType, String cursor, String keyword) {
+        log.info("[Service] getGroupBuyList() called");
+        log.info("keyword received: '{}'", keyword);
         int fetchLimit = limit + 1;
 
         List<GroupBuyListResponse> items;
 
         if ("order_count".equals(sortType)) {
-            items = getGroupBuyListOrderByOrderCountWithCursor(categoryId, fetchLimit, cursor);
+            items = getGroupBuyListOrderByOrderCountWithCursor(categoryId, fetchLimit, cursor, keyword);
         } else {
-            items = getGroupBuyListWithSortAndCursor(categoryId, fetchLimit, sortType, cursor);
+            items = getGroupBuyListWithSortAndCursor(categoryId, fetchLimit, sortType, cursor, keyword);
         }
 
         boolean hasMore = items.size() > limit;
@@ -72,7 +74,7 @@ public class GroupBuyListService {
      * @param cursor
      * @return
      */
-    private List<GroupBuyListResponse> getGroupBuyListWithSortAndCursor(Long categoryId, int limit, String sortType, String cursor) {
+    private List<GroupBuyListResponse> getGroupBuyListWithSortAndCursor(Long categoryId, int limit, String sortType, String cursor, String keyword) {
         log.debug("Fetching group buy list with sort and cursor - categoryId: {}, limit: {}, sortType: {}, cursor: {}",
                 categoryId, limit, sortType, cursor);
 
@@ -84,7 +86,8 @@ public class GroupBuyListService {
         GroupBuySortOption sortOption = GroupBuySortOption.from(sortType);
         CursorInfoDto cursorInfoDto = cursor != null ? decodeCursor(cursor) : null;
 
-        List<Tuple> tuples = groupBuyRepository.findGroupBuysSortedWithCursor(categoryId, sortOption, limit + 1, cursorInfoDto);
+        List<Tuple> tuples = groupBuyRepository.findGroupBuysSortedWithCursor(
+                categoryId, sortOption, limit + 1, cursorInfoDto, keyword);
 
         if (tuples.isEmpty() && cursor == null) {
             String message = categoryId != null
@@ -107,63 +110,47 @@ public class GroupBuyListService {
     }
 
     /**
-     * 판매량 정렬 + 커서
+     * 판매량 정렬 + 커서 + 키워드 검색
      * @param categoryId
      * @param limit
      * @param cursor
+     * @param keyword 추가!
      * @return
      */
-    private List<GroupBuyListResponse> getGroupBuyListOrderByOrderCountWithCursor(Long categoryId, int limit, String cursor) {
-        log.debug("Fetching group buy list by order count with cursor - categoryId: {}, limit: {}, cursor: {}",
-                categoryId, limit, cursor);
+    private List<GroupBuyListResponse> getGroupBuyListOrderByOrderCountWithCursor(Long categoryId, int limit, String cursor, String keyword) {
+        log.debug("Fetching group buy list by order count with cursor - categoryId: {}, limit: {}, cursor: {}, keyword: {}",
+                categoryId, limit, cursor, keyword);
 
-        List<GroupBuy> groupBuys = categoryId != null
-                ? groupBuyRepository.findByProductCategoryIdWithOptions(categoryId)
-                : groupBuyRepository.findAllPublicWithOptions();
+        GroupBuySortOption sortOption = GroupBuySortOption.ORDER_COUNT;
+        CursorInfoDto cursorInfoDto = cursor != null ? decodeCursor(cursor) : null;
 
-        if (groupBuys.isEmpty()) {
+        // keyword까지 포함한 조회
+        List<Tuple> tuples = groupBuyRepository.findGroupBuysSortedWithCursor(
+                categoryId, sortOption, limit, cursorInfoDto, keyword);
+
+        if (tuples.isEmpty() && cursor == null) {
             String message = categoryId != null
                     ? "해당 카테고리의 공동구매를 찾을 수 없습니다."
                     : "공동구매를 찾을 수 없습니다.";
             throw new BusinessException(GROUPBUY_NOT_FOUND, message);
         }
 
-        // initialStock 기반 판매량 배치 조회
-        List<Long> groupBuyIds = groupBuys.stream().map(GroupBuy::getId).toList();
-        Map<Long, Integer> orderCountMap = getOrderCountMapFromInitialStock(groupBuyIds);
+        // Tuple을 Response로 변환 후 판매량 기준 정렬
+        List<GroupBuyListResponse> responses = tuples.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
 
-        // 판매량 기준으로 정렬
-        List<GroupBuyListResponse> sortedList = groupBuys.stream()
+        // 판매량 기준 수동 정렬
+        List<GroupBuyListResponse> sortedList = responses.stream()
                 .sorted((a, b) -> {
-                    Integer countA = orderCountMap.getOrDefault(a.getId(), 0);
-                    Integer countB = orderCountMap.getOrDefault(b.getId(), 0);
-                    return b.getId().compareTo(a.getId());
+                    // 판매량 내림차순, 같으면 ID 내림차순
+                    int orderCountComparison = b.orderCount().compareTo(a.orderCount());
+                    return orderCountComparison != 0 ? orderCountComparison : b.id().compareTo(a.id());
                 })
-                .map(groupBuy -> {
-                    Integer orderCount = orderCountMap.getOrDefault(groupBuy.getId(), 0);
-                    return GroupBuyListResponse.from(groupBuy, groupBuy.getOptions(), orderCount);
-                })
-                .toList();
-
-        // 커서 기반 페이징 적용
-        if (cursor != null) {
-            CursorInfoDto cursorInfoDto = decodeCursor(cursor);
-            sortedList = sortedList.stream()
-                    .filter(item -> {
-                        // 주문량이 더 적거나, 같으면 id가 더 작은 것들만
-                        if (item.orderCount() < cursorInfoDto.orderCount()) {
-                            return true;
-                        } else if (item.orderCount().equals(cursorInfoDto.orderCount())) {
-                            return item.id() < cursorInfoDto.id();
-                        }
-                        return false;
-                    })
-                    .toList();
-        }
-
-        return sortedList.stream()
                 .limit(limit)
                 .collect(Collectors.toList());
+
+        return sortedList;
     }
 
     /**

@@ -10,7 +10,7 @@ public interface GroupBuyQueryRepository {
     List<Tuple> findGroupBuysSorted(Long categoryId, GroupBuySortOption sortOption, int limit);
 
     /**
-     * 무한스크롤
+     * 카테고리 + 필터링 + 무한스크롤 + 키워드 검색
      * @param categoryId
      * @param sortOption
      * @param limit
@@ -21,5 +21,7 @@ public interface GroupBuyQueryRepository {
             Long categoryId,
             GroupBuySortOption sortOption,
             int limit,
-            CursorInfoDto cursorInfo);
+            CursorInfoDto cursorInfo,
+            String keyword // 키워드 추가
+            );
 }

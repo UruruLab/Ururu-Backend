@@ -13,12 +13,16 @@ import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyQueryRepository;
 import com.ururulab.ururu.groupBuy.dto.common.CursorInfoDto;
 import com.ururulab.ururu.product.domain.entity.QProduct;
 import com.ururulab.ururu.product.domain.entity.QProductCategory;
+import com.ururulab.ururu.product.domain.entity.QProductOption;
+import com.ururulab.ururu.seller.domain.entity.QSeller;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.List;
 
 @RequiredArgsConstructor
+@Slf4j
 public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
 
     private final JPAQueryFactory queryFactory;
@@ -80,15 +84,28 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
      * @return
      */
     @Override
-    public List<Tuple> findGroupBuysSortedWithCursor(Long categoryId, GroupBuySortOption sortOption, int limit, CursorInfoDto cursorInfo) {
+    public List<Tuple> findGroupBuysSortedWithCursor(Long categoryId, GroupBuySortOption sortOption, int limit, CursorInfoDto cursorInfo, String keyword) {
         QGroupBuy gb = QGroupBuy.groupBuy;
         QProduct p = QProduct.product;
         QProductCategory pc = QProductCategory.productCategory;
         QGroupBuyOption gbo = QGroupBuyOption.groupBuyOption;
+        QProductOption po = QProductOption.productOption;
+        QSeller s = QSeller.seller;
 
         BooleanBuilder where = new BooleanBuilder()
                 .and(gb.status.eq(GroupBuyStatus.OPEN))
                 .and(gb.endsAt.after(Instant.now()));
+
+        // 키워드 조건
+        if (keyword != null && !keyword.isBlank()) {
+            BooleanBuilder keywordCondition = new BooleanBuilder()
+                    .or(gb.title.containsIgnoreCase(keyword))
+                    .or(po.fullIngredients.containsIgnoreCase(keyword))
+                    .or(s.name.containsIgnoreCase(keyword));
+            where.and(keywordCondition);
+        }else {
+            log.info("keyword 조건 안 걸림");
+        }
 
         if (categoryId != null) {
             where.and(pc.category.id.eq(categoryId));
@@ -98,6 +115,8 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
         if (cursorInfo != null) {
             where.and(getCursorCondition(sortOption, gb, cursorInfo));
         }
+
+        log.info("➡ [Repo] where = {}", where);
 
         return queryFactory
                 .select(
@@ -120,11 +139,15 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
                         gb.createdAt
                 )
                 .from(gb)
-                .join(gb.product, p)
-                .join(p.productCategories, pc)
+                .join(gb.seller, s)
+                .join(gb.product, QProduct.product)
+                .join(QProduct.product.productCategories, pc)
+                .join(gb.options, gbo)
+                .join(gbo.productOption, po)
                 .where(where)
                 .orderBy(getOrderSpecifier(sortOption, gb))
                 .limit(limit)
+                .distinct()
                 .fetch();
     }
 
