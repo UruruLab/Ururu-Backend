@@ -117,7 +117,12 @@ public enum ErrorCode {
 	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
 	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
 	GROUPBUY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "GROUPBUY033", "DRAFT 상태인 공동구매만 삭제할 수 있습니다."),
+	INVALID_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "GROUPBUY034", "유효하지 않은 검색어입니다."),
+	GROUPBUY_EMPTY(HttpStatus.NOT_FOUND, "GROUPBUY035", "판매자의 공동구매가 존재하지 않습니다."),
 
+	// -- 커서 --
+	CURSOR_ENCODING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CURSOR001", "커서 인코딩에 실패했습니다"),
+	CURSOR_DECODING_FAILED(HttpStatus.BAD_REQUEST, "CURSOR002", "커서 디코딩에 실패했습니다: %s"),
 
 	// --- 공동구매 통계 ---
 	GROUPBUY_STATISTICS_ALREADY_EXISTS(HttpStatus.CONFLICT, "GB_STAT_001", "이미 해당 공동구매의 통계가 존재합니다."),

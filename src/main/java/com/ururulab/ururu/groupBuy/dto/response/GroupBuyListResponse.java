@@ -1,13 +1,8 @@
 package com.ururulab.ururu.groupBuy.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
-import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
-import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
-import com.ururulab.ururu.groupBuy.util.TimeCalculator;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -21,7 +16,6 @@ public record GroupBuyListResponse(
         Integer startPrice, // 첫번째 옵션의 공구시작가
         Integer maxDiscountRate, // 리워드 최고 할인률
         Instant endsAt,
-        Long remainingTimeSeconds, // 남은 시간 (초 단위)
         Integer orderCount, // 주문량 (정렬 기준)
         Instant createdAt
 ) {
@@ -29,14 +23,10 @@ public record GroupBuyListResponse(
                                             List<GroupBuyOption> options,
                                             Integer orderCount) {
 
-        List<DiscountStageDto> stages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
-        Integer maxDiscountRate = stages.get(stages.size() - 1).discountRate();
-        Long remainingSeconds = TimeCalculator.calculateRemainingSeconds(groupBuy.getEndsAt());
         Integer startPrice = options.stream()
                 .map(GroupBuyOption::getPriceOverride)
                 .min(Integer::compareTo)
                 .orElseThrow(() -> new BusinessException(GROUPBUY_NO_OPTIONS));
-
 
         return new GroupBuyListResponse
                 (
@@ -45,9 +35,8 @@ public record GroupBuyListResponse(
                 groupBuy.getThumbnailUrl(), //공구 썸네일
                 groupBuy.getDisplayFinalPrice(), // 공구 메인 가격
                 startPrice, // 공구 옵션 중 최저가
-                maxDiscountRate, // 최대 할인률
+                groupBuy.getMaxDiscountRate(), // 최대 할인률
                 groupBuy.getEndsAt(), // 공구 종료일
-                remainingSeconds, // 종료일까지 남은 초
                 orderCount, // 주문량
                 groupBuy.getCreatedAt() // 생성일
         );

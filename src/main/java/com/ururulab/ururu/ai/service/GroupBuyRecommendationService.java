@@ -24,6 +24,33 @@ public class GroupBuyRecommendationService {
 
     private final GroupBuyRecommendationCacheService cacheService;
     private final UruruAiService aiService;
+    private final BeautyProfileConversionService conversionService;
+
+    public GroupBuyRecommendationResponse getRecommendationsByProfile(final Long memberId, final Integer topK) {
+        log.info("뷰티프로필 기반 추천 요청 시작 - 회원ID: {}", memberId);
+
+        final GroupBuyRecommendationRequest request = conversionService.convertToRecommendationRequest(memberId, topK);
+        
+        return getRecommendations(memberId, request);
+    }
+
+    public String checkAiServiceHealth() {
+        try {
+            log.info("AI 서비스 Health Check 시작");
+            
+            final long startTime = System.currentTimeMillis();
+            final String healthStatus = aiService.checkHealth();
+            final long responseTime = System.currentTimeMillis() - startTime;
+            
+            log.info("AI 서비스 Health Check 완료 - 응답시간: {}ms", responseTime);
+            
+            return String.format("AI 서비스 정상 (응답시간: %dms) - %s", responseTime, healthStatus);
+            
+        } catch (Exception e) {
+            log.error("AI 서비스 Health Check 실패", e);
+            return "AI 서비스 연결 실패: " + e.getMessage();
+        }
+    }
 
     public GroupBuyRecommendationResponse getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {
         log.info("공동구매 추천 요청 시작 - 회원ID: {}, 피부타입: {}",
