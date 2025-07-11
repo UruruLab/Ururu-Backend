@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 @Service
 @RequiredArgsConstructor
@@ -24,22 +25,22 @@ public class GroupBuyRecommendationService {
     private final GroupBuyRecommendationCacheService cacheService;
     private final UruruAiService aiService;
 
-    public GroupBuyRecommendationResponse getRecommendations(final GroupBuyRecommendationRequest request) {
+    public GroupBuyRecommendationResponse getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {
         log.info("공동구매 추천 요청 시작 - 회원ID: {}, 피부타입: {}",
-                request.memberId(), request.skinType());
+                memberId, request.beautyProfile().skinType());
 
-        final GroupBuyRecommendationResponse cachedResponse = cacheService.getCachedRecommendation(request.memberId());
+        final GroupBuyRecommendationResponse cachedResponse = cacheService.getCachedRecommendation(memberId);
         if (cachedResponse != null) {
-            log.info("캐시에서 추천 결과 반환 - 회원ID: {}", request.memberId());
+            log.info("캐시에서 추천 결과 반환 - 회원ID: {}", memberId);
             return updateCacheSource(cachedResponse, "CACHE");
         }
 
-        if (!cacheService.tryAcquireProcessingLock(request.memberId())) {
-            throw new BusinessException(ErrorCode.ORDER_PROCESSING_IN_PROGRESS);
+        if (!cacheService.tryAcquireProcessingLock(memberId)) {
+            throw new BusinessException(ErrorCode.AI_RECOMMENDATION_PROCESSING_IN_PROGRESS);
         }
 
         try {
-            final List<RecommendedGroupBuy> recommendations = aiService.getRecommendations(request);
+            final List<RecommendedGroupBuy> recommendations = aiService.getRecommendations(memberId, request);
 
             if (recommendations.isEmpty()) {
                 throw new BusinessException(ErrorCode.AI_NO_RECOMMENDATIONS_FOUND);
@@ -47,46 +48,47 @@ public class GroupBuyRecommendationService {
 
             final GroupBuyRecommendationResponse response = GroupBuyRecommendationResponse.of(
                     recommendations,
-                    buildRecommendationReason(request),
+                    "AI가 분석한 맞춤형 추천입니다.", // TODO: AI 서비스에서 추천 이유 제공 시 수정
                     LocalDateTime.now(),
                     "AI_SERVICE"
             );
 
-            cacheService.cacheRecommendation(request.memberId(), response);
+            cacheService.cacheRecommendation(memberId, response);
 
             log.info("공동구매 추천 완료 - 회원ID: {}, 추천 수: {}",
-                    request.memberId(), recommendations.size());
+                    memberId, recommendations.size());
 
             return response;
 
         } finally {
-            cacheService.releaseProcessingLock(request.memberId());
+            cacheService.releaseProcessingLock(memberId);
         }
     }
 
     @Async
-    public CompletableFuture<Void> refreshRecommendationCache(final GroupBuyRecommendationRequest request) {
-        try {
-            log.info("백그라운드 추천 캐시 갱신 시작 - 회원ID: {}", request.memberId());
+    public CompletableFuture<Void> refreshRecommendationCache(final Long memberId, final GroupBuyRecommendationRequest request) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                log.info("백그라운드 추천 캐시 갱신 시작 - 회원ID: {}", memberId);
 
-            final List<RecommendedGroupBuy> recommendations = aiService.getRecommendations(request);
+                final List<RecommendedGroupBuy> recommendations = aiService.getRecommendations(memberId, request);
 
-            final GroupBuyRecommendationResponse response = GroupBuyRecommendationResponse.of(
-                    recommendations,
-                    buildRecommendationReason(request),
-                    LocalDateTime.now(),
-                    "AI_SERVICE_REFRESH"
-            );
+                final GroupBuyRecommendationResponse response = GroupBuyRecommendationResponse.of(
+                        recommendations,
+                        "AI가 분석한 맞춤형 추천입니다.", // TODO: AI 서비스에서 추천 이유 제공 시 수정
+                        LocalDateTime.now(),
+                        "AI_SERVICE_REFRESH"
+                );
 
-            cacheService.cacheRecommendation(request.memberId(), response);
+                cacheService.cacheRecommendation(memberId, response);
 
-            log.info("백그라운드 추천 캐시 갱신 완료 - 회원ID: {}", request.memberId());
+                log.info("백그라운드 추천 캐시 갱신 완료 - 회원ID: {}", memberId);
 
-        } catch (final Exception e) {
-            log.error("백그라운드 추천 캐시 갱신 실패 - 회원ID: {}", request.memberId(), e);
-        }
-
-        return CompletableFuture.completedFuture(null);
+            } catch (final Exception e) {
+                log.error("백그라운드 추천 캐시 갱신 실패 - 회원ID: {}", memberId, e);
+                throw new CompletionException(e);
+            }
+        });
     }
 
     public void evictRecommendationCache(final Long memberId) {
@@ -109,24 +111,5 @@ public class GroupBuyRecommendationService {
                 response.recommendedAt(),
                 cacheSource
         );
-    }
-
-    private String buildRecommendationReason(final GroupBuyRecommendationRequest request) {
-        final StringBuilder reason = new StringBuilder();
-
-        reason.append(request.skinType()).append(" 피부 타입");
-
-        if (request.skinConcerns() != null && !request.skinConcerns().isEmpty()) {
-            reason.append("과 ").append(String.join(", ", request.skinConcerns())).append(" 고민");
-        }
-
-        reason.append("을 고려하여 개인 맞춤형 공동구매 상품을 추천해드렸습니다.");
-
-        if (request.preferredCategories() != null && !request.preferredCategories().isEmpty()) {
-            reason.append(" 선호하시는 ").append(String.join(", ", request.preferredCategories()))
-                    .append(" 카테고리를 우선적으로 반영했습니다.");
-        }
-
-        return reason.toString();
     }
 }
