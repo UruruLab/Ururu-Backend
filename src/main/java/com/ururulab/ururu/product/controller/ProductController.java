@@ -1,6 +1,7 @@
 package com.ururulab.ururu.product.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
+import com.ururulab.ururu.groupBuy.util.AuthUtils;
 import com.ururulab.ururu.product.dto.request.ProductRequest;
 import com.ururulab.ururu.product.dto.response.ProductListResponse;
 import com.ururulab.ururu.product.dto.response.ProductOptionResponse;
@@ -28,7 +29,7 @@ import java.util.List;
 @Tag(name = "상품", description = "상품 관리 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/products/{sellerId}")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
+@RequestMapping("/api/products")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
 public class ProductController {
 
     private final ProductService productService;
@@ -45,12 +46,10 @@ public class ProductController {
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponseFormat<ProductResponse>> createProduct(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @Valid @RequestPart("product") ProductRequest productRequest,
             @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
     ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         ProductResponse response = productService.createProduct(productRequest, optionImages, sellerId);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -67,13 +66,11 @@ public class ProductController {
     })
     @PatchMapping(value = "/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponseFormat<ProductResponse>> updateProduct(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId,
             @Valid @RequestPart("product") ProductRequest productRequest,
             @RequestPart(value = "optionImages", required = false) List<MultipartFile> optionImages
     ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         ProductResponse response = productService.updateProduct(productId, productRequest, optionImages, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품이 수정되었습니다.", response));
@@ -88,13 +85,11 @@ public class ProductController {
     })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<Page<ProductListResponse>>> getProducts(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PageableDefault(page = 0, size = 10, sort = {"createdAt", "id"}, direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
 
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         Page<ProductListResponse> products = productService.getProducts(pageable, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 목록 조회가 성공했습니다.", products));
@@ -110,11 +105,9 @@ public class ProductController {
     })
     @GetMapping("/{productId}")
     public ResponseEntity<ApiResponseFormat<ProductResponse>> getProduct(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId
     ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         ProductResponse response = productService.getProduct(productId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 상세 조회가 성공했습니다.", response));
@@ -129,11 +122,10 @@ public class ProductController {
     })
     @GetMapping("/{productId}/options")
     public ResponseEntity<ApiResponseFormat<List<ProductOptionResponse>>> getProductOptions(
-            @PathVariable Long sellerId,  // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId
     ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         List<ProductOptionResponse> response = productOptionService.getProductOptions(productId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 옵션 조회가 성공했습니다.", response));
@@ -149,12 +141,10 @@ public class ProductController {
     })
     @DeleteMapping("/{productId}/options/{optionId}")
     public ResponseEntity<ApiResponseFormat<Void>> deleteProductOption(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId,
             @PathVariable Long optionId
     ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         productOptionService.deleteProductOption(productId, optionId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품 옵션이 삭제되었습니다."));
@@ -169,11 +159,9 @@ public class ProductController {
     })
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponseFormat<Void>> deleteProduct(
-            @PathVariable Long sellerId, // TODO: JWT 구현 후 @AuthenticationPrincipal로 변경
             @PathVariable Long productId
     ) {
-        // TODO: JWT 구현 후 주석 제거
-        // Long sellerId = extractSellerIdFromUserDetails(userDetails);
+        Long sellerId = AuthUtils.getSellerIdFromAuthentication();
 
         productService.deleteProduct(productId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("상품이 삭제되었습니다."));

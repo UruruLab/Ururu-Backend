@@ -5,6 +5,8 @@ import com.ururulab.ururu.global.domain.repository.TagCategoryRepository;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.domain.repository.CategoryRepository;
+import com.ururulab.ururu.product.dto.common.CategoryCacheDto;
+import com.ururulab.ururu.product.dto.common.TagCategoryCacheDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,16 +22,30 @@ public class CategoryCacheService {
     private final TagCategoryRepository tagCategoryRepository;
 
     @Cacheable(value = "category", key = "#categoryId")
-    public Category findCategoryById(Long categoryId) {
+    public CategoryCacheDto findCategoryDto(Long categoryId) {
         log.info("DB hit: categoryId = {}", categoryId);
-        return categoryRepository.findById(categoryId)
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND));
+        return CategoryCacheDto.from(category);
     }
 
     @Cacheable(value = "tagCategory", key = "#tagCategoryId")
-    public TagCategory findTagCategoryById(Long tagCategoryId) {
+    public TagCategoryCacheDto findTagCategoryDto(Long tagCategoryId) {
         log.info("DB hit: tagCategoryId = {}", tagCategoryId);
-        return tagCategoryRepository.findById(tagCategoryId)
+        TagCategory tagCategory = tagCategoryRepository.findById(tagCategoryId)
+                .orElseThrow(() -> new BusinessException(TAG_NOT_FOUND));
+        return TagCategoryCacheDto.from(tagCategory);
+    }
+
+    public Category findCategoryById(Long categoryId) {
+        CategoryCacheDto dto = findCategoryDto(categoryId);
+        return categoryRepository.findById(dto.id())
+                .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND));
+    }
+
+    public TagCategory findTagCategoryById(Long tagCategoryId) {
+        TagCategoryCacheDto dto = findTagCategoryDto(tagCategoryId);
+        return tagCategoryRepository.findById(dto.id())
                 .orElseThrow(() -> new BusinessException(TAG_NOT_FOUND));
     }
 }
