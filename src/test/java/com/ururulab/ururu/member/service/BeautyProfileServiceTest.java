@@ -19,10 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class BeautyProfileServiceTest {
@@ -64,7 +63,7 @@ public class BeautyProfileServiceTest {
 
     @Test
     @DisplayName("뷰티 프로필 생성 실패 - 존재하지 않는 회원")
-    void createBeautyProfile_MemberNotFound_ThrowsException() {
+    void createBeautyProfile_memberNotFound_throwsException() {
         // Given
         Long memberId = 999L;
         BeautyProfileRequest request = BeautyProfileTestFixture.createValidRequest();
@@ -104,7 +103,7 @@ public class BeautyProfileServiceTest {
 
     @Test
     @DisplayName("뷰티 프로필 조회 실패 - 존재하지 않는 프로필")
-    void getBeautyProfile_ProfileNotFound_ThrowsException() {
+    void getBeautyProfile_profileNotFound_throwsException() {
         // Given
         Long memberId = 999L;
 
@@ -139,7 +138,7 @@ public class BeautyProfileServiceTest {
 
     @Test
     @DisplayName("뷰티 프로필 수정 실패 - 존재하지 않는 프로필")
-    void updateBeautyProfile_ProfileNotFound_ThrowsException() {
+    void updateBeautyProfile_profileNotFound_throwsException() {
         // Given
         Long memberId = 999L;
         BeautyProfileRequest request = BeautyProfileTestFixture.createValidRequest();
@@ -152,4 +151,35 @@ public class BeautyProfileServiceTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.BEAUTY_PROFILE_NOT_FOUND);
     }
+
+    @Test
+    @DisplayName("뷰티 프로필 삭제 성공")
+    void deleteBeautyProfile_success() {
+        // Given
+        Long memberId = 1L;
+
+        given(beautyProfileRepository.existsByMemberId(memberId)).willReturn(true);
+
+        // When
+        beautyProfileService.deleteBeautyProfile(memberId);
+
+        // Then
+        then(beautyProfileRepository).should().deleteByMemberId(memberId);
+    }
+
+    @Test
+    @DisplayName("뷰티 프로필 삭제 실패 - 존재하지 않는 프로필")
+    void deleteBeautyProfile_profileNotFound_throwsException() {
+        // Given
+        Long memberId = 999L;
+
+        given(beautyProfileRepository.existsByMemberId(memberId)).willReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> beautyProfileService.deleteBeautyProfile(memberId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.BEAUTY_PROFILE_NOT_FOUND);
+    }
+
 }
