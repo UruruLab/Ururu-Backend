@@ -227,7 +227,7 @@ public class MemberServiceTest {
 
     @Test
     @DisplayName("이메일 사용 가능 여부 확인 - 사용가능한 경우")
-    void getEmailAvailable_AvailableEmail() {
+    void getEmailAvailable_availableEmail() {
         // Given
         String availableEmail = "available@example.com";
         given(memberRepository.isEmailAvailable(availableEmail)).willReturn(true);
@@ -294,7 +294,7 @@ public class MemberServiceTest {
 
     @Test
     @DisplayName("회원 탈퇴 미리보기를 정상적으로 조회한다")
-    void getWithdrawalPreview_ValidMember_ReturnsPreview() {
+    void getWithdrawalPreview_validMember_returnsPreview() {
         // Given
         Long memberId = 1L;
         Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");

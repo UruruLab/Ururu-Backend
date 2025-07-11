@@ -1,12 +1,13 @@
 package com.ururulab.ururu.member.service;
 
-import com.ururulab.ururu.member.dto.request.MemberAgreementRequest;
-import com.ururulab.ururu.member.dto.response.MemberAgreementCreateResponse;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.MemberAgreement;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.ururulab.ururu.member.dto.request.MemberAgreementRequest;
+import com.ururulab.ururu.member.dto.response.MemberAgreementCreateResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,8 +25,7 @@ public class MemberAgreementService {
     @Transactional
     public MemberAgreementCreateResponse createAgreements(Long memberId, MemberAgreementRequest request) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "회원을 찾을 수 없습니다. ID: " + memberId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_EXIST));
 
         List<MemberAgreement> memberAgreements = request.agreements().stream()
                 .map(agreementItem -> MemberAgreement.of(

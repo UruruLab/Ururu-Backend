@@ -187,8 +187,47 @@ public enum ErrorCode {
 	SELLER_MAIL_ORDER_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER031", "통신판매업 신고번호는 %d자 이하여야 합니다."),
 
 	// --- 시스템 ---
-	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");
+	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요."),
 
+	// --- 회원 ---
+	MEMBER_NOT_EXIST(HttpStatus.NOT_FOUND, "MEMBER001", "회원을 찾을 수 없습니다."),
+	MEMBER_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "MEMBER002", "이미 탈퇴한 회원입니다."),
+	MEMBER_DELETION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "MEMBER003", "회원 탈퇴가 불가능한 상태입니다."),
+	DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "MEMBER004", "이미 사용 중인 닉네임입니다."),
+	DUPLICATE_EMAIL_MEMBER(HttpStatus.CONFLICT, "MEMBER005", "이미 사용 중인 이메일입니다."),
+	INVALID_MEMBER_STATUS(HttpStatus.BAD_REQUEST, "MEMBER006", "유효하지 않은 회원 상태입니다."),
+	MEMBER_ACTIVE_ORDERS_EXIST(HttpStatus.BAD_REQUEST, "MEMBER007", "진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다."),
+	MEMBER_PENDING_PAYMENTS_EXIST(HttpStatus.BAD_REQUEST, "MEMBER008", "진행 중인 결제가 있어 탈퇴할 수 없습니다."),
+	PROFILE_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "MEMBER009", "이미지 파일은 필수입니다."),
+	INVALID_GENDER_VALUE(HttpStatus.BAD_REQUEST, "MEMBER010", "올바른 성별 값이 아닙니다."),
+	MEMBER_DELETION_FAILED(HttpStatus.BAD_REQUEST, "MEMBER011", "회원 데이터 정리 중 오류가 발생했습니다"),
+
+	// --- 뷰티 프로필 ---
+	BEAUTY_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "BEAUTY001", "뷰티 프로필을 찾을 수 없습니다."),
+	BEAUTY_PROFILE_ALREADY_EXISTS(HttpStatus.CONFLICT, "BEAUTY002", "이미 뷰티 프로필이 존재합니다."),
+	INVALID_SKIN_TYPE(HttpStatus.BAD_REQUEST, "BEAUTY003", "올바른 피부 타입 값이 아닙니다."),
+	INVALID_SKIN_TONE(HttpStatus.BAD_REQUEST, "BEAUTY004", "올바른 피부 톤 값이 아닙니다."),
+	INVALID_PRICE_RANGE(HttpStatus.BAD_REQUEST, "BEAUTY005", "최소 가격은 최대 가격보다 작거나 같아야 합니다."),
+	ALLERGY_INCONSISTENCY(HttpStatus.BAD_REQUEST, "BEAUTY006", "알러지가 있다고 선택하셨습니다. 알러지 목록을 입력해주세요."),
+	NO_ALLERGY_INCONSISTENCY(HttpStatus.BAD_REQUEST, "BEAUTY007", "알러지가 없다고 선택하셨습니다. 알러지 목록을 비워주세요."),
+
+	// --- 회원 약관 동의 ---
+	INVALID_AGREEMENT_REQUEST(HttpStatus.BAD_REQUEST, "AGREEMENT001", "약관 동의 요청이 올바르지 않습니다."),
+	AGREEMENT_TYPE_NOT_FOUND(HttpStatus.BAD_REQUEST, "AGREEMENT002", "존재하지 않는 약관 타입입니다."),
+	REQUIRED_AGREEMENT_NOT_AGREED(HttpStatus.BAD_REQUEST, "AGREEMENT003", "필수 약관에 동의해야 합니다."),
+
+	// --- 회원 선호도 ---
+	MEMBER_PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "PREFERENCE001", "회원 선호도를 찾을 수 없습니다."),
+	MEMBER_PREFERENCE_ALREADY_EXISTS(HttpStatus.CONFLICT, "PREFERENCE002", "해당 판매자에 대한 선호도가 이미 존재합니다."),
+	INVALID_PREFERENCE_LEVEL(HttpStatus.BAD_REQUEST, "PREFERENCE003", "선호도 레벨은 1-5 사이여야 합니다."),
+	INVALID_PURCHASE_FREQUENCY(HttpStatus.BAD_REQUEST, "PREFERENCE004", "올바른 구매 빈도 값이 아닙니다."),
+	PURCHASE_FREQUENCY_REQUIRED(HttpStatus.BAD_REQUEST, "PREFERENCE005", "구매 빈도는 필수입니다."),
+
+	// --- 배송지 ---
+	SHIPPING_ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "SHIPPING001", "배송지를 찾을 수 없습니다."),
+	SHIPPING_ADDRESS_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SHIPPING002", "배송지는 최대 5개까지 등록할 수 있습니다."),
+	DEFAULT_SHIPPING_ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "SHIPPING003", "기본 배송지를 찾을 수 없습니다."),
+	SHIPPING_ADDRESS_ACCESS_DENIED(HttpStatus.FORBIDDEN, "SHIPPING004", "해당 배송지에 접근할 권한이 없습니다.");
 
 	private final HttpStatus status;
 	private final String code;
