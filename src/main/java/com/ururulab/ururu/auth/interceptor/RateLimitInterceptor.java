@@ -13,7 +13,6 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Rate Limiting을 처리하는 인터셉터.
@@ -39,23 +38,38 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        String clientIp = getClientIp(request);
-        String key = "rate_limit:" + clientIp + ":" + request.getRequestURI();
-        
-        // 현재 요청 수 확인
-        String currentCount = redisTemplate.opsForValue().get(key);
-        int count = currentCount == null ? 0 : Integer.parseInt(currentCount);
-        
-        if (count >= rateLimit.value()) {
-            log.warn("Rate limit exceeded for IP: {}, URI: {}", clientIp, request.getRequestURI());
-            throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+        try {
+            String clientIp = getClientIp(request);
+            String key = "rate_limit:" + clientIp + ":" + request.getRequestURI();
+            
+            // 원자적으로 카운트 증가 (동시성 문제 해결)
+            Long count = redisTemplate.opsForValue().increment(key);
+            
+            // null 체크 추가
+            if (count == null) {
+                log.error("Failed to increment rate limit counter for IP: {}, URI: {}", clientIp, request.getRequestURI());
+                return true; // Redis 오류 시 요청 허용
+            }
+            
+            // 첫 번째 요청인 경우에만 만료 시간 설정
+            if (count == 1) {
+                redisTemplate.expire(key, Duration.of(1, rateLimit.timeUnit().toChronoUnit()));
+            }
+            
+            if (count > rateLimit.value()) {
+                log.warn("Rate limit exceeded for IP: {}, URI: {}", clientIp, request.getRequestURI());
+                throw new BusinessException(ErrorCode.TOO_MANY_REQUESTS);
+            }
+            
+            return true;
+        } catch (BusinessException e) {
+            // Rate limit 초과는 그대로 예외 전파
+            throw e;
+        } catch (Exception e) {
+            log.error("Rate limiting failed for URI: {}, allowing request", request.getRequestURI(), e);
+            // fail-open: Redis 오류 시 요청 허용
+            return true;
         }
-        
-        // 요청 수 증가
-        redisTemplate.opsForValue().increment(key);
-        redisTemplate.expire(key, Duration.ofSeconds(rateLimit.timeUnit().toSeconds(1)));
-        
-        return true;
     }
 
     private String getClientIp(HttpServletRequest request) {
