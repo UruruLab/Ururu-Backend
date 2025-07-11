@@ -142,6 +142,7 @@ public enum ErrorCode {
 
 	// AI 서비스 상태 관련 에러
 	AI_SERVICE_HEALTH_CHECK_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI008", "AI 서비스 상태 확인에 실패했습니다."),
+	AI_RECOMMENDATION_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "AI009", "이미 추천 처리가 진행 중입니다. 잠시 후 다시 시도해주세요."),
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
