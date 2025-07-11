@@ -16,9 +16,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
@@ -103,5 +105,44 @@ public class MemberPreferenceServiceTest {
                 .isEqualTo(ErrorCode.MEMBER_PREFERENCE_ALREADY_EXISTS);
 
         then(memberPreferenceRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("회원 선호도 목록 조회 성공")
+    void getMemberPreference_success() {
+        // Given
+        Long memberId = 1L;
+        List<MemberPreference> preferences = MemberPreferenceTestFixture.createMemberPreferenceList(memberId);
+
+        given(memberRepository.existsById(memberId)).willReturn(true);
+        given(memberPreferenceRepository.findByMemberId(memberId)).willReturn(preferences);
+
+        // When
+        List<MemberPreferenceResponse> responses = memberPreferenceService.getMemberPreferences(memberId);
+
+        // Then
+        assertThat(responses).isNotNull();
+        assertThat(responses).hasSize(3);
+        assertThat(responses).extracting(MemberPreferenceResponse::sellerId)
+                .containsExactly(100L, 101L, 102L);
+        assertThat(responses).extracting(MemberPreferenceResponse::preferenceLevel)
+                .containsExactly(4,5,3);
+    }
+
+    @Test
+    @DisplayName("회원 선호도 목록 조회 실패 - 존재하지 않는 회원")
+    void getMemberPreferences_MemberNotFound_ThrowsException() {
+        // Given
+        Long memberId = 999L;
+
+        given(memberRepository.existsById(memberId)).willReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> memberPreferenceService.getMemberPreferences(memberId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MEMBER_NOT_EXIST);
+
+        then(memberPreferenceRepository).should(never()).findByMemberId(any());
     }
 }
