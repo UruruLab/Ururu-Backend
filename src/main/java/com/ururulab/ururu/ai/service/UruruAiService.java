@@ -25,10 +25,10 @@ public class UruruAiService {
     @Qualifier("aiServiceRestClient")
     private final RestClient aiServiceRestClient;
 
-    public List<RecommendedGroupBuy> getRecommendations(final GroupBuyRecommendationRequest request) {
+    public List<RecommendedGroupBuy> getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {
         try {
             log.info("AI 추천 서비스 호출 시작 - 회원ID: {}, 피부타입: {}",
-                    request.memberId(), request.skinType());
+                    memberId, request.beautyProfile().skinType());
 
             final Map<String, Object> aiRequest = buildAiRequest(request);
 
@@ -52,56 +52,34 @@ public class UruruAiService {
 
         } catch (final ResourceAccessException e) {
             if (e.getCause() instanceof SocketTimeoutException) {
-                log.error("AI 서비스 타임아웃 발생 - 회원ID: {}", request.memberId(), e);
+                log.error("AI 서비스 타임아웃 발생 - 회원ID: {}", memberId, e);
                 throw new BusinessException(ErrorCode.AI_SERVICE_TIMEOUT);
             }
-            log.error("AI 서비스 연결 실패 - 회원ID: {}", request.memberId(), e);
+            log.error("AI 서비스 연결 실패 - 회원ID: {}", memberId, e);
             throw new BusinessException(ErrorCode.AI_SERVICE_CONNECTION_FAILED);
         } catch (final Exception e) {
-            log.error("AI 추천 서비스 호출 중 예외 발생 - 회원ID: {}", request.memberId(), e);
+            log.error("AI 추천 서비스 호출 중 예외 발생 - 회원ID: {}", memberId, e);
             throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
         }
     }
 
     private Map<String, Object> buildAiRequest(final GroupBuyRecommendationRequest request) {
-        final String userDiagnosis = buildUserDiagnosis(request);
-
         return Map.of(
-                "user_diagnosis", userDiagnosis,
+                "beauty_profile", Map.of(
+                        "skin_type", request.beautyProfile().skinType(),
+                        "skin_tone", request.beautyProfile().skinTone() != null ? request.beautyProfile().skinTone() : "",
+                        "concerns", request.beautyProfile().concerns() != null ? request.beautyProfile().concerns() : List.of(),
+                        "has_allergy", request.beautyProfile().hasAllergy() != null ? request.beautyProfile().hasAllergy() : false,
+                        "allergies", request.beautyProfile().allergies() != null ? request.beautyProfile().allergies() : List.of(),
+                        "interest_categories", request.beautyProfile().interestCategories() != null ? request.beautyProfile().interestCategories() : List.of()
+                ),
                 "top_k", request.topK(),
-                "max_price", extractMaxPrice(request.priceRange())
+                "include_categories", request.interestCategories() != null ? request.interestCategories() : List.of(),
+                "min_similarity", request.minSimilarity(),
+                "use_price_filter", request.usePriceFilter(),
+                "min_price", request.minPrice() != null ? request.minPrice() : 10,
+                "max_price", request.maxPrice() != null ? request.maxPrice() : 1000000,
+                "additional_info", request.additionalInfo() != null ? request.additionalInfo() : ""
         );
-    }
-
-    private String buildUserDiagnosis(final GroupBuyRecommendationRequest request) {
-        final StringBuilder diagnosis = new StringBuilder();
-
-        diagnosis.append(request.ageGroup() != null ? request.ageGroup() + " " : "")
-                .append(request.skinType()).append(" 피부, ");
-
-        if (request.skinConcerns() != null && !request.skinConcerns().isEmpty()) {
-            diagnosis.append(String.join(", ", request.skinConcerns())).append("으로 고민이 있어요. ");
-        }
-
-        if (request.preferredCategories() != null && !request.preferredCategories().isEmpty()) {
-            diagnosis.append(String.join(", ", request.preferredCategories())).append(" 제품을 선호해요.");
-        }
-
-        return diagnosis.toString().trim();
-    }
-
-    private Integer extractMaxPrice(final String priceRange) {
-        if (priceRange == null || priceRange.isEmpty()) {
-            return 100000;
-        }
-
-        return switch (priceRange) {
-            case "10000원 미만" -> 10000;
-            case "10000-30000원" -> 30000;
-            case "30000-50000원" -> 50000;
-            case "50000-100000원" -> 100000;
-            case "100000원 이상" -> 200000;
-            default -> 100000;
-        };
     }
 }
