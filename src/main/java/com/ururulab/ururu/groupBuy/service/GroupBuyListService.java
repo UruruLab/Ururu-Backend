@@ -11,6 +11,7 @@ import com.ururulab.ururu.groupBuy.dto.common.CursorInfoDto;
 import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyPageResponse;
+import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
 import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NOT_FOUND;
+import static com.ururulab.ururu.global.exception.error.ErrorCode.INVALID_SEARCH_KEYWORD;
 
 @Service
 @Slf4j
@@ -35,6 +37,7 @@ public class GroupBuyListService {
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final ObjectMapper objectMapper;
+    private final GroupBuyValidator groupBuyValidator;
 
     /**
      * 목록 조회 메인 cursor 적용
@@ -45,20 +48,21 @@ public class GroupBuyListService {
      * @return
      */
     public GroupBuyPageResponse getGroupBuyList(Long categoryId, int limit, String sortType, String cursor, String keyword) {
-        log.info("[Service] getGroupBuyList() called");
-        log.info("keyword received: '{}'", keyword);
+        if (!groupBuyValidator.isValidKeyword(keyword)) {
+            log.warn("위험한 검색 키워드 차단: {}", keyword);
+            throw new BusinessException(INVALID_SEARCH_KEYWORD);
+        }
 
         String normalizedKeyword = normalizeKeyword(keyword);
-        log.info("정규화된 키워드: '{}'", normalizedKeyword);
 
         int fetchLimit = limit + 1;
 
         List<GroupBuyListResponse> items;
 
         if ("order_count".equals(sortType)) {
-            items = getGroupBuyListOrderByOrderCountWithCursor(categoryId, fetchLimit, cursor, keyword);
+            items = getGroupBuyListOrderByOrderCountWithCursor(categoryId, fetchLimit, cursor, normalizedKeyword);
         } else {
-            items = getGroupBuyListWithSortAndCursor(categoryId, fetchLimit, sortType, cursor, keyword);
+            items = getGroupBuyListWithSortAndCursor(categoryId, fetchLimit, sortType, cursor, normalizedKeyword);
         }
 
         boolean hasMore = items.size() > limit;
@@ -74,14 +78,22 @@ public class GroupBuyListService {
      * 키워드 정규화
      * 1. 공백 제거 (모든 종류의 공백: 스페이스, 탭, 줄바꿈 등)
      * 2. 소문자 변환
-     * 3. 특수문자는 유지 (검색 정확도를 위해)
+     * 3. 특수문자는 제거
+     * 4. 길이 100자로 제한
      */
     private String normalizeKeyword(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return null;
         }
 
-        return keyword.replaceAll("\\s+", "")
+        // 길이 제한 (DoS 공격 방지)
+        if (keyword.length() > 100) {
+            keyword = keyword.substring(0, 100);
+            log.warn("키워드가 너무 깁니다. 100자로 제한됨: {}", keyword);
+        }
+
+        return keyword.replaceAll("[^\\p{L}\\p{N}\\s]", "")
+                .replaceAll("\\s+", "")
                 .toLowerCase();
     }
 

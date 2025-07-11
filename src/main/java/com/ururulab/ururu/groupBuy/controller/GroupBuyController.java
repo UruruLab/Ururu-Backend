@@ -157,7 +157,6 @@ public class GroupBuyController {
             ) {
 
         GroupBuyPageResponse responses = groupBuyListService.getGroupBuyList(categoryId, limit, sort, cursor, keyword);
-        log.info("GET /groupbuy keyword param = '{}'", keyword);
         return ResponseEntity.ok(ApiResponseFormat.success("공동 구매 목록 조회에 성공하였습니다.", responses));
     }
 

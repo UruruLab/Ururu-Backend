@@ -260,4 +260,31 @@ public class GroupBuyValidator {
     }
 
 
+    /**
+     * SQL Injection 방지
+     * @param keyword
+     * @return
+     */
+    public boolean isValidKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return true;
+        }
+
+        // SQL Injection 방지 패턴
+        String[] dangerousPatterns = {
+                "script", "select", "insert", "update", "delete",
+                "drop", "union", "exec", "javascript:", "vbscript:"
+        };
+
+        String lowerKeyword = keyword.toLowerCase();
+        for (String pattern : dangerousPatterns) {
+            if (lowerKeyword.contains(pattern)) {
+                log.warn("위험한 키워드 감지: {}", keyword);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }
