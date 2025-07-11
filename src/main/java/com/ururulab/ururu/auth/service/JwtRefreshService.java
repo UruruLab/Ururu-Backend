@@ -10,6 +10,7 @@ import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
 import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.auth.jwt.validator.JwtTokenValidator;
 import com.ururulab.ururu.auth.storage.RefreshTokenStorage;
+import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.auth.storage.TokenBlacklistStorage;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -193,9 +194,10 @@ public final class JwtRefreshService {
     }
 
     private String extractTokenFromBearer(final String bearerToken) {
-        if (bearerToken == null || !bearerToken.startsWith(AuthConstants.BEARER_PREFIX)) {
+        try {
+            return TokenExtractor.extractTokenFromBearer(bearerToken);
+        } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.MISSING_AUTHORIZATION_HEADER);
         }
-        return bearerToken.substring(AuthConstants.BEARER_PREFIX.length());
     }
 }

@@ -5,6 +5,7 @@ import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.service.SellerAuthService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
+import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -73,13 +74,8 @@ public class SellerAuthController {
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        // Authorization 헤더 또는 쿠키에서 토큰 추출하여 Redis 토큰 삭제
-        String tokenToLogout = null;
-        if (authorization != null && !authorization.isBlank()) {
-            tokenToLogout = authorization;
-        } else if (accessToken != null && !accessToken.isBlank()) {
-            tokenToLogout = "Bearer " + accessToken;
-        }
+        // TokenExtractor를 사용하여 토큰 추출
+        final String tokenToLogout = TokenExtractor.extractTokenForLogout(authorization, accessToken);
         
         if (tokenToLogout != null) {
             try {
