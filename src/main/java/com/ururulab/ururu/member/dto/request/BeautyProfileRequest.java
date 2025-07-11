@@ -41,8 +41,6 @@ public record BeautyProfileRequest(
                 message = BeautyProfileValidationMessages.MIN_PRICE_INVALID)
         int minPrice,
 
-        @Min(value = BeautyProfileValidationConstants.MAX_PRICE_VALUE,
-                message = BeautyProfileValidationMessages.MAX_PRICE_INVALID)
         int maxPrice,
 
         @Size(max = BeautyProfileValidationConstants.ADDITIONAL_INFO_MAX_LENGTH,

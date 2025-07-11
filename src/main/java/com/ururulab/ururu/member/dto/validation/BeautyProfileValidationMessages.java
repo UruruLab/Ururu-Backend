@@ -26,8 +26,6 @@ public class BeautyProfileValidationMessages {
 
     public static final String MIN_PRICE_INVALID = "최소 가격은 " +
             BeautyProfileValidationConstants.MIN_PRICE_VALUE + "원 이상이어야 합니다.";
-    public static final String MAX_PRICE_INVALID = "최대 가격은 " +
-            BeautyProfileValidationConstants.MAX_PRICE_VALUE + "원 이상이어야 합니다.";
     public static final String PRICE_RANGE_INVALID = "최소 가격은 최대 가격보다 작거나 같아야 합니다.";
 
     public static final String ADDITIONAL_INFO_SIZE = "추가 정보는 " +
