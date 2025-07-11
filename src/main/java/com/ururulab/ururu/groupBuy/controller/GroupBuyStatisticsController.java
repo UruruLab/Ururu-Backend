@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,6 +41,10 @@ public class GroupBuyStatisticsController {
             @PathVariable Long groupBuyId,
             @PathVariable Long sellerId
     ) {
+
+        //TODO @PathVariable Long sellerId 삭제 후 주석 해제
+        //Long sellerId = AuthUtils.getSellerIdFromAuthentication();
+
         GroupBuyStatisticsDetailResponse response = groupBuyStatisticsService.getGroupBuyStatisticsDetail(groupBuyId, sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("공동구매 상세 통계 조회에 성공하였습니다.", response));
     }
@@ -59,6 +62,9 @@ public class GroupBuyStatisticsController {
     public ResponseEntity<ApiResponseFormat<List<GroupBuyStatisticsResponse>>> getMyGroupBuyStatistics(
             @PathVariable Long sellerId
     ) {
+        //TODO @PathVariable Long sellerId 삭제 후 주석 해제
+        //Long sellerId = AuthUtils.getSellerIdFromAuthentication();
+
         List<GroupBuyStatisticsResponse> response = groupBuyStatisticsService.getGroupBuyStatisticsBySeller(sellerId);
         return ResponseEntity.ok(ApiResponseFormat.success("공동구매 통계 목록 조회에 성공하였습니다.", response));
     }

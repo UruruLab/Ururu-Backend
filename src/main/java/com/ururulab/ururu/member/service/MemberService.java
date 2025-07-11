@@ -2,6 +2,8 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
+import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -184,10 +187,34 @@ public class MemberService {
         );
 
         final Member savedMember = memberRepository.save(member);
+        createDefaultBeautyProfile(savedMember);
         log.debug("New social member created with ID: {} for provider: {}",
                 savedMember.getId(), socialMemberInfo.provider());
 
         return savedMember;
+    }
+
+    private void createDefaultBeautyProfile(final Member member) {
+        try{
+            final BeautyProfile defaultProfile = BeautyProfile.of(
+                    member,
+                    SkinType.NEUTRAL,
+                    SkinTone.NEUTRAL,
+                    List.of(),
+                    false,
+                    List.of(),
+                    List.of("스킨케어"),
+                    10,
+                    100000,
+                    ""
+            );
+            beautyProfileRepository.save(defaultProfile);
+            log.debug("Default beauty profile created for member ID: {}", member.getId());
+
+        } catch (Exception e) {
+            log.warn("Failed to create default beauty profile for member ID: {} - {}",
+                    member.getId(), e.getMessage());
+        }
     }
 
 

@@ -24,7 +24,7 @@ jobs:
       - name: Copy config files (application*.yml)
         run: |
           mkdir -p src/main/resources/
-          cp config/application-*.yml src/main/resources/
+          cp config/application*.yml src/main/resources/
 
       # 3. JDK 설정
       - name: Set up JDK 17

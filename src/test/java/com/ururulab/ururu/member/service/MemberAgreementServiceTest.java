@@ -59,7 +59,7 @@ public class MemberAgreementServiceTest {
 
     @Test
     @DisplayName("회원 약관 동의 생성 성공 - 필수 약관만 동의")
-    void createAgreements_RequiredOnly_Success() {
+    void createAgreements_requiredOnly_success() {
         // Given
         Long memberId = 1L;
         Member member = MemberAgreementTestFixture.createMember(memberId);
@@ -88,7 +88,7 @@ public class MemberAgreementServiceTest {
 
     @Test
     @DisplayName("회원 약관 동의 생성 실패 - 존재하지 않는 회원")
-    void createAgreements_MemberNotFound_ThrowsException() {
+    void createAgreements_memberNotFound_throwsException() {
         // Given
         Long memberId = 999L;
         MemberAgreementRequest request = MemberAgreementTestFixture.createValidAgreementRequest();

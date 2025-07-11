@@ -2,6 +2,8 @@ package com.ururulab.ururu.groupBuy.domain.repository;
 
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -94,4 +96,11 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
           AND gb.endsAt > CURRENT_TIMESTAMP
         """)
     List<GroupBuy> findAllPublicWithOptions();
+
+
+    @Query("SELECT gb FROM GroupBuy gb WHERE gb.seller.id = :sellerId ORDER BY gb.createdAt DESC")
+    Page<GroupBuy> findBySellerIdWithPagination(@Param("sellerId") Long sellerId, Pageable pageable);
+
+    @Query("SELECT gb FROM GroupBuy gb JOIN FETCH gb.options WHERE gb.id IN :groupBuyIds")
+    List<GroupBuy> findByIdsWithOptions(@Param("groupBuyIds") List<Long> groupBuyIds);
 }

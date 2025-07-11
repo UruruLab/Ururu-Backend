@@ -11,6 +11,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,8 +30,8 @@ public class CorsConfig {
 
     private final Environment environment;
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000}")
-    private List<String> allowedOrigins;
+    @Value("${app.cors.allowed-origins:localhost:3000}")
+    private String allowedOrigins;
 
     public CorsConfig(final Environment environment) {
         this.environment = environment;
@@ -45,13 +46,14 @@ public class CorsConfig {
 
         final CorsConfiguration configuration = new CorsConfiguration();
 
+        log.info("Allowed Origins: {}", allowedOrigins);
         // 환경에 따른 Origin 설정
         if (isDev) {
             // 개발환경: 패턴 매칭 허용 (와일드카드 지원)
-            configuration.setAllowedOriginPatterns(allowedOrigins);
+            configuration.setAllowedOriginPatterns(Collections.singletonList(allowedOrigins));
         } else {
             // 운영환경: 정확한 도메인만 허용 (보안 강화)
-            configuration.setAllowedOrigins(allowedOrigins);
+            configuration.setAllowedOriginPatterns(Collections.singletonList(allowedOrigins));
         }
 
         configuration.setAllowedMethods(List.of(

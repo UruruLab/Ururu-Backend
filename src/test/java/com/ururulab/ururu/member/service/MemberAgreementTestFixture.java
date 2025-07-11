@@ -12,7 +12,6 @@ import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class MemberAgreementTestFixture {
@@ -61,28 +60,6 @@ public class MemberAgreementTestFixture {
         return new MemberAgreementRequest(agreements);
     }
 
-    public static MemberAgreementRequest createEmptyAgreementRequest() {
-        return new MemberAgreementRequest(Collections.emptyList());
-    }
-
-    public static MemberAgreementRequest createNullAgreementRequest() {
-        return new MemberAgreementRequest(null);
-    }
-
-    public static List<MemberAgreement> createMemberAgreements(Member member) {
-        List<MemberAgreement> agreements = new ArrayList<>();
-        agreements.add(MemberAgreement.of(member, AgreementType.TERMS_OF_SERVICE, true));
-        agreements.add(MemberAgreement.of(member, AgreementType.PRIVACY_POLICY, true));
-        agreements.add(MemberAgreement.of(member, AgreementType.MARKETING, false));
-        agreements.add(MemberAgreement.of(member, AgreementType.LOCATION, true));
-
-        // ID 설정
-        for (int i = 0; i < agreements.size(); i++) {
-            setAgreementId(agreements.get(i), (long) (i + 1));
-        }
-
-        return agreements;
-    }
 
     public static List<MemberAgreement> createAllAgreedMemberAgreements(Member member) {
         List<MemberAgreement> agreements = new ArrayList<>();

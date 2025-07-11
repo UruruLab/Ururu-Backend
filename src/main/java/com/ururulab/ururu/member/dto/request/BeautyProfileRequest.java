@@ -5,6 +5,7 @@ import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.member.dto.validation.BeautyProfileValidationConstants;
 import com.ururulab.ururu.member.dto.validation.BeautyProfileValidationMessages;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -41,7 +42,7 @@ public record BeautyProfileRequest(
                 message = BeautyProfileValidationMessages.MIN_PRICE_INVALID)
         int minPrice,
 
-        @Min(value = BeautyProfileValidationConstants.MAX_PRICE_VALUE,
+        @Max(value = BeautyProfileValidationConstants.MAX_PRICE_VALUE,
                 message = BeautyProfileValidationMessages.MAX_PRICE_INVALID)
         int maxPrice,
 

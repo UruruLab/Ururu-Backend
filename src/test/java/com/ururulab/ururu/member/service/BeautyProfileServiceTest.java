@@ -134,6 +134,11 @@ public class BeautyProfileServiceTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.memberId()).isEqualTo(memberId);
+        assertThat(response.skinType().name()).isEqualTo("OILY");
+        assertThat(response.skinTone().name()).isEqualTo("COOL");
+        assertThat(response.concerns()).containsExactly("모공", "과도한 유분");
+        assertThat(response.hasAllergy()).isTrue();
+        assertThat(response.allergies()).containsExactly("방부제");
     }
 
     @Test

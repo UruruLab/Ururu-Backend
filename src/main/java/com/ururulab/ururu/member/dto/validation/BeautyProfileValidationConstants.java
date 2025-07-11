@@ -11,8 +11,8 @@ public class BeautyProfileValidationConstants {
 
     public static final int INTEREST_CATEGORY_ITEM_MAX_LENGTH = 50;
 
-    public static final int MIN_PRICE_VALUE = 0;
-    public static final int MAX_PRICE_VALUE = 1000000;
+    public static final int MIN_PRICE_VALUE = 1;
+    public static final int MAX_PRICE_VALUE = 2147483640;
 
     public static final int ADDITIONAL_INFO_MAX_LENGTH = 1000;
 }

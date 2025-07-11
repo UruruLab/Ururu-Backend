@@ -21,7 +21,7 @@ public class GroupBuyProductService {
 
     public GroupBuyCreatePageResponse getGroupBuyCreateData(Long sellerId) {
 
-        // 해당 판매자의 활성화된 상품과 옵션을 함께 조회
+        // 해당 판매자의 공동구매에 사용 안 된 상품과 옵션을 함께 조회
         List<Product> products = productRepository.findBySellerIdAndStatusWithOptions(sellerId, Status.INACTIVE);
 
         if (products == null || products.isEmpty()) {
