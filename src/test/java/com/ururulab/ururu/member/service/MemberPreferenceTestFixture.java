@@ -40,42 +40,6 @@ public class MemberPreferenceTestFixture {
         );
     }
 
-    public static MemberPreferenceRequest createHighPreferenceRequest(Long sellerId) {
-        return new MemberPreferenceRequest(
-                sellerId,
-                5,
-                100000,
-                "HIGH"
-        );
-    }
-
-    public static MemberPreferenceRequest createLowPreferenceRequest(Long sellerId) {
-        return new MemberPreferenceRequest(
-                sellerId,
-                1,
-                10000,
-                "LOW"
-        );
-    }
-
-    public static MemberPreferenceRequest createInvalidSellerIdRequest(Long sellerId) {
-        return new MemberPreferenceRequest(
-                sellerId,  // null 또는 0
-                4,
-                50000,
-                "MEDIUM"
-        );
-    }
-
-    public static MemberPreferenceRequest createInvalidPurchaseFrequencyRequest(Long sellerId) {
-        return new MemberPreferenceRequest(
-                sellerId,
-                4,
-                50000,
-                "INVALID_FREQUENCY"
-        );
-    }
-
     public static MemberPreference createMemberPreference(Member member, Long sellerId) {
         MemberPreference preference = MemberPreference.of(
                 member,
@@ -83,18 +47,6 @@ public class MemberPreferenceTestFixture {
                 4,
                 50000,
                 PurchaseFrequency.MEDIUM
-        );
-        setPreferenceId(preference, 1L);
-        return preference;
-    }
-
-    public static MemberPreference createHighPreferenceMemberPreference(Member member, Long sellerId) {
-        MemberPreference preference = MemberPreference.of(
-                member,
-                sellerId,
-                5,
-                100000,
-                PurchaseFrequency.HIGH
         );
         setPreferenceId(preference, 1L);
         return preference;

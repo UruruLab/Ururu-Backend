@@ -66,7 +66,7 @@ public class MemberPreferenceServiceTest {
 
     @Test
     @DisplayName("회원 선호도 생성 실패 - 존재하지 않는 판매자")
-    void createPreference_SellerNotFound_ThrowsException() {
+    void createPreference_sellerNotFound_throwsException() {
         // Given
         Long memberId = 1L;
         Long sellerId = 999L;
@@ -87,7 +87,7 @@ public class MemberPreferenceServiceTest {
 
     @Test
     @DisplayName("회원 선호도 생성 실패 - 이미 존재하는 선호도")
-    void createPreference_AlreadyExists_ThrowsException() {
+    void createPreference_alreadyExists_throwsException() {
         // Given
         Long memberId = 1L;
         Long sellerId = 100L;
@@ -131,7 +131,7 @@ public class MemberPreferenceServiceTest {
 
     @Test
     @DisplayName("회원 선호도 목록 조회 실패 - 존재하지 않는 회원")
-    void getMemberPreferences_MemberNotFound_ThrowsException() {
+    void getMemberPreferences_memberNotFound_throwsException() {
         // Given
         Long memberId = 999L;
 
