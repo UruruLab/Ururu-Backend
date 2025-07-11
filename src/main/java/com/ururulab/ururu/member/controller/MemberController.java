@@ -1,7 +1,7 @@
 package com.ururulab.ururu.member.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.member.dto.request.MemberRequest;
+import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
 import com.ururulab.ururu.member.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,19 +46,19 @@ public class MemberController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "내 정보 수정 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
-            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자"),
+            @ApiResponse(responseCode = "409", description = "중복된 닉네임")
     })
     @PatchMapping("/me")
     public ResponseEntity<ApiResponseFormat<MemberUpdateResponse>> updateMyProfile(
             @AuthenticationPrincipal final Long memberId,
-            @Valid @RequestBody final MemberRequest request
+            @Valid @RequestBody final MemberUpdateRequest request
     ) {
         final MemberUpdateResponse response = memberService.updateMyProfile(memberId, request);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("내 정보를 수정했습니다.", response)
         );
     }
-
     @Operation(summary = "프로필 이미지 업로드", description = "회원의 프로필 이미지를 업로드합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "프로필 이미지 업로드 성공"),
