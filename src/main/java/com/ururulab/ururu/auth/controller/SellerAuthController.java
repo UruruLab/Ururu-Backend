@@ -6,6 +6,7 @@ import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.service.SellerAuthService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.util.TokenExtractor;
+import com.ururulab.ururu.auth.service.SecurityLoggingService;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -29,13 +30,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SellerAuthController {
 
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
-
     private final SellerAuthService sellerAuthService;
     private final JwtCookieHelper jwtCookieHelper;
     private final JwtRefreshService jwtRefreshService;
     private final Environment environment;
+    private final SecurityLoggingService securityLoggingService;
 
     /**
      * 판매자 로그인 API.
@@ -45,7 +44,7 @@ public class SellerAuthController {
             @Valid @RequestBody final SellerLoginRequest request,
             final HttpServletResponse response) {
         
-        log.info("Seller login attempt: {}", MaskingUtils.maskEmail(request.email()));
+        log.info("Seller login attempt: {}", securityLoggingService.maskEmail(request.email()));
         
         // 판매자 로그인 처리
         final SocialLoginResponse loginResponse = sellerAuthService.login(request);
@@ -57,7 +56,7 @@ public class SellerAuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("Seller login successful: {} (env: {})", 
-                MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("판매자 로그인이 완료되었습니다.", secureResponse)
@@ -150,31 +149,11 @@ public class SellerAuthController {
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
         return SocialLoginResponse.of(
-                maskToken(original.accessToken()),
-                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
+                securityLoggingService.maskToken(original.accessToken()),
+                original.refreshToken() != null ? securityLoggingService.maskToken(original.refreshToken()) : null,
                 original.expiresIn(),
                 original.memberInfo()
         );
-    }
-
-    /**
-     * 토큰 마스킹 (보안용)
-     */
-    private String maskToken(final String token) {
-        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
-    }
-
-    /**
-     * 민감한 데이터 마스킹 (로그용)
-     */
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**

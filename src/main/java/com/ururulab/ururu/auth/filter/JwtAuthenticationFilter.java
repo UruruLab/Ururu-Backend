@@ -41,7 +41,7 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String token = extractToken(request);
 
-        if (token != null && jwtTokenProvider.validateToken(token)) {
+        if (token != null && jwtTokenProvider.validateToken(token) && !jwtTokenProvider.isTokenExpired(token)) {
             setAuthentication(token);
         }
 

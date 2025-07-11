@@ -10,6 +10,7 @@ import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.service.UserInfoService;
 import com.ururulab.ururu.auth.service.TokenValidator;
 import com.ururulab.ururu.auth.util.TokenExtractor;
+import com.ururulab.ururu.auth.annotation.RateLimit;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -32,6 +33,8 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import com.ururulab.ururu.auth.service.SecurityLoggingService;
 
 /**
  * 인증 관련 API 컨트롤러.
@@ -62,6 +65,7 @@ public class AuthController {
     private final TokenValidator tokenValidator;
     private final Environment environment;
     private final StringRedisTemplate redisTemplate;
+    private final SecurityLoggingService securityLoggingService;
 
     /**
      * 카카오 OAuth 콜백 처리.
@@ -73,7 +77,7 @@ public class AuthController {
             @RequestParam(required = false) final String error,
             final HttpServletResponse response) {
 
-        return handleOAuthCallback(code, error, SocialProvider.KAKAO, response);
+        return handleOAuthCallback(code, state, error, SocialProvider.KAKAO, response);
     }
 
     /**
@@ -86,12 +90,13 @@ public class AuthController {
             @RequestParam(required = false) final String error,
             final HttpServletResponse response) {
 
-        return handleOAuthCallback(code, error, SocialProvider.GOOGLE, response);
+        return handleOAuthCallback(code, state, error, SocialProvider.GOOGLE, response);
     }
 
     /**
      * 소셜 로그인 처리 API (프론트엔드에서 직접 호출용).
      */
+    @RateLimit(value = 5, timeUnit = TimeUnit.MINUTES)
     @PostMapping("/social/login/{provider}")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> processSocialLogin(
             @PathVariable final String provider,
@@ -328,14 +333,15 @@ public class AuthController {
      */
     private RedirectView handleOAuthCallback(
             final String code,
+            final String state,
             final String error, 
             final SocialProvider provider,
             final HttpServletResponse response) {
         
         final String providerName = provider.name().toLowerCase();
         
-        log.info("{} OAuth callback received - error: {}, hasCode: {}, environment: {}", 
-                providerName, error, code != null, getCurrentProfile());
+        log.info("{} OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
+                providerName, error, code != null, state != null, getCurrentProfile());
 
         // 에러 처리
         if (error != null) {
@@ -347,18 +353,30 @@ public class AuthController {
             throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
 
+        // state 검증 (CSRF 공격 방지)
+        if (state == null || state.trim().isEmpty()) {
+            log.warn("{} OAuth callback received without state parameter", providerName);
+            return redirectToError("missing_state", providerName);
+        }
+
         // 중복 코드 사용 방지
         final String redisKey = OAUTH_CODE_KEY_PREFIX + code;
         final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(OAUTH_CODE_TTL_SECONDS));
 
         if (isCodeUsed == null || !isCodeUsed) {
-            log.warn("{} OAuth code already used or expired: {}...", providerName, maskSensitiveData(code));
+            log.warn("{} OAuth code already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(code));
             return redirectToError("code_already_used", providerName);
         }
 
         try {
-            // 코드를 사용된 목록에 추가 (중복 방지)
-            // USED_CODES.add(code); // 메모리 기반에서 Redis 기반으로 변경
+            // state를 Redis에 저장 (중복 방지)
+            final String redisStateKey = OAUTH_CODE_KEY_PREFIX + "state:" + state;
+            final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(OAUTH_CODE_TTL_SECONDS));
+            
+            if (isStateUsed == null || !isStateUsed) {
+                log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
+                return redirectToError("state_already_used", providerName);
+            }
             
             // 소셜로그인 처리
             final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
@@ -374,14 +392,14 @@ public class AuthController {
             redirectView.setUrl(redirectUrl);
 
             log.info("{} login successful for user: {} (env: {})", 
-                    providerName, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                    providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
             log.info("Redirecting to: {}", redirectUrl);
 
             return redirectView;
         } catch (final Exception e) {
-            // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
-            // USED_CODES.remove(code); // 메모리 기반에서 Redis 기반으로 변경
-            redisTemplate.delete(OAUTH_CODE_KEY_PREFIX + code); // Redis에서 코드 삭제
+            // 실패시 코드와 state를 사용된 목록에서 제거 (재시도 가능하도록)
+            redisTemplate.delete(OAUTH_CODE_KEY_PREFIX + code);
+            redisTemplate.delete(OAUTH_CODE_KEY_PREFIX + "state:" + state);
             throw e;
         }
     }
@@ -416,8 +434,8 @@ public class AuthController {
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
         return SocialLoginResponse.of(
-                maskToken(original.accessToken()),
-                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
+                securityLoggingService.maskToken(original.accessToken()),
+                original.refreshToken() != null ? securityLoggingService.maskToken(original.refreshToken()) : null,
                 original.expiresIn(),
                 original.memberInfo()
         );
@@ -492,26 +510,6 @@ public class AuthController {
         final byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
         return BASE64_ENCODER.encodeToString(randomBytes);
-    }
-
-    /**
-     * 토큰 마스킹 (보안용)
-     */
-    private String maskToken(final String token) {
-        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
-    }
-
-    /**
-     * 민감한 데이터 마스킹 (로그용)
-     */
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**
