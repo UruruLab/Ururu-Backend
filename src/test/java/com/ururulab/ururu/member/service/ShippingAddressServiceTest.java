@@ -101,7 +101,7 @@ public class ShippingAddressServiceTest {
 
     @Test
     @DisplayName("배송지 목록 조회 실패 - 존재하지 않는 회원")
-    void getShippingAddresses_MemberNotFound_ThrowsException() {
+    void getShippingAddresses_memberNotFound_throwsException() {
         // Given
         Long memberId = 999L;
 
@@ -112,5 +112,26 @@ public class ShippingAddressServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.MEMBER_NOT_EXIST);
+    }
+
+    @Test
+    @DisplayName("특정 배송지 조회")
+    void getShippingAddressById_success() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress address = ShippingAddressTestFixture.createShippingAddress(member);
+        ShippingAddressRequest updatedRequest = ShippingAddressTestFixture.createValidRequest();
+
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.updateShippingAddress(memberId, addressId, updatedRequest))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.SHIPPING_ADDRESS_NOT_FOUND);
+        then(shippingAddressRepository).should(never()).save(any());
     }
 }
