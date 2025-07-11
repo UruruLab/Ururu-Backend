@@ -58,4 +58,32 @@ public class DiscountStageParser {
             throw new BusinessException(DISCOUNT_STAGES_PARSING_FAILED);
         }
     }
+
+    /**
+     * JSON에서 최대 할인율만 추출
+     * GroupBuy 엔티티의 maxDiscountRate 필드 계산에 사용
+     *
+     * @param discountStagesJson 할인 단계 JSON 문자열
+     * @return 최대 할인율 (예외 발생 시 0 반환)
+     */
+    public static Integer extractMaxDiscountRate(String discountStagesJson) {
+        if (discountStagesJson == null || discountStagesJson.trim().isEmpty()) {
+            return 0;
+        }
+
+        try {
+            List<DiscountStageDto> stages = parseDiscountStages(discountStagesJson);
+            if (stages.isEmpty()) {
+                return 0;
+            }
+
+            // 할인율이 오름차순으로 정렬되어 있다고 가정하고 마지막 요소 반환
+            // GroupBuyDiscountStageValidator에서 정렬 순서를 검증하므로 안전함
+            return stages.get(stages.size() - 1).discountRate();
+
+        } catch (Exception e) {
+            log.warn("Failed to extract max discount rate from JSON: {}", discountStagesJson, e);
+            return 0; // 예외 발생 시 안전한 기본값
+        }
+    }
 }

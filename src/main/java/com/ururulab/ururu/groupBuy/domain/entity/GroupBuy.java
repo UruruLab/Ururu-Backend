@@ -3,6 +3,7 @@ package com.ururulab.ururu.groupBuy.domain.entity;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
+import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import jakarta.persistence.*;
@@ -53,6 +54,9 @@ public class GroupBuy extends BaseEntity {
     private String discountStages; // 달성 인원에 따른 할인율
 
     @Column(nullable = false)
+    private Integer maxDiscountRate; // 최대 할인율
+
+    @Column(nullable = false)
     private Integer limitQuantityPerMember; // 1인 최대 수량 제한
 
     @Enumerated(EnumType.STRING)
@@ -97,6 +101,7 @@ public class GroupBuy extends BaseEntity {
         groupBuy.description = description;
         groupBuy.thumbnailUrl = thumbnailUrl;
         groupBuy.discountStages = discountStages;
+        groupBuy.maxDiscountRate = calculateMaxDiscountRateFromJson(discountStages); // 최대 할인률 반영
         groupBuy.limitQuantityPerMember = limitQuantityPerMember;
         groupBuy.displayFinalPrice = null; // 등록 이후에 계산
         groupBuy.status = status;
@@ -127,5 +132,9 @@ public class GroupBuy extends BaseEntity {
      */
     public void updateDisplayFinalPrice(Integer finalPrice) {
         this.displayFinalPrice = finalPrice;
+    }
+
+    private static Integer calculateMaxDiscountRateFromJson(String discountStagesJson) {
+        return DiscountStageParser.extractMaxDiscountRate(discountStagesJson);
     }
 }
