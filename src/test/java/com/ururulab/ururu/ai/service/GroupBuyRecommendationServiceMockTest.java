@@ -131,8 +131,6 @@ class GroupBuyRecommendationServiceMockTest {
         return new GroupBuyRecommendationRequest(
                 beautyProfile,
                 10,
-                "20대",
-                "10000-30000원",
                 10000,
                 30000,
                 "수분이 부족해요",
