@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -36,65 +38,52 @@ public class GroupBuyRecommendationController {
     })
     @PostMapping
     public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> getGroupBuyRecommendations(
+            @AuthenticationPrincipal final Long memberId,
             @Parameter(description = "공동구매 추천 요청 정보", required = true)
             @Valid @RequestBody final GroupBuyRecommendationRequest request
     ) {
         log.info("공동구매 추천 API 호출 - 회원ID: {}, 피부타입: {}",
-                request.memberId(), request.skinType());
+                memberId, request.beautyProfile().skinType());
 
-        final GroupBuyRecommendationResponse response = recommendationService.getRecommendations(request);
+        final GroupBuyRecommendationResponse response = recommendationService.getRecommendations(memberId, request);
 
         log.info("공동구매 추천 API 응답 완료 - 회원ID: {}, 추천 수: {}",
-                request.memberId(), response.recommendedGroupBuys().size());
+                memberId, response.recommendedGroupBuys().size());
 
         return ResponseEntity.ok(ApiResponseFormat.success("공동구매 추천이 완료되었습니다.", response));
     }
 
     @Operation(
             summary = "추천 캐시 갱신",
-            description = "특정 회원의 추천 캐시를 백그라운드에서 갱신합니다."
+            description = "인증된 회원의 추천 캐시를 백그라운드에서 갱신합니다."
     )
-    @PostMapping("/{memberId}/refresh")
+    @PostMapping("/refresh")
     public ResponseEntity<ApiResponseFormat<Void>> refreshRecommendationCache(
-            @Parameter(description = "회원 ID", required = true, example = "1")
-            @PathVariable final Long memberId,
-
+            @AuthenticationPrincipal final Long memberId,
             @Parameter(description = "공동구매 추천 요청 정보", required = true)
             @Valid @RequestBody final GroupBuyRecommendationRequest request
     ) {
         log.info("추천 캐시 갱신 API 호출 - 회원ID: {}", memberId);
 
-        recommendationService.refreshRecommendationCache(request);
+        recommendationService.refreshRecommendationCache(memberId, request);
 
         return ResponseEntity.ok(ApiResponseFormat.success("추천 캐시 갱신이 시작되었습니다."));
     }
 
     @Operation(
-            summary = "개별 회원 추천 캐시 삭제",
-            description = "특정 회원의 추천 캐시를 삭제합니다."
+            summary = "개별 회원 추천 캐시 삭제 (관리자 전용)",
+            description = "관리자가 특정 회원의 추천 캐시를 삭제합니다."
     )
     @DeleteMapping("/{memberId}/cache")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponseFormat<Void>> evictMemberRecommendationCache(
             @Parameter(description = "회원 ID", required = true, example = "1")
             @PathVariable final Long memberId
     ) {
-        log.info("개별 추천 캐시 삭제 API 호출 - 회원ID: {}", memberId);
+        log.info("개별 추천 캐시 삭제 API 호출 (관리자) - 대상 회원ID: {}", memberId);
 
         recommendationService.evictRecommendationCache(memberId);
 
         return ResponseEntity.ok(ApiResponseFormat.success("추천 캐시가 삭제되었습니다."));
-    }
-
-    @Operation(
-            summary = "전체 추천 캐시 삭제",
-            description = "모든 회원의 추천 캐시를 삭제합니다. (관리자 전용)"
-    )
-    @DeleteMapping("/cache/all")
-    public ResponseEntity<ApiResponseFormat<Void>> evictAllRecommendationCaches() {
-        log.info("전체 추천 캐시 삭제 API 호출");
-
-        recommendationService.evictAllRecommendationCaches();
-
-        return ResponseEntity.ok(ApiResponseFormat.success("전체 추천 캐시가 삭제되었습니다."));
     }
 }
