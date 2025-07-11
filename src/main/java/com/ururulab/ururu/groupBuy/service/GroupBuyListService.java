@@ -156,17 +156,9 @@ public class GroupBuyListService {
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
 
-        // 판매량 기준 수동 정렬
-        List<GroupBuyListResponse> sortedList = responses.stream()
-                .sorted((a, b) -> {
-                    // 판매량 내림차순, 같으면 ID 내림차순
-                    int orderCountComparison = b.orderCount().compareTo(a.orderCount());
-                    return orderCountComparison != 0 ? orderCountComparison : b.id().compareTo(a.id());
-                })
+        return responses.stream()
                 .limit(limit)
                 .collect(Collectors.toList());
-
-        return sortedList;
     }
 
     /**
