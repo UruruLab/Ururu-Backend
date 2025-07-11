@@ -17,6 +17,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/members")
 @RequiredArgsConstructor
@@ -90,15 +92,21 @@ public class MemberController {
 
     @Operation(summary = "닉네임 존재 여부 확인", description = "특정 닉네임이 이미 사용 중인지 확인합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "닉네임이 존재함"),
-            @ApiResponse(responseCode = "404", description = "닉네임이 존재하지 않음")
+            @ApiResponse(responseCode = "200", description = "닉네임이 존재 여부 확인 완료"),
+            @ApiResponse(responseCode = "400", description = "잘못된 닉네임 형식")
     })
-    @RequestMapping(value = "/nicknames/{nickname}", method = RequestMethod.HEAD)
-    public ResponseEntity<Void> checkNicknameExists(
+    @GetMapping(value = "/nicknames/{nickname}/exists")
+    public ResponseEntity<ApiResponseFormat<Object>> checkNicknameExists(
             @PathVariable final String nickname
     ) {
         final boolean exists = memberService.checkNicknameExists(nickname);
-        return exists ? ResponseEntity.ok().build() : ResponseEntity.notFound().build();
+        final Object response = Map.of(
+                "nickname", nickname,
+                "exists", exists
+        );
+        return ResponseEntity.ok(
+                ApiResponseFormat.success("닉네임 존재 여부를 확인했습니다.", response)
+        );
     }
 
     @Operation(summary = "닉네임 사용 가능 여부 조회", description = "특정 닉네임의 사용 가능 여부를 상세히 조회합니다.")
