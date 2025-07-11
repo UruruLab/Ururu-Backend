@@ -45,13 +45,14 @@ public class CorsConfig {
 
         final CorsConfiguration configuration = new CorsConfiguration();
 
+        log.info("Allowed Origins: {}", allowedOrigins);
         // 환경에 따른 Origin 설정
         if (isDev) {
             // 개발환경: 패턴 매칭 허용 (와일드카드 지원)
             configuration.setAllowedOriginPatterns(allowedOrigins);
         } else {
             // 운영환경: 정확한 도메인만 허용 (보안 강화)
-            configuration.setAllowedOrigins(allowedOrigins);
+            configuration.setAllowedOriginPatterns(allowedOrigins);
         }
 
         configuration.setAllowedMethods(List.of(
