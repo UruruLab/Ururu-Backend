@@ -35,6 +35,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import com.ururulab.ururu.auth.service.SecurityLoggingService;
+import com.ururulab.ururu.auth.util.AuthResponseHelper;
+import com.ururulab.ururu.auth.util.AuthCookieHelper;
+import com.ururulab.ururu.auth.constants.AuthConstants;
 
 /**
  * 인증 관련 API 컨트롤러.
@@ -47,14 +50,8 @@ import com.ururulab.ururu.auth.service.SecurityLoggingService;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Base64.Encoder BASE64_ENCODER = Base64.getUrlEncoder();
-    
-    // OAuth 코드 중복 사용 방지를 위한 Redis 키 패턴
-    private static final String OAUTH_CODE_KEY_PREFIX = "oauth:code:";
-    private static final int OAUTH_CODE_TTL_SECONDS = 300; // 5분
 
     private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtCookieHelper jwtCookieHelper;
@@ -360,8 +357,8 @@ public class AuthController {
         }
 
         // 중복 코드 사용 방지
-        final String redisKey = OAUTH_CODE_KEY_PREFIX + code;
-        final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(OAUTH_CODE_TTL_SECONDS));
+        final String redisKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + code;
+        final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
 
         if (isCodeUsed == null || !isCodeUsed) {
             log.warn("{} OAuth code already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(code));
@@ -370,8 +367,8 @@ public class AuthController {
 
         try {
             // state를 Redis에 저장 (중복 방지)
-            final String redisStateKey = OAUTH_CODE_KEY_PREFIX + "state:" + state;
-            final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(OAUTH_CODE_TTL_SECONDS));
+            final String redisStateKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state;
+            final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
             
             if (isStateUsed == null || !isStateUsed) {
                 log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
@@ -398,8 +395,8 @@ public class AuthController {
             return redirectView;
         } catch (final Exception e) {
             // 실패시 코드와 state를 사용된 목록에서 제거 (재시도 가능하도록)
-            redisTemplate.delete(OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(OAUTH_CODE_KEY_PREFIX + "state:" + state);
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
             throw e;
         }
     }
@@ -420,12 +417,7 @@ public class AuthController {
      */
     private void setSecureCookies(final HttpServletResponse response, 
                                   final SocialLoginResponse loginResponse) {
-        jwtCookieHelper.setAccessTokenCookie(response, loginResponse.accessToken());
-        
-        if (loginResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, loginResponse.refreshToken());
-        }
-
+        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
         log.debug("Secure cookies set successfully for {} environment", getCurrentProfile());
     }
 
@@ -433,12 +425,7 @@ public class AuthController {
      * 보안을 위해 토큰 정보를 마스킹한 응답 생성
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return SocialLoginResponse.of(
-                securityLoggingService.maskToken(original.accessToken()),
-                original.refreshToken() != null ? securityLoggingService.maskToken(original.refreshToken()) : null,
-                original.expiresIn(),
-                original.memberInfo()
-        );
+        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
     }
 
     /**
@@ -485,7 +472,7 @@ public class AuthController {
             }
             
             // 설정이 없을 경우 fallback
-            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
+            return isProductionEnvironment() ? AuthConstants.FRONTEND_BASE_URL_PROD : AuthConstants.FRONTEND_BASE_URL_DEV;
             
         } catch (final Exception e) {
             log.warn("Failed to get frontend URL from yml config, using fallback (env: {}): {}", 

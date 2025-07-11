@@ -3,6 +3,7 @@ package com.ururulab.ururu.auth.filter;
 import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.service.TokenValidator;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -31,6 +32,7 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenValidator tokenValidator;
 
     @Override
     protected void doFilterInternal(
@@ -41,8 +43,16 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String token = extractToken(request);
 
-        if (token != null && jwtTokenProvider.validateToken(token) && !jwtTokenProvider.isTokenExpired(token)) {
-            setAuthentication(token);
+        if (token != null) {
+            try {
+                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
+                final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(token);
+                setAuthentication(validationResult);
+            } catch (final Exception e) {
+                log.debug("Token validation failed in filter: {}", e.getMessage());
+                // 검증 실패 시 인증 컨텍스트 클리어
+                SecurityContextHolder.clearContext();
+            }
         }
 
         filterChain.doFilter(request, response);
@@ -86,26 +96,23 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 
-    private void setAuthentication(final String token) {
+    private void setAuthentication(final TokenValidator.TokenValidationResult validationResult) {
         try {
-            final String userType = jwtTokenProvider.getUserType(token);
-            final String role = jwtTokenProvider.getRole(token);
+            final String userType = validationResult.userType();
+            final Long userId = validationResult.userId();
             
             // userType이 null이거나 없는 경우 기본값으로 MEMBER 사용
             final String actualUserType = (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE.getValue();
             
-            // userType에 따라 userId를 다르게 처리
-            final Long userId;
+            // userType에 따라 authority 결정
             final String authority;
             
             if (UserType.SELLER.getValue().equals(actualUserType)) {
-                userId = jwtTokenProvider.getMemberId(token); // sellerId로 사용
                 authority = AuthConstants.AUTHORITY_ROLE_SELLER; // 판매자 전용 권한
-                log.debug("판매자 인증 처리 - sellerId: {}, role: {}", userId, role);
+                log.debug("판매자 인증 처리 - sellerId: {}", userId);
             } else {
-                userId = jwtTokenProvider.getMemberId(token); // memberId로 사용
                 authority = AuthConstants.AUTHORITY_ROLE_MEMBER; // 회원 전용 권한
-                log.debug("회원 인증 처리 - memberId: {}, role: {}", userId, role);
+                log.debug("회원 인증 처리 - memberId: {}", userId);
             }
 
             final Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -115,14 +122,11 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("JWT 토큰으로 인증 완료 - userId: {}, role: {}, userType: {}, authority: {}",
-                    userId, role, actualUserType, authority);
+            log.debug("JWT 토큰으로 인증 완료 - userId: {}, userType: {}, authority: {}",
+                    userId, actualUserType, authority);
 
-        } catch (final JwtException e) { // 3. JwtException 구체적으로 처리
-            log.warn("JWT 토큰 인증 처리 중 오류 발생: {}", e.getMessage());
-            SecurityContextHolder.clearContext();
-        } catch (final Exception e) { // 4. 예상치 못한 일반 예외 처리
-            log.error("예상치 못한 인증 오류 발생: {}", e.getMessage());
+        } catch (final Exception e) {
+            log.error("인증 처리 중 오류 발생: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
     }

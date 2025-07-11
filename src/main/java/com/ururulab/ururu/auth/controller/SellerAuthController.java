@@ -7,6 +7,8 @@ import com.ururulab.ururu.auth.service.SellerAuthService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.auth.service.SecurityLoggingService;
+import com.ururulab.ururu.auth.util.AuthResponseHelper;
+import com.ururulab.ururu.auth.util.AuthCookieHelper;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -135,12 +137,7 @@ public class SellerAuthController {
      */
     private void setSecureCookies(final HttpServletResponse response, 
                                   final SocialLoginResponse loginResponse) {
-        jwtCookieHelper.setAccessTokenCookie(response, loginResponse.accessToken());
-        
-        if (loginResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, loginResponse.refreshToken());
-        }
-
+        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
         log.debug("Secure cookies set successfully for seller (env: {})", getCurrentProfile());
     }
 
@@ -148,12 +145,7 @@ public class SellerAuthController {
      * 보안을 위해 토큰 정보를 마스킹한 응답 생성
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return SocialLoginResponse.of(
-                securityLoggingService.maskToken(original.accessToken()),
-                original.refreshToken() != null ? securityLoggingService.maskToken(original.refreshToken()) : null,
-                original.expiresIn(),
-                original.memberInfo()
-        );
+        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ururulab.ururu.auth.service;
 
+import com.ururulab.ururu.auth.constants.AuthConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +12,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class SecurityLoggingService {
 
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
-
     /**
      * 토큰을 마스킹합니다.
      *
@@ -21,10 +19,10 @@ public class SecurityLoggingService {
      * @return 마스킹된 토큰
      */
     public String maskToken(String token) {
-        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
+        if (token == null || token.length() <= AuthConstants.SENSITIVE_DATA_PREVIEW_LENGTH) {
+            return AuthConstants.MASKED_DATA_PLACEHOLDER;
         }
-        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
+        return token.substring(0, AuthConstants.SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**
@@ -35,12 +33,12 @@ public class SecurityLoggingService {
      */
     public String maskEmail(String email) {
         if (email == null || email.length() <= 3) {
-            return MASKED_DATA_PLACEHOLDER;
+            return AuthConstants.MASKED_DATA_PLACEHOLDER;
         }
         
         int atIndex = email.indexOf('@');
         if (atIndex <= 1) {
-            return MASKED_DATA_PLACEHOLDER;
+            return AuthConstants.MASKED_DATA_PLACEHOLDER;
         }
         
         String localPart = email.substring(0, atIndex);
@@ -60,10 +58,10 @@ public class SecurityLoggingService {
      * @return 마스킹된 데이터
      */
     public String maskSensitiveData(String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
+        if (data == null || data.length() <= AuthConstants.SENSITIVE_DATA_PREVIEW_LENGTH) {
+            return AuthConstants.MASKED_DATA_PLACEHOLDER;
         }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
+        return data.substring(0, AuthConstants.SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**
