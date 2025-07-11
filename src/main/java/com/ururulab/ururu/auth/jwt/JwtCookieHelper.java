@@ -32,7 +32,7 @@ public final class JwtCookieHelper {
     private final Environment environment;
 
     public void setAccessTokenCookie(final HttpServletResponse response, final String accessToken) {
-        final long maxAgeSeconds = jwtProperties.getAccessTokenExpiry() / 1000;
+        final long maxAgeSeconds = jwtProperties.getAccessTokenExpiry();
         setCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME, accessToken, (int) maxAgeSeconds);
 
         log.debug("Access token cookie set with expiry: {} seconds for domain: {}",
@@ -40,7 +40,7 @@ public final class JwtCookieHelper {
     }
 
     public void setRefreshTokenCookie(final HttpServletResponse response, final String refreshToken) {
-        final long maxAgeSeconds = jwtProperties.getRefreshTokenExpiry() / 1000;
+        final long maxAgeSeconds = jwtProperties.getRefreshTokenExpiry();
         setCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken, (int) maxAgeSeconds);
 
         log.debug("Refresh token cookie set with expiry: {} seconds for domain: {}",
