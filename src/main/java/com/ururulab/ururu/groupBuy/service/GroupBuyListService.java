@@ -19,8 +19,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NOT_FOUND;
-import static com.ururulab.ururu.global.exception.error.ErrorCode.INVALID_SEARCH_KEYWORD;
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
 @Service
 @Slf4j
@@ -173,7 +172,7 @@ public class GroupBuyListService {
             return Base64.getEncoder().encodeToString(json.getBytes());
         } catch (Exception e) {
             log.error("Failed to encode cursor", e);
-            throw new BusinessException(GROUPBUY_NOT_FOUND, "커서 인코딩에 실패했습니다.");
+            throw new BusinessException(CURSOR_ENCODING_FAILED);
         }
     }
 
@@ -189,7 +188,7 @@ public class GroupBuyListService {
             return objectMapper.readValue(json, CursorInfoDto.class);
         } catch (Exception e) {
             log.error("Failed to decode cursor: {}", cursor, e);
-            throw new BusinessException(GROUPBUY_NOT_FOUND, "유효하지 않은 커서입니다.");
+            throw new BusinessException(CURSOR_DECODING_FAILED);
         }
     }
 
