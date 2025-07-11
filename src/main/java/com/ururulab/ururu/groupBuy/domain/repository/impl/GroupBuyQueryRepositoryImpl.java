@@ -78,23 +78,23 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
 
         return queryFactory
                 .select(
-                        gb.id,
-                        gb.title,
-                        gb.thumbnailUrl,
-                        gb.displayFinalPrice,
+                        gb.id, // 0
+                        gb.title, // 1
+                        gb.thumbnailUrl, //2
+                        gb.displayFinalPrice, //3
                         // 최저 시작가 조회
                         JPAExpressions.select(gbo.priceOverride.min())
                                 .from(gbo)
-                                .where(gbo.groupBuy.id.eq(gb.id)),
-                        gb.discountStages,
-                        gb.endsAt,
+                                .where(gbo.groupBuy.id.eq(gb.id)), //4
+                        gb.endsAt, //5
                         // initialStock 기반 총 판매량 조회
                         JPAExpressions.select(
                                         gbo.initialStock.sum().subtract(gbo.stock.sum()).coalesce(0)
                                 )
                                 .from(gbo)
-                                .where(gbo.groupBuy.id.eq(gb.id)),
-                        gb.createdAt
+                                .where(gbo.groupBuy.id.eq(gb.id)), //6
+                        gb.createdAt, //7
+                        gb.maxDiscountRate //8
                 )
                 .from(gb)
                 .join(gb.seller, s)
@@ -141,9 +141,8 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
                 break;
 
             case DISCOUNT:
-                // 할인율순: DB에서 직접 정렬이 어려우므로 createdAt 기준으로 처리
-                condition.or(gb.createdAt.lt(cursorInfo.createdAt()))
-                        .or(gb.createdAt.eq(cursorInfo.createdAt()).and(gb.id.lt(cursorInfo.id())));
+                condition.or(gb.maxDiscountRate.lt(cursorInfo.maxDiscountRate()))
+                        .or(gb.maxDiscountRate.eq(cursorInfo.maxDiscountRate()).and(gb.id.lt(cursorInfo.id())));
                 break;
 
             default:
@@ -162,7 +161,7 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
             case DEADLINE -> gb.endsAt.asc();
             case PRICE_LOW -> gb.displayFinalPrice.asc();
             case PRICE_HIGH -> gb.displayFinalPrice.desc();
-            case DISCOUNT -> gb.createdAt.desc(); // JSON 형식을 직접 추출 불가 - 계산 위임
+            case DISCOUNT -> gb.maxDiscountRate.desc();
             default -> gb.createdAt.desc(); // 주문 많은 순 - 계산 위임
         };
     }

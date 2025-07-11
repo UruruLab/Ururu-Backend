@@ -9,6 +9,7 @@ public record CursorInfoDto(
         Instant createdAt,
         Instant endsAt,
         Integer price,
+        Integer maxDiscountRate,
         Integer orderCount
 ) {
     public static CursorInfoDto from(GroupBuyListResponse response) {
@@ -17,6 +18,7 @@ public record CursorInfoDto(
                 response.createdAt(),
                 response.endsAt(),
                 response.displayFinalPrice(),
+                response.maxDiscountRate(),
                 response.orderCount()
         );
     }

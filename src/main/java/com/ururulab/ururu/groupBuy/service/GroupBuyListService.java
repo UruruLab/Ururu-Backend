@@ -127,14 +127,6 @@ public class GroupBuyListService {
             throw new BusinessException(GROUPBUY_NOT_FOUND, message);
         }
 
-        // 할인율 정렬이면 수동 정렬
-        if ("discount".equals(sortType)) {
-            return tuples.stream()
-                    .map(this::convertToResponse)
-                    .sorted(Comparator.comparing(GroupBuyListResponse::maxDiscountRate).reversed())
-                    .collect(Collectors.toList());
-        }
-
         return tuples.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
@@ -145,7 +137,7 @@ public class GroupBuyListService {
      * @param categoryId
      * @param limit
      * @param cursor
-     * @param keyword 추가!
+     * @param keyword
      * @return
      */
     private List<GroupBuyListResponse> getGroupBuyListOrderByOrderCountWithCursor(Long categoryId, int limit, String cursor, String keyword) {
@@ -222,54 +214,16 @@ public class GroupBuyListService {
         String thumbnailUrl = row.get(2, String.class);
         Integer displayFinalPrice = row.get(3, Integer.class);
         Integer startPrice = row.get(4, Integer.class);
-        String discountStages = row.get(5, String.class);
-        Instant endsAt = row.get(6, Instant.class);
-        Integer orderCount = row.get(7, Long.class).intValue();
-        Instant createdAt = row.get(8, Instant.class);
-        Integer maxDiscountRate = calculateMaxDiscountRate(discountStages);
+        Instant endsAt = row.get(5, Instant.class);
+        Integer orderCount = row.get(6, Long.class).intValue();
+        Instant createdAt = row.get(7, Instant.class);
+        Integer maxDiscountRate = row.get(8, Integer.class);
 
         return new GroupBuyListResponse(
                 id, title, thumbnailUrl, displayFinalPrice,
                 startPrice, maxDiscountRate, endsAt,
                 orderCount, createdAt
         );
-    }
-
-    /**
-     * 여러 공동구매의 판매량 조회
-     * @param groupBuyIds
-     * @return
-     */
-    private Map<Long, Integer> getOrderCountMapFromInitialStock(List<Long> groupBuyIds) {
-        List<Object[]> results = groupBuyOptionRepository.getTotalSoldQuantitiesByGroupBuyIds(groupBuyIds);
-
-        Map<Long, Integer> orderCountMap = results.stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],           // groupBuyId
-                        row -> ((Long) row[1]).intValue() // totalSoldQuantity
-                ));
-
-        log.debug("Retrieved sold quantities for {} group buys using initialStock", groupBuyIds.size());
-        return orderCountMap;
-    }
-
-    /**
-     * discount_stages JSON에서 최대 할인률 계산
-     * @param discountStages
-     * @return
-     */
-    private Integer calculateMaxDiscountRate(String discountStages) {
-        if (discountStages == null || discountStages.isEmpty()) {
-            return 0;
-        }
-
-        try {
-            List<DiscountStageDto> stages = DiscountStageParser.parseDiscountStages(discountStages);
-            return stages.isEmpty() ? 0 : stages.get(stages.size() - 1).discountRate();
-        } catch (Exception e) {
-            log.warn("Failed to parse discount stages: {}", discountStages, e);
-            return 0;
-        }
     }
 
     /**
