@@ -1,6 +1,9 @@
 package com.ururulab.ururu.auth.filter;
 
+import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.service.TokenValidator;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -26,11 +29,10 @@ import java.util.Collections;
 @Lazy  // 순환 참조 방지
 public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX = "Bearer ";
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String ACCESS_TOKEN_COOKIE_NAME = "access_token";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenValidator tokenValidator;
 
     @Override
     protected void doFilterInternal(
@@ -41,8 +43,16 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String token = extractToken(request);
 
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            setAuthentication(token);
+        if (token != null) {
+            try {
+                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
+                final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(token);
+                setAuthentication(validationResult);
+            } catch (final Exception e) {
+                log.debug("Token validation failed in filter: {}", e.getMessage());
+                // 검증 실패 시 인증 컨텍스트 클리어
+                SecurityContextHolder.clearContext();
+            }
         }
 
         filterChain.doFilter(request, response);
@@ -66,7 +76,7 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         for (final Cookie cookie : cookies) {
-            if (ACCESS_TOKEN_COOKIE_NAME.equals(cookie.getName())) {
+            if (AuthConstants.ACCESS_TOKEN_COOKIE_NAME.equals(cookie.getName())) {
                 final String token = cookie.getValue();
                 log.debug("쿠키에서 JWT 토큰 추출 성공");
                 return token;
@@ -78,34 +88,45 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
     private String extractTokenFromHeader(final HttpServletRequest request) {
         final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith(BEARER_PREFIX)) {
-            final String token = authorizationHeader.substring(BEARER_PREFIX.length());
+        if (authorizationHeader != null && authorizationHeader.startsWith(AuthConstants.BEARER_PREFIX)) {
+            final String token = authorizationHeader.substring(AuthConstants.BEARER_PREFIX.length());
             log.debug("Authorization 헤더에서 JWT 토큰 추출 성공");
             return token;
         }
         return null;
     }
 
-    private void setAuthentication(final String token) {
+    private void setAuthentication(final TokenValidator.TokenValidationResult validationResult) {
         try {
-            final Long memberId = jwtTokenProvider.getMemberId(token);
-            final String role = jwtTokenProvider.getRole(token);
+            final String userType = validationResult.userType();
+            final Long userId = validationResult.userId();
+            
+            // userType이 null이거나 없는 경우 기본값으로 MEMBER 사용
+            final String actualUserType = (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE.getValue();
+            
+            // userType에 따라 authority 결정
+            final String authority;
+            
+            if (UserType.SELLER.getValue().equals(actualUserType)) {
+                authority = AuthConstants.AUTHORITY_ROLE_SELLER; // 판매자 전용 권한
+                log.debug("판매자 인증 처리 - sellerId: {}", userId);
+            } else {
+                authority = AuthConstants.AUTHORITY_ROLE_MEMBER; // 회원 전용 권한
+                log.debug("회원 인증 처리 - memberId: {}", userId);
+            }
 
             final Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    memberId,
+                    userId,
                     null,
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                    Collections.singletonList(new SimpleGrantedAuthority(authority))
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("JWT 토큰으로 인증 완료 - memberId: {}, role: {}",
-                    memberId, role);
+            log.debug("JWT 토큰으로 인증 완료 - userId: {}, userType: {}, authority: {}",
+                    userId, actualUserType, authority);
 
-        } catch (final JwtException e) { // 3. JwtException 구체적으로 처리
-            log.warn("JWT 토큰 인증 처리 중 오류 발생: {}", e.getMessage());
-            SecurityContextHolder.clearContext();
-        } catch (final Exception e) { // 4. 예상치 못한 일반 예외 처리
-            log.error("예상치 못한 인증 오류 발생: {}", e.getMessage());
+        } catch (final Exception e) {
+            log.error("인증 처리 중 오류 발생: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
     }
@@ -117,6 +138,8 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 인증이 필요 없는 경로들
         return path.startsWith("/api/auth/") ||
                path.startsWith("/api/public/") ||
+               path.equals("/api/sellers/signup") ||  
+               path.startsWith("/api/sellers/check/") ||  
                path.equals("/health") ||
                path.startsWith("/swagger-ui/") ||
                path.startsWith("/v3/api-docs/");
