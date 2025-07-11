@@ -3,16 +3,12 @@ package com.ururulab.ururu.groupBuy.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.querydsl.core.Tuple;
 import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuySortOption;
-import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.common.CursorInfoDto;
-import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyPageResponse;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
-import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.GROUPBUY_NOT_FOUND;
@@ -35,7 +29,6 @@ import static com.ururulab.ururu.global.exception.error.ErrorCode.INVALID_SEARCH
 public class GroupBuyListService {
 
     private final GroupBuyRepository groupBuyRepository;
-    private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final ObjectMapper objectMapper;
     private final GroupBuyValidator groupBuyValidator;
 
