@@ -33,7 +33,7 @@ import java.util.List;
 @Tag(name = "공동구매", description = "공동구매 관리 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/groupbuy")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
+@RequestMapping("/api/groupbuys")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
 @Slf4j
 public class GroupBuyController {
 

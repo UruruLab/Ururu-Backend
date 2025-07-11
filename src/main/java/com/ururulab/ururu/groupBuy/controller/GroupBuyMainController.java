@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/groupbuy")
+@RequestMapping("/api/groupbuys")
 @RequiredArgsConstructor
 @Slf4j
 public class GroupBuyMainController {
