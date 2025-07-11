@@ -152,7 +152,7 @@ public final class JwtTokenProvider {
     private String createToken(final Long userId, final String email, final String role, final String userType,
                                final TokenType type, final long expirySeconds) {
         final Date now = new Date();
-        final Date expiry = new Date(now.getTime() + expirySeconds);
+        final Date expiry = new Date(now.getTime() + (expirySeconds * 1000));
 
         final JwtBuilder builder = Jwts.builder()
                 .subject(userId.toString())
