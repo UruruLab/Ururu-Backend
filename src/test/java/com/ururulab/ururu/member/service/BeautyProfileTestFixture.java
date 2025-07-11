@@ -12,7 +12,6 @@ import com.ururulab.ururu.member.dto.request.BeautyProfileRequest;
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 
 public class BeautyProfileTestFixture {
 
@@ -57,48 +56,6 @@ public class BeautyProfileTestFixture {
                 Arrays.asList("스킨케어", "메이크업"),
                 10000,
                 50000,
-                "추가 정보"
-        );
-    }
-
-    public static BeautyProfileRequest createRequestWithAllergy() {
-        return new BeautyProfileRequest(
-                "DRY",
-                "WARM",
-                List.of("여드름"),
-                true,
-                Arrays.asList("향료", "방부제"),
-                List.of("스킨케어"),
-                10000,
-                50000,
-                "알레르기 있음"
-        );
-    }
-
-    public static BeautyProfileRequest createRequestWithInvalidSkinType() {
-        return new BeautyProfileRequest(
-                "INVALID_TYPE",
-                "WARM",
-                List.of("여드름"),
-                false,
-                null,
-                List.of("스킨케어"),
-                10000,
-                50000,
-                "추가 정보"
-        );
-    }
-
-    public static BeautyProfileRequest createRequestWithInvalidPriceRange() {
-        return new BeautyProfileRequest(
-                "DRY",
-                "WARM",
-                Arrays.asList("여드름"),
-                false,
-                null,
-                Arrays.asList("스킨케어"),
-                50000,  // 최소가격이 최대가격보다 큼
-                10000,  // 최대가격
                 "추가 정보"
         );
     }
