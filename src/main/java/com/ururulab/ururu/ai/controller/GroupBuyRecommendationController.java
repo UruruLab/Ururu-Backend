@@ -26,6 +26,45 @@ public class GroupBuyRecommendationController {
     private final GroupBuyRecommendationService recommendationService;
 
     @Operation(
+            summary = "뷰티프로필 기반 개인 맞춤형 공동구매 추천",
+            description = "저장된 뷰티 프로필을 기반으로 AI가 개인 맞춤형 공동구매 상품을 자동 추천합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "추천 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "뷰티 프로필이 완성되지 않음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "추천 가능한 상품 없음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "AI 서비스 이용 불가")
+    })
+    @GetMapping("/by-profile")
+    public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> getRecommendationsByProfile(
+            @AuthenticationPrincipal final Long memberId,
+            @Parameter(description = "추천 상품 개수", example = "40") 
+            @RequestParam(defaultValue = "40") final Integer topK
+    ) {
+        log.info("뷰티프로필 기반 추천 API 호출 - 회원ID: {}, topK: {}", memberId, topK);
+
+        final GroupBuyRecommendationResponse response = recommendationService.getRecommendationsByProfile(memberId, topK);
+
+        log.info("뷰티프로필 기반 추천 완료 - 회원ID: {}, 추천 수: {}", 
+                memberId, response.recommendedGroupBuys().size());
+
+        return ResponseEntity.ok(ApiResponseFormat.success("개인 맞춤 추천이 완료되었습니다.", response));
+    }
+
+    @Operation(
+            summary = "AI 서비스 연결 상태 확인",
+            description = "AI 추천 서비스의 연결 상태와 응답 시간을 확인합니다."
+    )
+    @GetMapping("/health")
+    public ResponseEntity<ApiResponseFormat<String>> checkAiServiceHealth() {
+        log.info("AI 서비스 Health Check 요청");
+
+        final String healthStatus = recommendationService.checkAiServiceHealth();
+
+        return ResponseEntity.ok(ApiResponseFormat.success("AI 서비스 상태 확인 완료", healthStatus));
+    }
+
+    @Operation(
             summary = "개인 맞춤형 공동구매 추천",
             description = "회원의 뷰티 프로필을 기반으로 AI가 개인 맞춤형 공동구매 상품을 추천합니다."
     )
