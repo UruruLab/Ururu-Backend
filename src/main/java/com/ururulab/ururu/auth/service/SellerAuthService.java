@@ -99,4 +99,14 @@ public final class SellerAuthService {
         jwtRefreshService.logout(authorization);
         log.info("Seller logout completed");
     }
+
+    /**
+     * 토큰으로 판매자 로그아웃 처리.
+     *
+     * @param accessToken 액세스 토큰
+     */
+    public void logoutWithToken(final String accessToken) {
+        jwtRefreshService.logoutWithToken(accessToken);
+        log.info("Seller logout with token completed");
+    }
 } 

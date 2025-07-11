@@ -8,8 +8,9 @@ import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
 import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
-import com.ururulab.ururu.auth.jwt.validator.JwtTokenValidator;
 import com.ururulab.ururu.auth.storage.RefreshTokenStorage;
+import com.ururulab.ururu.auth.util.TokenExtractor;
+import com.ururulab.ururu.auth.service.TokenValidator;
 import com.ururulab.ururu.auth.storage.TokenBlacklistStorage;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -30,10 +31,10 @@ public final class JwtRefreshService {
     private final JwtProperties jwtProperties;
     private final AccessTokenGenerator accessTokenGenerator;
     private final RefreshTokenGenerator refreshTokenGenerator;
-    private final JwtTokenValidator jwtTokenValidator;
     private final RefreshTokenStorage refreshTokenStorage;
     private final TokenBlacklistStorage tokenBlacklistStorage;
     private final UserInfoService userInfoService;
+    private final TokenValidator tokenValidator;
 
     /**
      * Refresh Token을 저장합니다.
@@ -62,53 +63,50 @@ public final class JwtRefreshService {
      * @throws BusinessException 토큰이 유효하지 않은 경우
      */
     public SocialLoginResponse refreshAccessToken(final String refreshToken) {
-        // 1. Refresh Token 검증 (JWT 서명 + 만료시간)
-        validateRefreshToken(refreshToken);
+        // 1. TokenValidator를 사용하여 Refresh Token 검증 및 정보 추출
+        final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateRefreshToken(refreshToken);
 
-        // 2. 토큰에서 정보 추출
-        final Long userId = jwtTokenProvider.getMemberId(refreshToken);
-        final String userType = jwtTokenProvider.getUserType(refreshToken);
-        final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
+        // 2. Refresh Token 개수 제한 확인
+        validateRefreshTokenLimit(validationResult.userType(), validationResult.userId());
 
-        // 3. 블랙리스트 확인
-        if (tokenBlacklistStorage.isTokenBlacklisted(tokenId)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
+        // 3. 사용자 정보 조회
+        final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
 
-        // 4. Refresh Token 개수 제한 확인
-        validateRefreshTokenLimit(userType, userId);
-
-        // 5. 사용자 정보 조회
-        final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
-
-        // 6. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
+        // 4. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
         try {
             // 기존 토큰을 블랙리스트에 추가
             tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
             // 기존 토큰을 Redis에서 삭제
-            refreshTokenStorage.deleteRefreshToken(userType, userId, tokenId);
-            log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", userId, userType);
+            refreshTokenStorage.deleteRefreshToken(validationResult.userType(), validationResult.userId(), validationResult.tokenId());
+            log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", validationResult.userId(), validationResult.userType());
         } catch (final BusinessException e) {
-            log.warn("Failed to invalidate previous refresh token during RTR: {}", e.getMessage());
-            // 토큰 무효화 실패 시에도 갱신 계속 진행 (기존 토큰은 만료되면 자동 삭제됨)
+            log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {}): {}", 
+                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            // RTR 방식에서는 무효화 실패 시 새 토큰 발급을 중단
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "기존 토큰 무효화에 실패했습니다. 보안상 토큰 갱신을 중단합니다.");
+        } catch (final Exception e) {
+            log.error("Unexpected error during token invalidation for user: {} (type: {}): {}", 
+                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            // 예상치 못한 오류도 토큰 갱신 중단
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "토큰 무효화 중 오류가 발생했습니다.");
         }
 
-        // 7. 새로운 토큰 생성
+        // 5. 새로운 토큰 생성
         final String newAccessToken = accessTokenGenerator.generateAccessToken(
-                userId, userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(userType)
+                validationResult.userId(), userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(validationResult.userType())
         );
-        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(userId, UserType.fromString(userType));
+        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(validationResult.userId(), UserType.fromString(validationResult.userType()));
 
-        // 8. 새로운 Refresh Token 저장
-        storeRefreshToken(userId, userType, newRefreshToken);
+        // 6. 새로운 Refresh Token 저장
+        storeRefreshToken(validationResult.userId(), validationResult.userType(), newRefreshToken);
 
-        log.info("RTR: Token refresh completed successfully for user: {} (type: {})", userId, userType);
+        log.info("RTR: Token refresh completed successfully for user: {} (type: {})", validationResult.userId(), validationResult.userType());
 
         return SocialLoginResponse.of(
                 newAccessToken,
                 newRefreshToken,
                 accessTokenGenerator.getExpirySeconds(),
-                SocialLoginResponse.MemberInfo.of(userId, userInfo.email(), null, null, userType)
+                SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
         );
     }
 
@@ -134,16 +132,16 @@ public final class JwtRefreshService {
         }
 
         try {
-            final Long userId = jwtTokenProvider.getMemberId(accessToken);
-            final String userType = jwtTokenProvider.getUserType(accessToken);
+            // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
+            final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
 
             // Refresh Token 삭제
-            refreshTokenStorage.deleteAllRefreshTokens(userType, userId);
+            refreshTokenStorage.deleteAllRefreshTokens(validationResult.userType(), validationResult.userId());
 
             // Access Token 블랙리스트 처리
             try {
                 tokenBlacklistStorage.blacklistAccessToken(accessToken);
-                log.info("Logout successful for user: {} (type: {})", userId, userType);
+                log.info("Logout successful for user: {} (type: {})", validationResult.userId(), validationResult.userType());
             } catch (final BusinessException e) {
                 log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
                 // 블랙리스트 실패는 로그아웃을 중단시키지 않음
@@ -166,9 +164,7 @@ public final class JwtRefreshService {
 
     // Private Helper Methods
 
-    private void validateRefreshToken(final String refreshToken) {
-        jwtTokenValidator.validateRefreshToken(refreshToken);
-    }
+    // validateRefreshToken 메서드 제거 - TokenValidator로 대체됨
 
     private void validateRefreshTokenLimit(final String userType, final Long userId) {
         // 토큰 개수 제한 확인
@@ -193,9 +189,10 @@ public final class JwtRefreshService {
     }
 
     private String extractTokenFromBearer(final String bearerToken) {
-        if (bearerToken == null || !bearerToken.startsWith(AuthConstants.BEARER_PREFIX)) {
+        try {
+            return TokenExtractor.extractTokenFromBearer(bearerToken);
+        } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.MISSING_AUTHORIZATION_HEADER);
         }
-        return bearerToken.substring(AuthConstants.BEARER_PREFIX.length());
     }
 }

@@ -73,6 +73,8 @@ public enum ErrorCode {
 	TOO_MANY_REFRESH_TOKENS(HttpStatus.TOO_MANY_REQUESTS, "AUTH013", "리프레시 토큰 개수가 제한을 초과했습니다. 다시 로그인해주세요."),
 	INVALID_TOKEN_BLACKLIST_PARAMETERS(HttpStatus.BAD_REQUEST, "AUTH014", "토큰 블랙리스트 파라미터가 유효하지 않습니다."),
 	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
+	INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUTH016", "유효하지 않은 OAuth state입니다."),
+	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "AUTH017", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
@@ -140,6 +142,7 @@ public enum ErrorCode {
 
 	// AI 서비스 상태 관련 에러
 	AI_SERVICE_HEALTH_CHECK_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI008", "AI 서비스 상태 확인에 실패했습니다."),
+	AI_RECOMMENDATION_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "AI009", "이미 추천 처리가 진행 중입니다. 잠시 후 다시 시도해주세요."),
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),

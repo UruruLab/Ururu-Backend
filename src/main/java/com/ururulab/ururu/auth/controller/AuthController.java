@@ -8,6 +8,9 @@ import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.service.UserInfoService;
+import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.auth.util.TokenExtractor;
+import com.ururulab.ururu.auth.annotation.RateLimit;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -30,6 +33,11 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import com.ururulab.ururu.auth.service.SecurityLoggingService;
+import com.ururulab.ururu.auth.util.AuthResponseHelper;
+import com.ururulab.ururu.auth.util.AuthCookieHelper;
+import com.ururulab.ururu.auth.constants.AuthConstants;
 
 /**
  * 인증 관련 API 컨트롤러.
@@ -42,14 +50,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Base64.Encoder BASE64_ENCODER = Base64.getUrlEncoder();
-    
-    // OAuth 코드 중복 사용 방지를 위한 Redis 키 패턴
-    private static final String OAUTH_CODE_KEY_PREFIX = "oauth:code:";
-    private static final int OAUTH_CODE_TTL_SECONDS = 300; // 5분
 
     private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtCookieHelper jwtCookieHelper;
@@ -57,8 +59,10 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final AccessTokenGenerator accessTokenGenerator;
     private final UserInfoService userInfoService;
+    private final TokenValidator tokenValidator;
     private final Environment environment;
     private final StringRedisTemplate redisTemplate;
+    private final SecurityLoggingService securityLoggingService;
 
     /**
      * 카카오 OAuth 콜백 처리.
@@ -70,7 +74,7 @@ public class AuthController {
             @RequestParam(required = false) final String error,
             final HttpServletResponse response) {
 
-        return handleOAuthCallback(code, error, SocialProvider.KAKAO, response);
+        return handleOAuthCallback(code, state, error, SocialProvider.KAKAO, response);
     }
 
     /**
@@ -83,12 +87,13 @@ public class AuthController {
             @RequestParam(required = false) final String error,
             final HttpServletResponse response) {
 
-        return handleOAuthCallback(code, error, SocialProvider.GOOGLE, response);
+        return handleOAuthCallback(code, state, error, SocialProvider.GOOGLE, response);
     }
 
     /**
      * 소셜 로그인 처리 API (프론트엔드에서 직접 호출용).
      */
+    @RateLimit(value = 5, timeUnit = TimeUnit.MINUTES)
     @PostMapping("/social/login/{provider}")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> processSocialLogin(
             @PathVariable final String provider,
@@ -187,22 +192,17 @@ public class AuthController {
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        // Authorization 헤더 또는 쿠키에서 토큰 추출하여 Redis 토큰 삭제
-        String tokenToLogout = null;
-        if (authorization != null && !authorization.isBlank()) {
-            tokenToLogout = authorization;
-        } else if (accessToken != null && !accessToken.isBlank()) {
-            tokenToLogout = "Bearer " + accessToken;
-        }
+        // TokenExtractor를 사용하여 토큰 추출
+        final String tokenToLogout = TokenExtractor.extractTokenForLogout(authorization, accessToken);
         
         if (tokenToLogout != null) {
             try {
-                jwtRefreshService.logout(tokenToLogout);
+                jwtRefreshService.logoutWithToken(tokenToLogout);
             } catch (final Exception e) {
                 log.warn("Failed to logout from Redis: {}", e.getMessage());
                 // Redis 삭제 실패는 로그아웃을 중단시키지 않음
             }
-        } else if (accessToken != null && !accessToken.isBlank()) {
+        } else if (TokenExtractor.isValidAccessToken(accessToken)) {
             // Authorization 헤더가 없어도 쿠키에서 토큰 추출하여 로그아웃 처리
             try {
                 jwtRefreshService.logoutWithToken(accessToken);
@@ -252,69 +252,43 @@ public class AuthController {
 
     /**
      * 현재 인증 상태 조회 API.
-     * 액세스 토큰이 유효하면 기존 토큰을 그대로 사용하고,
-     * 액세스 토큰이 만료된 경우에만 리프레시 토큰으로 갱신합니다.
+     * 액세스 토큰이 유효하면 사용자 정보를 반환하고,
+     * 액세스 토큰이 만료된 경우 401 상태를 반환합니다.
+     * 토큰 갱신은 /refresh API에서만 처리합니다.
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> getCurrentAuthStatus(
             @CookieValue(name = "access_token", required = false) final String accessToken,
-            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
         // 액세스 토큰이 있으면 검증
         if (accessToken != null && !accessToken.isBlank()) {
             try {
-                // 액세스 토큰에서 사용자 정보 추출
-                final Long userId = jwtTokenProvider.getMemberId(accessToken);
-                final String userType = jwtTokenProvider.getUserType(accessToken);
+                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
+                final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
                 
                 // 사용자 정보 조회
-                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
+                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
                 
-                // 기존 토큰을 그대로 사용 (새로운 리프레시 토큰 발급하지 않음)
+                // 현재 토큰을 그대로 사용 (새로운 토큰 발급하지 않음)
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,
-                        refreshToken, // 기존 리프레시 토큰 그대로 사용
+                        null, // 리프레시 토큰은 /me API에서 반환하지 않음
                         accessTokenGenerator.getExpirySeconds(),
-                        SocialLoginResponse.MemberInfo.of(userId, userInfo.email(), null, null, userType)
+                        SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
                 );
                 
                 // 보안을 위해 토큰 정보는 마스킹해서 응답
                 final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
                 
-                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing tokens", userId, userType);
+                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing access token", validationResult.userId(), validationResult.userType());
                 
                 return ResponseEntity.ok(
                         ApiResponseFormat.success("현재 인증 상태를 조회했습니다.", secureResponse)
                 );
             } catch (final Exception e) {
                 log.debug("Access token validation failed: {}", e.getMessage());
-                // 액세스 토큰이 유효하지 않으면 리프레시 토큰으로 갱신 시도
-            }
-        }
-        
-        // 리프레시 토큰이 있으면 갱신 시도 (액세스 토큰이 만료된 경우에만)
-        if (refreshToken != null && !refreshToken.isBlank()) {
-            try {
-                final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
-                
-                // 새로운 토큰을 쿠키로 설정
-                jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
-                if (refreshResponse.refreshToken() != null) {
-                    jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
-                }
-                
-                // 보안을 위해 토큰 정보는 마스킹해서 응답
-                final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
-                
-                log.info("Token refresh successful for user: {} (env: {})", 
-                        MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
-                
-                return ResponseEntity.ok(
-                        ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
-                );
-            } catch (final Exception e) {
-                log.debug("Refresh token validation failed: {}", e.getMessage());
+                // 액세스 토큰이 유효하지 않으면 401 반환
             }
         }
         
@@ -331,14 +305,15 @@ public class AuthController {
      */
     private RedirectView handleOAuthCallback(
             final String code,
+            final String state,
             final String error, 
             final SocialProvider provider,
             final HttpServletResponse response) {
         
         final String providerName = provider.name().toLowerCase();
         
-        log.info("{} OAuth callback received - error: {}, hasCode: {}, environment: {}", 
-                providerName, error, code != null, getCurrentProfile());
+        log.info("{} OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
+                providerName, error, code != null, state != null, getCurrentProfile());
 
         // 에러 처리
         if (error != null) {
@@ -350,18 +325,30 @@ public class AuthController {
             throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
 
+        // state 검증 (CSRF 공격 방지)
+        if (state == null || state.trim().isEmpty()) {
+            log.warn("{} OAuth callback received without state parameter", providerName);
+            return redirectToError("missing_state", providerName);
+        }
+
         // 중복 코드 사용 방지
-        final String redisKey = OAUTH_CODE_KEY_PREFIX + code;
-        final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(OAUTH_CODE_TTL_SECONDS));
+        final String redisKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + code;
+        final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
 
         if (isCodeUsed == null || !isCodeUsed) {
-            log.warn("{} OAuth code already used or expired: {}...", providerName, maskSensitiveData(code));
+            log.warn("{} OAuth code already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(code));
             return redirectToError("code_already_used", providerName);
         }
 
         try {
-            // 코드를 사용된 목록에 추가 (중복 방지)
-            // USED_CODES.add(code); // 메모리 기반에서 Redis 기반으로 변경
+            // state를 Redis에 저장 (중복 방지)
+            final String redisStateKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state;
+            final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
+            
+            if (isStateUsed == null || !isStateUsed) {
+                log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
+                return redirectToError("state_already_used", providerName);
+            }
             
             // 소셜로그인 처리
             final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
@@ -370,6 +357,10 @@ public class AuthController {
             // JWT 토큰을 쿠키로 설정
             setSecureCookies(response, loginResponse);
 
+            // 성공 시 인증 코드와 state 즉시 삭제 (일회성 보장)
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
+
             // 프론트엔드 성공 페이지로 리다이렉트
             final RedirectView redirectView = new RedirectView();
             redirectView.setContextRelative(false);
@@ -377,14 +368,14 @@ public class AuthController {
             redirectView.setUrl(redirectUrl);
 
             log.info("{} login successful for user: {} (env: {})", 
-                    providerName, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                    providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
             log.info("Redirecting to: {}", redirectUrl);
 
             return redirectView;
         } catch (final Exception e) {
-            // 실패시 코드를 사용된 목록에서 제거 (재시도 가능하도록)
-            // USED_CODES.remove(code); // 메모리 기반에서 Redis 기반으로 변경
-            redisTemplate.delete(OAUTH_CODE_KEY_PREFIX + code); // Redis에서 코드 삭제
+            // 실패시 코드와 state를 사용된 목록에서 제거 (재시도 가능하도록)
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
             throw e;
         }
     }
@@ -405,12 +396,7 @@ public class AuthController {
      */
     private void setSecureCookies(final HttpServletResponse response, 
                                   final SocialLoginResponse loginResponse) {
-        jwtCookieHelper.setAccessTokenCookie(response, loginResponse.accessToken());
-        
-        if (loginResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, loginResponse.refreshToken());
-        }
-
+        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
         log.debug("Secure cookies set successfully for {} environment", getCurrentProfile());
     }
 
@@ -418,12 +404,7 @@ public class AuthController {
      * 보안을 위해 토큰 정보를 마스킹한 응답 생성
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return SocialLoginResponse.of(
-                maskToken(original.accessToken()),
-                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
-                original.expiresIn(),
-                original.memberInfo()
-        );
+        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
     }
 
     /**
@@ -470,7 +451,7 @@ public class AuthController {
             }
             
             // 설정이 없을 경우 fallback
-            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
+            return isProductionEnvironment() ? AuthConstants.FRONTEND_BASE_URL_PROD : AuthConstants.FRONTEND_BASE_URL_DEV;
             
         } catch (final Exception e) {
             log.warn("Failed to get frontend URL from yml config, using fallback (env: {}): {}", 
@@ -495,26 +476,6 @@ public class AuthController {
         final byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
         return BASE64_ENCODER.encodeToString(randomBytes);
-    }
-
-    /**
-     * 토큰 마스킹 (보안용)
-     */
-    private String maskToken(final String token) {
-        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
-    }
-
-    /**
-     * 민감한 데이터 마스킹 (로그용)
-     */
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
     /**

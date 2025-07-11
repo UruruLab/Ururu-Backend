@@ -5,6 +5,10 @@ import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.service.SellerAuthService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
+import com.ururulab.ururu.auth.util.TokenExtractor;
+import com.ururulab.ururu.auth.service.SecurityLoggingService;
+import com.ururulab.ururu.auth.util.AuthResponseHelper;
+import com.ururulab.ururu.auth.util.AuthCookieHelper;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -28,13 +32,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class SellerAuthController {
 
-    private static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
-    private static final String MASKED_DATA_PLACEHOLDER = "***";
-
     private final SellerAuthService sellerAuthService;
     private final JwtCookieHelper jwtCookieHelper;
     private final JwtRefreshService jwtRefreshService;
     private final Environment environment;
+    private final SecurityLoggingService securityLoggingService;
 
     /**
      * 판매자 로그인 API.
@@ -44,7 +46,7 @@ public class SellerAuthController {
             @Valid @RequestBody final SellerLoginRequest request,
             final HttpServletResponse response) {
         
-        log.info("Seller login attempt: {}", MaskingUtils.maskEmail(request.email()));
+        log.info("Seller login attempt: {}", securityLoggingService.maskEmail(request.email()));
         
         // 판매자 로그인 처리
         final SocialLoginResponse loginResponse = sellerAuthService.login(request);
@@ -56,7 +58,7 @@ public class SellerAuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("Seller login successful: {} (env: {})", 
-                MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("판매자 로그인이 완료되었습니다.", secureResponse)
@@ -73,17 +75,12 @@ public class SellerAuthController {
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        // Authorization 헤더 또는 쿠키에서 토큰 추출하여 Redis 토큰 삭제
-        String tokenToLogout = null;
-        if (authorization != null && !authorization.isBlank()) {
-            tokenToLogout = authorization;
-        } else if (accessToken != null && !accessToken.isBlank()) {
-            tokenToLogout = "Bearer " + accessToken;
-        }
+        // TokenExtractor를 사용하여 토큰 추출
+        final String tokenToLogout = TokenExtractor.extractTokenForLogout(authorization, accessToken);
         
         if (tokenToLogout != null) {
             try {
-                sellerAuthService.logout(tokenToLogout);
+                sellerAuthService.logoutWithToken(tokenToLogout);
             } catch (final Exception e) {
                 log.warn("Failed to logout seller from Redis: {}", e.getMessage());
                 // Redis 삭제 실패는 로그아웃을 중단시키지 않음
@@ -140,12 +137,7 @@ public class SellerAuthController {
      */
     private void setSecureCookies(final HttpServletResponse response, 
                                   final SocialLoginResponse loginResponse) {
-        jwtCookieHelper.setAccessTokenCookie(response, loginResponse.accessToken());
-        
-        if (loginResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, loginResponse.refreshToken());
-        }
-
+        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
         log.debug("Secure cookies set successfully for seller (env: {})", getCurrentProfile());
     }
 
@@ -153,32 +145,7 @@ public class SellerAuthController {
      * 보안을 위해 토큰 정보를 마스킹한 응답 생성
      */
     private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return SocialLoginResponse.of(
-                maskToken(original.accessToken()),
-                original.refreshToken() != null ? maskToken(original.refreshToken()) : null,
-                original.expiresIn(),
-                original.memberInfo()
-        );
-    }
-
-    /**
-     * 토큰 마스킹 (보안용)
-     */
-    private String maskToken(final String token) {
-        if (token == null || token.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return token.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
-    }
-
-    /**
-     * 민감한 데이터 마스킹 (로그용)
-     */
-    private String maskSensitiveData(final String data) {
-        if (data == null || data.length() <= SENSITIVE_DATA_PREVIEW_LENGTH) {
-            return MASKED_DATA_PLACEHOLDER;
-        }
-        return data.substring(0, SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
+        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
     }
 
     /**
