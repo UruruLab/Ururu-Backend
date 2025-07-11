@@ -197,7 +197,7 @@ public class AuthController {
         
         if (tokenToLogout != null) {
             try {
-                jwtRefreshService.logout(tokenToLogout);
+                jwtRefreshService.logoutWithToken(tokenToLogout);
             } catch (final Exception e) {
                 log.warn("Failed to logout from Redis: {}", e.getMessage());
                 // Redis 삭제 실패는 로그아웃을 중단시키지 않음
@@ -252,13 +252,13 @@ public class AuthController {
 
     /**
      * 현재 인증 상태 조회 API.
-     * 액세스 토큰이 유효하면 기존 토큰을 그대로 사용하고,
-     * 액세스 토큰이 만료된 경우에만 리프레시 토큰으로 갱신합니다.
+     * 액세스 토큰이 유효하면 사용자 정보를 반환하고,
+     * 액세스 토큰이 만료된 경우 401 상태를 반환합니다.
+     * 토큰 갱신은 /refresh API에서만 처리합니다.
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> getCurrentAuthStatus(
             @CookieValue(name = "access_token", required = false) final String accessToken,
-            @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
         // 액세스 토큰이 있으면 검증
@@ -270,10 +270,10 @@ public class AuthController {
                 // 사용자 정보 조회
                 final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
                 
-                // 기존 토큰을 그대로 사용 (새로운 리프레시 토큰 발급하지 않음)
+                // 현재 토큰을 그대로 사용 (새로운 토큰 발급하지 않음)
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,
-                        refreshToken, // 기존 리프레시 토큰 그대로 사용
+                        null, // 리프레시 토큰은 /me API에서 반환하지 않음
                         accessTokenGenerator.getExpirySeconds(),
                         SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
                 );
@@ -281,39 +281,14 @@ public class AuthController {
                 // 보안을 위해 토큰 정보는 마스킹해서 응답
                 final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
                 
-                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing tokens", validationResult.userId(), validationResult.userType());
+                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing access token", validationResult.userId(), validationResult.userType());
                 
                 return ResponseEntity.ok(
                         ApiResponseFormat.success("현재 인증 상태를 조회했습니다.", secureResponse)
                 );
             } catch (final Exception e) {
                 log.debug("Access token validation failed: {}", e.getMessage());
-                // 액세스 토큰이 유효하지 않으면 리프레시 토큰으로 갱신 시도
-            }
-        }
-        
-        // 리프레시 토큰이 있으면 갱신 시도 (액세스 토큰이 만료된 경우에만)
-        if (refreshToken != null && !refreshToken.isBlank()) {
-            try {
-                final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
-                
-                // 새로운 토큰을 쿠키로 설정
-                jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
-                if (refreshResponse.refreshToken() != null) {
-                    jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
-                }
-                
-                // 보안을 위해 토큰 정보는 마스킹해서 응답
-                final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
-                
-                log.info("Token refresh successful for user: {} (env: {})", 
-                        MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
-                
-                return ResponseEntity.ok(
-                        ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
-                );
-            } catch (final Exception e) {
-                log.debug("Refresh token validation failed: {}", e.getMessage());
+                // 액세스 토큰이 유효하지 않으면 401 반환
             }
         }
         
@@ -381,6 +356,10 @@ public class AuthController {
 
             // JWT 토큰을 쿠키로 설정
             setSecureCookies(response, loginResponse);
+
+            // 성공 시 인증 코드와 state 즉시 삭제 (일회성 보장)
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
 
             // 프론트엔드 성공 페이지로 리다이렉트
             final RedirectView redirectView = new RedirectView();

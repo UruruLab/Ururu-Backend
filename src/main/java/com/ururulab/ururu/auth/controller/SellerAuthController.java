@@ -80,7 +80,7 @@ public class SellerAuthController {
         
         if (tokenToLogout != null) {
             try {
-                sellerAuthService.logout(tokenToLogout);
+                sellerAuthService.logoutWithToken(tokenToLogout);
             } catch (final Exception e) {
                 log.warn("Failed to logout seller from Redis: {}", e.getMessage());
                 // Redis 삭제 실패는 로그아웃을 중단시키지 않음

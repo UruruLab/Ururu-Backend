@@ -72,7 +72,7 @@ public final class JwtRefreshService {
         // 3. 사용자 정보 조회
         final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
 
-        // 6. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
+        // 4. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
         try {
             // 기존 토큰을 블랙리스트에 추가
             tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
@@ -80,17 +80,24 @@ public final class JwtRefreshService {
             refreshTokenStorage.deleteRefreshToken(validationResult.userType(), validationResult.userId(), validationResult.tokenId());
             log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", validationResult.userId(), validationResult.userType());
         } catch (final BusinessException e) {
-            log.warn("Failed to invalidate previous refresh token during RTR: {}", e.getMessage());
-            // 토큰 무효화 실패 시에도 갱신 계속 진행 (기존 토큰은 만료되면 자동 삭제됨)
+            log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {}): {}", 
+                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            // RTR 방식에서는 무효화 실패 시 새 토큰 발급을 중단
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "기존 토큰 무효화에 실패했습니다. 보안상 토큰 갱신을 중단합니다.");
+        } catch (final Exception e) {
+            log.error("Unexpected error during token invalidation for user: {} (type: {}): {}", 
+                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            // 예상치 못한 오류도 토큰 갱신 중단
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "토큰 무효화 중 오류가 발생했습니다.");
         }
 
-        // 7. 새로운 토큰 생성
+        // 5. 새로운 토큰 생성
         final String newAccessToken = accessTokenGenerator.generateAccessToken(
                 validationResult.userId(), userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(validationResult.userType())
         );
         final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(validationResult.userId(), UserType.fromString(validationResult.userType()));
 
-        // 8. 새로운 Refresh Token 저장
+        // 6. 새로운 Refresh Token 저장
         storeRefreshToken(validationResult.userId(), validationResult.userType(), newRefreshToken);
 
         log.info("RTR: Token refresh completed successfully for user: {} (type: {})", validationResult.userId(), validationResult.userType());
