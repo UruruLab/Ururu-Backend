@@ -47,6 +47,10 @@ public class GroupBuyListService {
     public GroupBuyPageResponse getGroupBuyList(Long categoryId, int limit, String sortType, String cursor, String keyword) {
         log.info("[Service] getGroupBuyList() called");
         log.info("keyword received: '{}'", keyword);
+
+        String normalizedKeyword = normalizeKeyword(keyword);
+        log.info("정규화된 키워드: '{}'", normalizedKeyword);
+
         int fetchLimit = limit + 1;
 
         List<GroupBuyListResponse> items;
@@ -64,6 +68,21 @@ public class GroupBuyListService {
 
         return GroupBuyPageResponse.of(trimmed, nextCursor, hasMore);
 
+    }
+
+    /**
+     * 키워드 정규화
+     * 1. 공백 제거 (모든 종류의 공백: 스페이스, 탭, 줄바꿈 등)
+     * 2. 소문자 변환
+     * 3. 특수문자는 유지 (검색 정확도를 위해)
+     */
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return null;
+        }
+
+        return keyword.replaceAll("\\s+", "")
+                .toLowerCase();
     }
 
     /**

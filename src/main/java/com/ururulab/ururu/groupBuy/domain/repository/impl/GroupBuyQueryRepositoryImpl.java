@@ -3,6 +3,7 @@ package com.ururulab.ururu.groupBuy.domain.repository.impl;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.ururulab.ururu.groupBuy.domain.entity.QGroupBuy;
@@ -27,54 +28,6 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
 
     private final JPAQueryFactory queryFactory;
 
-    @Override
-    public List<Tuple> findGroupBuysSorted(Long categoryId, GroupBuySortOption sortOption, int limit) {
-        QGroupBuy gb = QGroupBuy.groupBuy;
-        QProduct p = QProduct.product;
-        QProductCategory pc = QProductCategory.productCategory;
-        QGroupBuyOption gbo = QGroupBuyOption.groupBuyOption;
-
-        BooleanBuilder where = new BooleanBuilder()
-                .and(gb.status.eq(GroupBuyStatus.OPEN))
-                .and(gb.endsAt.after(Instant.now()));
-
-        if (categoryId != null) {
-            where.and(pc.category.id.eq(categoryId));
-        }
-
-        return queryFactory
-                .select(
-                        gb.id,
-                        gb.title,
-                        gb.thumbnailUrl,
-                        gb.displayFinalPrice,
-
-                        // 최저 시작가 조회
-                        JPAExpressions.select(gbo.priceOverride.min())
-                                .from(gbo)
-                                .where(gbo.groupBuy.id.eq(gb.id)),
-
-                        gb.discountStages,
-                        gb.endsAt,
-
-                        // initialStock 기반 총 판매량 조회
-                        JPAExpressions.select(
-                                        gbo.initialStock.sum().subtract(gbo.stock.sum()).coalesce(0)
-                                )
-                                .from(gbo)
-                                .where(gbo.groupBuy.id.eq(gb.id)),
-
-                        gb.createdAt
-                )
-                .from(gb)
-                .join(gb.product, p)
-                .join(p.productCategories, pc)
-                .where(where)
-                .orderBy(getOrderSpecifier(sortOption, gb))
-                .limit(limit)
-                .fetch();
-    }
-
     /**
      * 무한스크롤
      * @param categoryId
@@ -96,15 +49,20 @@ public class GroupBuyQueryRepositoryImpl implements GroupBuyQueryRepository {
                 .and(gb.status.eq(GroupBuyStatus.OPEN))
                 .and(gb.endsAt.after(Instant.now()));
 
-        // 키워드 조건
+        // 키워드 검색: 공백 + 대소문자 무시
         if (keyword != null && !keyword.isBlank()) {
             BooleanBuilder keywordCondition = new BooleanBuilder()
-                    .or(gb.title.containsIgnoreCase(keyword))
-                    .or(po.fullIngredients.containsIgnoreCase(keyword))
-                    .or(s.name.containsIgnoreCase(keyword));
+                    // 공동구매 제목에서 검색
+                    .or(Expressions.stringTemplate("LOWER(REPLACE({0}, ' ', ''))", gb.title).contains(keyword))
+                    // 상품 옵션 전성분에서 검색
+                    .or(Expressions.stringTemplate("LOWER(REPLACE({0}, ' ', ''))", po.fullIngredients).contains(keyword))
+                    // 판매자명에서 검색
+                    .or(Expressions.stringTemplate("LOWER(REPLACE({0}, ' ', ''))", s.name).contains(keyword));
+
             where.and(keywordCondition);
-        }else {
-            log.info("keyword 조건 안 걸림");
+            log.info("키워드 검색 조건 적용: '{}' (공백+대소문자 무시)", keyword);
+        } else {
+            log.info("키워드 조건 없음");
         }
 
         if (categoryId != null) {

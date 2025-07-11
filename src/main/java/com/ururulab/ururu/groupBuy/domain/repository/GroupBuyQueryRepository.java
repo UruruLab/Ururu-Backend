@@ -7,8 +7,6 @@ import com.ururulab.ururu.groupBuy.dto.common.CursorInfoDto;
 import java.util.List;
 
 public interface GroupBuyQueryRepository {
-    List<Tuple> findGroupBuysSorted(Long categoryId, GroupBuySortOption sortOption, int limit);
-
     /**
      * 카테고리 + 필터링 + 무한스크롤 + 키워드 검색
      * @param categoryId
