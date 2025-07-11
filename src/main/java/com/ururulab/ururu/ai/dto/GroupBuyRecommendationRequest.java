@@ -15,9 +15,6 @@ public record GroupBuyRecommendationRequest(
     @Max(value = 100, message = "추천 개수는 100개 이하여야 합니다")
     Integer topK,
     
-    String ageGroup,
-    String priceRange,
-    
     @Min(value = 10, message = "최소 가격은 10원 이상이어야 합니다")
     Integer minPrice,
     
@@ -67,8 +64,6 @@ public record GroupBuyRecommendationRequest(
             final List<String> allergies,
             final List<String> interestCategories,
             final Integer topK,
-            final String ageGroup,
-            final String priceRange,
             final Integer minPrice,
             final Integer maxPrice,
             final String additionalInfo,
@@ -87,8 +82,6 @@ public record GroupBuyRecommendationRequest(
         return new GroupBuyRecommendationRequest(
                 beautyProfile,
                 topK != null ? topK : 40,
-                ageGroup,
-                priceRange,
                 minPrice,
                 maxPrice,
                 additionalInfo,
