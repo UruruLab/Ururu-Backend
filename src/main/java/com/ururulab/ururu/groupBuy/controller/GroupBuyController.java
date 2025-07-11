@@ -3,10 +3,7 @@ package com.ururulab.ururu.groupBuy.controller;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyStatusUpdateRequest;
-import com.ururulab.ururu.groupBuy.dto.response.GroupBuyCreatePageResponse;
-import com.ururulab.ururu.groupBuy.dto.response.GroupBuyCreateResponse;
-import com.ururulab.ururu.groupBuy.dto.response.GroupBuyDetailResponse;
-import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
+import com.ururulab.ururu.groupBuy.dto.response.*;
 import com.ururulab.ururu.groupBuy.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -151,14 +148,15 @@ public class GroupBuyController {
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
     @GetMapping
-    public ResponseEntity<ApiResponseFormat<List<GroupBuyListResponse>>> getGroupBuyList(
+    public ResponseEntity<ApiResponseFormat<GroupBuyPageResponse>> getGroupBuyList(
             @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int limit,
-            @RequestParam(defaultValue = "order_count") String sort) {
-        List<GroupBuyListResponse> responses;
+            @RequestParam(defaultValue = "order_count") String sort,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String cursor
+            ) {
 
-        responses = groupBuyListService.getGroupBuyList(categoryId, limit, sort);
-
+        GroupBuyPageResponse responses = groupBuyListService.getGroupBuyList(categoryId, limit, sort, cursor, keyword);
         return ResponseEntity.ok(ApiResponseFormat.success("공동 구매 목록 조회에 성공하였습니다.", responses));
     }
 

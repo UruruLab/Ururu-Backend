@@ -61,6 +61,8 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-hibernate6:2.17.0'
+
     //QueryDSL 의존성
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
     annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
