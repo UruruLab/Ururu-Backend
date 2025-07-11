@@ -1,6 +1,7 @@
 package com.ururulab.ururu.ai.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -47,6 +48,11 @@ public record GroupBuyRecommendationRequest(
         
         List<String> interestCategories
     ) {}
+    
+    @AssertTrue(message = "최소 가격은 최대 가격보다 작거나 같아야 합니다")
+    public boolean isValidPriceRange() {
+        return minPrice == null || maxPrice == null || minPrice <= maxPrice;
+    }
     
     public GroupBuyRecommendationRequest withMemberId(final Long memberId) {
         // memberId는 인증을 통해 처리되므로 DTO에서 제거
