@@ -136,6 +136,41 @@ public class ShippingAddressServiceTest {
     }
 
     @Test
+    @DisplayName("기본 배송지 조회 성공")
+    void getDefaultShippingAddress_success() {
+        // Given
+        Long memberId = 1L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress defaultAddress = ShippingAddressTestFixture.createDefaultShippingAddress(member);
+
+        given(shippingAddressRepository.findByMemberIdAndIsDefaultTrue(memberId))
+                .willReturn(Optional.of(defaultAddress));
+
+        // When
+        ShippingAddress result = shippingAddressService.getDefaultShippingAddress(memberId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.isDefault()).isTrue();
+    }
+
+    @Test
+    @DisplayName("기본 배송지 조회 실패 - 기본 배송지 없음")
+    void getDefaultShippingAddress_notFound_throwsException() {
+        // Given
+        Long memberId = 1L;
+
+        given(shippingAddressRepository.findByMemberIdAndIsDefaultTrue(memberId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.getDefaultShippingAddress(memberId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.DEFAULT_SHIPPING_ADDRESS_NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("배송지 삭제 성공")
     void deleteShippingAddress_success() {
         // Given
@@ -153,7 +188,7 @@ public class ShippingAddressServiceTest {
 
     @Test
     @DisplayName("배송지 삭제 실패 - 존재하지 않는 배송지")
-    void deleteShippingAddress_AddressNotFound_ThrowsException() {
+    void deleteShippingAddress_addressNotFound_throwsException() {
         // Given
         Long memberId = 1L;
         Long addressId = 999L;
