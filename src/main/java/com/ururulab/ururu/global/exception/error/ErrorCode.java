@@ -188,8 +188,11 @@ public enum ErrorCode {
 	DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "MEMBER004", "이미 사용 중인 닉네임입니다."),
 	DUPLICATE_EMAIL_MEMBER(HttpStatus.CONFLICT, "MEMBER005", "이미 사용 중인 이메일입니다."),
 	INVALID_MEMBER_STATUS(HttpStatus.BAD_REQUEST, "MEMBER006", "유효하지 않은 회원 상태입니다."),
-	MEMBER_ACTIVE_ORDERS_EXIST(HttpStatus.BAD_REQUEST, "MEMBER007", "진행 중인 주문이 있어 탈퇴할 수 없습니다."),
+	MEMBER_ACTIVE_ORDERS_EXIST(HttpStatus.BAD_REQUEST, "MEMBER007", "진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다."),
 	MEMBER_PENDING_PAYMENTS_EXIST(HttpStatus.BAD_REQUEST, "MEMBER008", "진행 중인 결제가 있어 탈퇴할 수 없습니다."),
+	PROFILE_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "MEMBER009", "이미지 파일은 필수입니다."),
+	INVALID_GENDER_VALUE(HttpStatus.BAD_REQUEST, "MEMBER010", "올바른 성별 값이 아닙니다."),
+	MEMBER_DELETION_FAILED(HttpStatus.BAD_REQUEST, "MEMBER011", "회원 데이터 정리 중 오류가 발생했습니다"),
 
 	// --- 뷰티 프로필 ---
 	BEAUTY_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "BEAUTY001", "뷰티 프로필을 찾을 수 없습니다."),
@@ -210,6 +213,7 @@ public enum ErrorCode {
 	MEMBER_PREFERENCE_ALREADY_EXISTS(HttpStatus.CONFLICT, "PREFERENCE002", "해당 판매자에 대한 선호도가 이미 존재합니다."),
 	INVALID_PREFERENCE_LEVEL(HttpStatus.BAD_REQUEST, "PREFERENCE003", "선호도 레벨은 1-5 사이여야 합니다."),
 	INVALID_PURCHASE_FREQUENCY(HttpStatus.BAD_REQUEST, "PREFERENCE004", "올바른 구매 빈도 값이 아닙니다."),
+	PURCHASE_FREQUENCY_REQUIRED(HttpStatus.BAD_REQUEST, "PREFERENCE005", "구매 빈도는 필수입니다."),
 
 	// --- 배송지 ---
 	SHIPPING_ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "SHIPPING001", "배송지를 찾을 수 없습니다."),

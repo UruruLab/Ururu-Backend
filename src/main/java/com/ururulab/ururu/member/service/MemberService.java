@@ -2,6 +2,8 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
@@ -17,7 +19,6 @@ import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -65,7 +66,7 @@ public class MemberService {
     @Transactional
     public void uploadProfileImage(final Long memberId, final MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty()) {
-            throw new IllegalArgumentException("이미지 파일은 필수입니다.");
+            throw new BusinessException(ErrorCode.PROFILE_IMAGE_REQUIRED);
         }
 
         final Member member = findActiveMemberById(memberId);
@@ -154,7 +155,7 @@ public class MemberService {
 
         if (request.nickname() != null && !request.nickname().equals(member.getNickname())) {
             if (!memberRepository.isNicknameAvailable(request.nickname())) {
-                throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
             }
         }
 
@@ -203,8 +204,7 @@ public class MemberService {
     private Member findActiveMemberById(final Long memberId) {
         return memberRepository.findById(memberId)
                 .filter(member -> !member.isDeleted())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "회원을 찾을 수 없습니다. ID: " + memberId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_EXIST));
     }
 
     private Gender parseGender(final String genderString) {
@@ -214,7 +214,7 @@ public class MemberService {
         try {
             return Gender.from(genderString);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("올바른 성별 값이 아닙니다: " + genderString, e);
+            throw new BusinessException(ErrorCode.INVALID_GENDER_VALUE);
         }
     }
 
@@ -223,14 +223,12 @@ public class MemberService {
 
          int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
          if (activeOrders > 0) {
-             throw new IllegalStateException(
-                 String.format("진행 중인 주문이 %d건 있어 탈퇴할 수 없습니다.", activeOrders)
-             );
+             throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST, activeOrders);
          }
 
          boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
          if (hasPendingPayments) {
-             throw new IllegalStateException("진행 중인 결제가 있어 탈퇴할 수 없습니다.");
+             throw new BusinessException(ErrorCode.MEMBER_PENDING_PAYMENTS_EXIST);
          }
 
         // 3. 환불 진행 중인 건 확인
@@ -255,7 +253,7 @@ public class MemberService {
 
         } catch (Exception e) {
             log.error("Error during member data cleanup for ID: {}", memberId, e);
-            throw new RuntimeException("회원 데이터 정리 중 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.MEMBER_DELETION_FAILED);
         }
     }
 
