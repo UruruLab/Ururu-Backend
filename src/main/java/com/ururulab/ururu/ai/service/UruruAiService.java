@@ -82,4 +82,22 @@ public class UruruAiService {
                 "additional_info", request.additionalInfo() != null ? request.additionalInfo() : ""
         );
     }
+
+    public String checkHealth() {
+        try {
+            final ResponseEntity<String> response = aiServiceRestClient
+                    .get()
+                    .uri("/health")
+                    .retrieve()
+                    .toEntity(String.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return "정상";
+            } else {
+                return "응답 오류: " + response.getStatusCode();
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
+        }
+    }
 }
