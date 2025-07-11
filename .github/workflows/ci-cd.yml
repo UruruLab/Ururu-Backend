@@ -2,7 +2,7 @@ name: CI/CD - DockerHub Push & Blue-Green Deploy
 
 on:
   push:
-    branches: [main, test/corsSettings]
+    branches: [main]
 
 jobs:
   build-and-deploy:
