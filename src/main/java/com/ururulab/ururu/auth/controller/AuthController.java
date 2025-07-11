@@ -8,6 +8,7 @@ import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.service.UserInfoService;
+import com.ururulab.ururu.auth.service.TokenValidator;
 import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
@@ -58,6 +59,7 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final AccessTokenGenerator accessTokenGenerator;
     private final UserInfoService userInfoService;
+    private final TokenValidator tokenValidator;
     private final Environment environment;
     private final StringRedisTemplate redisTemplate;
 
@@ -260,25 +262,24 @@ public class AuthController {
         // 액세스 토큰이 있으면 검증
         if (accessToken != null && !accessToken.isBlank()) {
             try {
-                // 액세스 토큰에서 사용자 정보 추출
-                final Long userId = jwtTokenProvider.getMemberId(accessToken);
-                final String userType = jwtTokenProvider.getUserType(accessToken);
+                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
+                final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
                 
                 // 사용자 정보 조회
-                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(userId, userType);
+                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
                 
                 // 기존 토큰을 그대로 사용 (새로운 리프레시 토큰 발급하지 않음)
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,
                         refreshToken, // 기존 리프레시 토큰 그대로 사용
                         accessTokenGenerator.getExpirySeconds(),
-                        SocialLoginResponse.MemberInfo.of(userId, userInfo.email(), null, null, userType)
+                        SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
                 );
                 
                 // 보안을 위해 토큰 정보는 마스킹해서 응답
                 final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
                 
-                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing tokens", userId, userType);
+                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing tokens", validationResult.userId(), validationResult.userType());
                 
                 return ResponseEntity.ok(
                         ApiResponseFormat.success("현재 인증 상태를 조회했습니다.", secureResponse)
