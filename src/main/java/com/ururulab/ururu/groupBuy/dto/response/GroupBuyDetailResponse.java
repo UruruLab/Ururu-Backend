@@ -21,7 +21,7 @@ public record GroupBuyDetailResponse(
         String thumbnailUrl,
         Integer displayFinalPrice,
         Integer startPrice,         // 공동구매 시작 가격
-        Integer maxDiscountRate,     // 최대 할인율 (%)
+        Integer maxDiscountRate,     // 최대 할인율
         List<DiscountStageDto> discountStages,
         Integer limitQuantityPerMember,
         GroupBuyStatus status,
@@ -49,7 +49,6 @@ public record GroupBuyDetailResponse(
     ) {
 
         List<DiscountStageDto> parsedStages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
-        Integer maxDiscountRate = parsedStages.get(parsedStages.size() - 1).discountRate();
         Integer startPrice = options.stream()
                 .map(GroupBuyOption::getPriceOverride)
                 .min(Integer::compareTo)
@@ -62,7 +61,7 @@ public record GroupBuyDetailResponse(
                 groupBuy.getThumbnailUrl(),
                 groupBuy.getDisplayFinalPrice(),
                 startPrice,
-                maxDiscountRate,
+                groupBuy.getMaxDiscountRate(),
                 parsedStages,
                 groupBuy.getLimitQuantityPerMember(),
                 groupBuy.getStatus(),
