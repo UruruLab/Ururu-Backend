@@ -9,6 +9,7 @@ import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.dto.response.BeautyProfileCreateResponse;
 import com.ururulab.ururu.member.dto.response.BeautyProfileGetResponse;
+import com.ururulab.ururu.member.dto.response.BeautyProfileUpdateResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,6 +112,42 @@ public class BeautyProfileServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> beautyProfileService.getBeautyProfile(memberId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.BEAUTY_PROFILE_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("뷰티 프로필 수정 성공")
+    void updateBeautyProfile_success() {
+        // Given
+        Long memberId = 1L;
+        Member member = BeautyProfileTestFixture.createMember(memberId);
+        BeautyProfile existingProfile = BeautyProfileTestFixture.createBeautyProfile(member);
+        BeautyProfileRequest updateRequest = BeautyProfileTestFixture.createUpdateRequest();
+
+        given(beautyProfileRepository.findByMemberId(memberId)).willReturn(Optional.of(existingProfile));
+        given(beautyProfileRepository.save(any(BeautyProfile.class))).willReturn(existingProfile);
+
+        // When
+        BeautyProfileUpdateResponse response = beautyProfileService.updateBeautyProfile(memberId, updateRequest);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.memberId()).isEqualTo(memberId);
+    }
+
+    @Test
+    @DisplayName("뷰티 프로필 수정 실패 - 존재하지 않는 프로필")
+    void updateBeautyProfile_ProfileNotFound_ThrowsException() {
+        // Given
+        Long memberId = 999L;
+        BeautyProfileRequest request = BeautyProfileTestFixture.createValidRequest();
+
+        given(beautyProfileRepository.findByMemberId(memberId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> beautyProfileService.updateBeautyProfile(memberId, request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.BEAUTY_PROFILE_NOT_FOUND);
