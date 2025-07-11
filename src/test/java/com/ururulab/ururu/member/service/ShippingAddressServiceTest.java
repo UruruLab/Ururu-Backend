@@ -211,6 +211,50 @@ public class ShippingAddressServiceTest {
     }
 
     @Test
+    @DisplayName("기본 배송지 설정 성공")
+    void setDefaultShippingAddress_success() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress targetAddress = ShippingAddressTestFixture.createShippingAddress(member);
+        ShippingAddress existingDefault = ShippingAddressTestFixture.createDefaultShippingAddress(member);
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.of(targetAddress));
+        given(shippingAddressRepository.findByMemberAndIsDefaultTrue(member))
+                .willReturn(Optional.of(existingDefault));
+        given(shippingAddressRepository.save(any(ShippingAddress.class))).willReturn(targetAddress);
+
+        // When
+        ShippingAddress result = shippingAddressService.setDefaultShippingAddress(memberId, addressId);
+
+        // Then
+        assertThat(result).isNotNull();
+        then(shippingAddressRepository).should().save(existingDefault);
+        then(shippingAddressRepository).should().save(targetAddress);
+    }
+
+    @Test
+    @DisplayName("기본 배송지 설정 실패 - 존재하지 않는 회원")
+    void setDefaultShippingAddress_memberNotFound_throwsException() {
+        // Given
+        Long memberId = 999L;
+        Long addressId = 100L;
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.setDefaultShippingAddress(memberId, addressId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MEMBER_NOT_EXIST);
+
+        then(shippingAddressRepository).should(never()).save(any());
+    }
+
+    @Test
     @DisplayName("배송지 삭제 성공")
     void deleteShippingAddress_success() {
         // Given
