@@ -8,6 +8,7 @@ import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.dto.request.BeautyProfileRequest;
 import com.ururulab.ururu.member.dto.response.BeautyProfileCreateResponse;
+import com.ururulab.ururu.member.dto.response.BeautyProfileGetResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,5 +76,43 @@ public class BeautyProfileServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.MEMBER_NOT_EXIST);
+    }
+
+    @Test
+    @DisplayName("뷰티 프로필 조회 성공")
+    void getBeautyProfile_success() {
+        // Given
+        Long memberId = 1L;
+        Member member = BeautyProfileTestFixture.createMember(memberId);
+        BeautyProfile beautyProfile = BeautyProfileTestFixture.createBeautyProfile(member);
+
+        given(beautyProfileRepository.findByMemberId(memberId)).willReturn(Optional.of(beautyProfile));
+
+        // When
+        BeautyProfileGetResponse response = beautyProfileService.getBeautyProfile(memberId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.memberId()).isEqualTo(memberId);
+        assertThat(response.skinType().name()).isEqualTo("DRY");
+        assertThat(response.skinTone().name()).isEqualTo("WARM");
+        assertThat(response.concerns()).containsExactly("여드름", "건조함");
+        assertThat(response.minPrice()).isEqualTo(10000);
+        assertThat(response.maxPrice()).isEqualTo(50000);
+    }
+
+    @Test
+    @DisplayName("뷰티 프로필 조회 실패 - 존재하지 않는 프로필")
+    void getBeautyProfile_ProfileNotFound_ThrowsException() {
+        // Given
+        Long memberId = 999L;
+
+        given(beautyProfileRepository.findByMemberId(memberId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> beautyProfileService.getBeautyProfile(memberId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.BEAUTY_PROFILE_NOT_FOUND);
     }
 }
