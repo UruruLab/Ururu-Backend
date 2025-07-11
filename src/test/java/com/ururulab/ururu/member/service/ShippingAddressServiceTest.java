@@ -14,9 +14,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 
@@ -75,5 +77,40 @@ public class ShippingAddressServiceTest {
                 .isEqualTo(ErrorCode.SHIPPING_ADDRESS_LIMIT_EXCEEDED);
 
         then(shippingAddressRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("배송지 목록 조회 성공")
+    void getShippingAddresses_success() {
+        // Given
+        Long memberId = 1L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        List<ShippingAddress> addresses = ShippingAddressTestFixture.createShippingAddressList(member);
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.findByMemberId(memberId)).willReturn(addresses);
+
+        // When
+        List<ShippingAddress> result = shippingAddressService.getShippingAddresses(memberId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(3);
+        assertThat(result).extracting(ShippingAddress::getLabel).containsExactly("집", "회사", "부모님집");
+    }
+
+    @Test
+    @DisplayName("배송지 목록 조회 실패 - 존재하지 않는 회원")
+    void getShippingAddresses_MemberNotFound_ThrowsException() {
+        // Given
+        Long memberId = 999L;
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.getShippingAddresses(memberId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.MEMBER_NOT_EXIST);
     }
 }
