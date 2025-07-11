@@ -35,8 +35,8 @@ public record GroupBuyRequest(
         @Max(value = LIMIT_QUANTITY_MAX, message = LIMIT_QUANTITY_MAX_MSG)
         Integer limitQuantityPerMember,
 
-        @NotNull(message = START_AT_REQUIRED)
-        Instant startAt,
+        //@NotNull(message = START_AT_REQUIRED)
+        //Instant startAt,
 
         @NotNull(message = ENDS_AT_REQUIRED)
         Instant endsAt,
@@ -59,7 +59,8 @@ public record GroupBuyRequest(
                 discountStagesJson,
                 limitQuantityPerMember,
                 GroupBuyStatus.DRAFT, // 기본값 - 작성 중 상태
-                startAt,
+                //startAt,
+                null, //startAt
                 endsAt
         );
     }

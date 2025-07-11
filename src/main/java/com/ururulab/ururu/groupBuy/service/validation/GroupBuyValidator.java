@@ -36,7 +36,7 @@ public class GroupBuyValidator {
     private final SellerRepository sellerRepository;
 
     public void validateCritical(GroupBuyRequest request) {
-        validateSchedule(request.startAt(), request.endsAt());
+        validateSchedule(request.endsAt());
         discountStageValidator.validateDiscountStages(request.discountStages());
         discountStageValidator.validateDiscountStageOrder(request.discountStages());
 
@@ -61,36 +61,17 @@ public class GroupBuyValidator {
 
     /**
      * 공동구매 시작일과 종료일 검증
-     * @param startAt
+     * @param //startAt
      * @param endsAt
      */
-    private void validateSchedule(Instant startAt, Instant endsAt) {
+    private void validateSchedule(Instant endsAt) {
         Instant now = Instant.now();
 
-        // 시작일이 현재 시간보다 이전인지 검증
-        if (startAt.isBefore(now)) {
-            log.error("공동구매 시작일이 현재 시간보다 이전입니다 - startAt: {}", startAt);
-            throw new BusinessException(INVALID_START_TIME);
-        }
-
-        // 종료일이 시작일보다 이후인지 검증 (DTO에서도 검증하지만 한번 더)
-        if (endsAt.isBefore(startAt) || endsAt.equals(startAt)) {
-            log.error("공동구매 종료일이 시작일보다 이전이거나 같습니다 - startAt: {}, endAt: {}", startAt, endsAt);
+        // 종료일이 현재 시간보다 이후인지 검증
+        if (endsAt.isBefore(now) || endsAt.equals(now)) {
+            log.error("공동구매 종료일이 현재 시간보다 이전이거나 같습니다 - endAt: {}, now: {}", endsAt, now);
             throw new BusinessException(INVALID_END_TIME);
         }
-
-        final long MIN_DURATION_HOURS = 1;
-        final long MAX_DURATION_HOURS = Duration.ofDays(7).toHours(); // 1주일
-
-        long durationHours = Duration.between(startAt, endsAt).toHours();
-
-        if (durationHours < MIN_DURATION_HOURS) {
-            throw new BusinessException(GROUP_BUY_DURATION_TOO_SHORT);
-        }
-        if (durationHours > MAX_DURATION_HOURS) {
-            throw new BusinessException(GROUP_BUY_DURATION_TOO_LONG);
-        }
-
     }
 
     /**
@@ -152,32 +133,46 @@ public class GroupBuyValidator {
      * @param groupBuy
      */
     public void validateGroupBuyOpenConditions(GroupBuy groupBuy) {
-        //Instant now = Instant.now(); - mysql로 배포 시 변경
-        Instant now = Instant.now().plusSeconds(9 * 3600); // UTC + 9시간 = KST;
+        Instant now = Instant.now(); //- mysql로 배포 시 변경
 
-        // 1. 시작일 검증
-        if (groupBuy.getStartAt().isAfter(now)) {
-            throw new BusinessException(GROUPBUY_NOT_STARTED_YET);
-        }
-
-        // 2. 종료일 검증
-        if (groupBuy.getEndsAt().isBefore(now)) {
+        // 종료일 검증
+        if (groupBuy.getEndsAt().isBefore(now) || groupBuy.getEndsAt().equals(now)) {
+            log.warn("공동구매 종료일이 현재 시간보다 이전이거나 같습니다 - endsAt: {}, now: {}",
+                    groupBuy.getEndsAt(), now);
             throw new BusinessException(GROUPBUY_ALREADY_ENDED);
         }
 
-        // 3. 옵션 존재 검증
+        // 지속 시간 검증 (현재 시간부터 종료일까지)
+        final long MIN_DURATION_HOURS = 1;
+        final long MAX_DURATION_HOURS = Duration.ofDays(7).toHours(); // 1주일
+
+        long durationHours = Duration.between(now, groupBuy.getEndsAt()).toHours();
+
+        if (durationHours < MIN_DURATION_HOURS) {
+            log.warn("공동구매 지속 시간이 너무 짧습니다 - durationHours: {}", durationHours);
+            throw new BusinessException(GROUP_BUY_DURATION_TOO_SHORT);
+        }
+        if (durationHours > MAX_DURATION_HOURS) {
+            log.warn("공동구매 지속 시간이 너무 깁니다 - durationHours: {}", durationHours);
+            throw new BusinessException(GROUP_BUY_DURATION_TOO_LONG);
+        }
+
+        // 옵션 존재 검증
         List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
         if (options.isEmpty()) {
+            log.warn("공동구매에 옵션이 없습니다 - groupBuyId: {}", groupBuy.getId());
             throw new BusinessException(GROUPBUY_NO_OPTIONS);
         }
 
-        // 4. 재고 검증
+        // 재고 검증
         boolean hasStock = options.stream().anyMatch(option -> option.getStock() > 0);
         if (!hasStock) {
+            log.warn("공동구매에 재고가 없습니다 - groupBuyId: {}", groupBuy.getId());
             throw new BusinessException(GROUPBUY_NO_STOCK);
         }
 
-        log.debug("Group buy open conditions validated successfully - groupBuyId: {}", groupBuy.getId());
+        log.info("공동구매 오픈 조건 검증 성공 - groupBuyId: {}, durationHours: {}",
+                groupBuy.getId(), durationHours);
     }
 
     /**

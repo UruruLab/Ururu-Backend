@@ -6,8 +6,8 @@ import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
-import com.ururulab.ururu.auth.jwt.JwtProperties;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
+import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.auth.oauth.GoogleOAuthProperties;
 import com.ururulab.ururu.auth.service.SocialLoginService;
 import com.ururulab.ururu.member.domain.entity.Member;
@@ -19,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 
 @Slf4j
 @Service
@@ -31,13 +32,14 @@ public final class GoogleLoginService extends AbstractSocialLoginService impleme
 
     public GoogleLoginService(
             final GoogleOAuthProperties googleOAuthProperties,
-            final JwtTokenProvider jwtTokenProvider,
-            final JwtProperties jwtProperties,
+            final AccessTokenGenerator accessTokenGenerator,
+            final RefreshTokenGenerator refreshTokenGenerator,
             @Qualifier("socialLoginRestClient") final RestClient socialLoginRestClient,
             final ObjectMapper objectMapper,
-            final MemberService memberService
+            final MemberService memberService,
+            final JwtRefreshService jwtRefreshService
     ) {
-        super(jwtTokenProvider, jwtProperties, objectMapper, memberService);
+        super(accessTokenGenerator, refreshTokenGenerator, objectMapper, memberService, jwtRefreshService);
         this.googleOAuthProperties = googleOAuthProperties;
         this.socialLoginRestClient = socialLoginRestClient;
     }

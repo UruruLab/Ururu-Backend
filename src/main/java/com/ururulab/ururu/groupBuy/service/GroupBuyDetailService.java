@@ -8,7 +8,6 @@ import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyDetailResponse;
 import com.ururulab.ururu.groupBuy.service.validation.GroupBuyValidator;
-import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
@@ -28,13 +28,11 @@ public class GroupBuyDetailService {
 
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
-    private final GroupBuyStockService stockService;
-    private final OrderItemRepository orderItemRepository;
     private final SellerRepository sellerRepository;
     private final GroupBuyValidator groupBuyValidator;
 
     /**
-     * 공동구매 상세 정보 조회
+     * 공동구매 상세 정보 조회 (판매자용)
      *
      * @param sellerId 판매자 ID
      * @param groupBuyId 공동구매 ID
@@ -59,16 +57,54 @@ public class GroupBuyDetailService {
         // 이미지 정보는 이미 페치된 데이터에서 추출
         List<GroupBuyImage> images = extractAndSortImages(groupBuy);
 
-        // 현재 재고 조회
-        Map<Long, Integer> currentStocks = stockService.getCurrentStocksByGroupBuy(groupBuyId, options);
+        // 현재 재고는 옵션에서 직접 조회
+        Map<Long, Integer> currentStocks = getCurrentStocksFromOptions(options);
 
-        // 실시간 주문 수 조회
-        int currentOrderCount = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuyId);
+        // initialStock 기반 총 판매량 조회
+        Integer currentOrderCount = groupBuyOptionRepository.getTotalSoldQuantityByGroupBuyId(groupBuyId);
 
-        log.info("Successfully fetched group buy detail - ID: {}, options: {}, images: {}",
-                groupBuyId, options.size(), images.size());
+        log.info("Successfully fetched group buy detail - ID: {}, options: {}, images: {}, soldQuantity: {}",
+                groupBuyId, options.size(), images.size(), currentOrderCount);
 
         return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks, currentOrderCount);
+    }
+
+    /**
+     * 공동구매 상세 조회 (구매자용 - DRAFT 제외)
+     */
+    public GroupBuyDetailResponse getPublicGroupBuyDetail(Long groupBuyId) {
+        // 1번 쿼리: 메인 데이터 (DRAFT 제외)
+        GroupBuy groupBuy = groupBuyRepository.findPublicGroupBuyWithDetails(groupBuyId)
+                .orElseThrow(() -> new BusinessException(GROUPBUY_NOT_FOUND, groupBuyId));
+
+        // 2번 쿼리: 이미지
+        List<GroupBuyImage> images = groupBuyRepository.findByIdWithImages(groupBuyId)
+                .map(this::extractAndSortImages)
+                .orElse(List.of());
+
+        // 3번 쿼리: 옵션
+        List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
+
+        // 현재 재고는 옵션에서 직접 조회
+        Map<Long, Integer> currentStocks = getCurrentStocksFromOptions(options);
+
+        // initialStock 기반 총 판매량 조회
+        Integer currentOrderCount = groupBuyOptionRepository.getTotalSoldQuantityByGroupBuyId(groupBuyId);
+
+        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks, currentOrderCount);
+    }
+
+    /**
+     * 공동구매 기본 정보만 조회 (연관 데이터 없이)
+     * 간단한 정보만 필요한 경우 사용
+     *
+     * @param groupBuyId 공동구매 ID
+     * @return 공동구매 기본 정보
+     */
+    public GroupBuy getGroupBuyBasicInfo(Long groupBuyId) {
+        log.debug("Fetching basic group buy info for ID: {}", groupBuyId);
+        return groupBuyRepository.findById(groupBuyId)
+                .orElseThrow(() -> new BusinessException(GROUPBUY_NOT_FOUND, groupBuyId));
     }
 
     /**
@@ -83,7 +119,6 @@ public class GroupBuyDetailService {
                     return new BusinessException(GROUPBUY_NOT_FOUND, groupBuyId);
                 });
     }
-
 
     /**
      * 공동구매 옵션과 연관된 ProductOption 정보를 함께 조회
@@ -105,37 +140,16 @@ public class GroupBuyDetailService {
                 .toList();
     }
 
-    // Service
-    public GroupBuyDetailResponse getPublicGroupBuyDetail(Long groupBuyId) {
-        // 1번 쿼리: 메인 데이터 (DRAFT 제외)
-        GroupBuy groupBuy = groupBuyRepository.findPublicGroupBuyWithDetails(groupBuyId)
-                .orElseThrow(() -> new BusinessException(GROUPBUY_NOT_FOUND, groupBuyId));
-
-        // 2번 쿼리: 이미지
-        List<GroupBuyImage> images = groupBuyRepository.findByIdWithImages(groupBuyId)
-                .map(this::extractAndSortImages)
-                .orElse(List.of());
-
-        // 3번 쿼리: 옵션
-        List<GroupBuyOption> options = groupBuyOptionRepository.findAllByGroupBuy(groupBuy);
-
-        Map<Long, Integer> currentStocks = stockService.getCurrentStocksByGroupBuy(groupBuyId, options);
-
-        int currentOrderCount = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuyId);
-
-        return GroupBuyDetailResponse.from(groupBuy, options, images, currentStocks, currentOrderCount);
-    }
-
     /**
-     * 공동구매 기본 정보만 조회 (연관 데이터 없이)
-     * 간단한 정보만 필요한 경우 사용
-     *
-     * @param groupBuyId 공동구매 ID
-     * @return 공동구매 기본 정보
+     * 옵션에서 직접 현재 재고 조회
+     * - 기존 복잡한 OrderItem 집계 제거
+     * - 엔티티에서 직접 stock 필드 사용
      */
-    public GroupBuy getGroupBuyBasicInfo(Long groupBuyId) {
-        log.debug("Fetching basic group buy info for ID: {}", groupBuyId);
-        return groupBuyRepository.findById(groupBuyId)
-                .orElseThrow(() -> new BusinessException(GROUPBUY_NOT_FOUND, groupBuyId));
+    private Map<Long, Integer> getCurrentStocksFromOptions(List<GroupBuyOption> options) {
+        return options.stream()
+                .collect(Collectors.toMap(
+                        GroupBuyOption::getId,
+                        GroupBuyOption::getStock // 현재 재고를 직접 사용
+                ));
     }
 }

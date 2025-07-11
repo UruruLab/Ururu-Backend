@@ -61,18 +61,22 @@ public enum ErrorCode {
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
 	MISSING_AUTHORIZATION_HEADER(HttpStatus.BAD_REQUEST, "AUTH003", "인증 헤더가 누락되었습니다."),
-	EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH004", "만료된 토큰입니다."),
-	MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH005", "잘못된 형식의 토큰입니다."),
-	UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH006", "지원하지 않는 소셜 제공자입니다: %s"),
-	SOCIAL_TOKEN_EXCHANGE_FAILED(HttpStatus.UNAUTHORIZED, "AUTH007", "소셜 로그인 인증에 실패했습니다."),
-	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "회원 정보를 가져올 수 없습니다."),
-	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH009", "소셜 로그인 처리 중 오류가 발생했습니다."),
-	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "일시적인 서버 오류입니다."),
-	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH011", "접근 권한이 없습니다."),
+	MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "AUTH004", "리프레시 토큰이 누락되었습니다."),
+	EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH005", "만료된 토큰입니다."),
+	MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH006", "잘못된 형식의 토큰입니다."),
+	UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH007", "지원하지 않는 소셜 제공자입니다: %s"),
+	SOCIAL_TOKEN_EXCHANGE_FAILED(HttpStatus.UNAUTHORIZED, "AUTH008", "소셜 로그인 인증에 실패했습니다."),
+	SOCIAL_MEMBER_INFO_FAILED(HttpStatus.UNAUTHORIZED, "AUTH009", "회원 정보를 가져올 수 없습니다."),
+	SOCIAL_LOGIN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH010", "소셜 로그인 처리 중 오류가 발생했습니다."),
+	REDIS_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH011", "일시적인 서버 오류입니다."),
+	ACCESS_DENIED(HttpStatus.FORBIDDEN, "AUTH012", "접근 권한이 없습니다."),
+	TOO_MANY_REFRESH_TOKENS(HttpStatus.TOO_MANY_REQUESTS, "AUTH013", "리프레시 토큰 개수가 제한을 초과했습니다. 다시 로그인해주세요."),
+	INVALID_TOKEN_BLACKLIST_PARAMETERS(HttpStatus.BAD_REQUEST, "AUTH014", "토큰 블랙리스트 파라미터가 유효하지 않습니다."),
+	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
 
 	// --- 상품 ---
-	PRODUCT_OPTION_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
-	PRODUCT_NOT_FOUND(HttpStatus.BAD_REQUEST, "PRODUCT002", "존재하지 않는 상품입니다."),
+	PRODUCT_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),
+	PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT002", "존재하지 않는 상품입니다."),
 	CANNOT_DELETE_LAST_OPTION(HttpStatus.BAD_REQUEST, "PRODUCT003", "상품의 마지막 옵션은 삭제할 수 없습니다."),
 	PRODUCT_OPTION_NOT_BELONG_TO_PRODUCT(HttpStatus.BAD_REQUEST, "PRODUCT004", "해당 옵션은 이 상품에 속하지 않습니다."),
 	PRODUCT_NOT_EXIST(HttpStatus.BAD_REQUEST, "PRODUCT005", "공동구매 등록 가능한 상품 없습니다."),
@@ -81,8 +85,8 @@ public enum ErrorCode {
 	DISCOUNT_STAGES_PARSING_FAILED(HttpStatus.BAD_REQUEST, "GROUPBUY001", "할인 단계 정보를 파싱하는 데 실패했습니다."),
 	INVALID_START_TIME(HttpStatus.BAD_REQUEST, "GROUPBUY002", "공동구매 시작일이 현재 시간보다 이전입니다."),
 	INVALID_END_TIME(HttpStatus.BAD_REQUEST, "GROUPBUY003", "공동구매 종료일이 시작일보다 이전이거나 같습니다."),
-	GROUP_BUY_DURATION_TOO_SHORT(HttpStatus.BAD_REQUEST, "GROUPBUY004", "공동구매 기간이 너무 짧습니다. 최소 1시간 이상이어야 합니다."),
-	GROUP_BUY_DURATION_TOO_LONG(HttpStatus.BAD_REQUEST, "GROUPBUY005", "공동구매 기간이 너무 깁니다. 최대 7일까지 가능합니다."),
+	GROUP_BUY_DURATION_TOO_SHORT(HttpStatus.BAD_REQUEST, "GROUPBUY004", "공동구매는 시작일과 종료일 사이에 최소 1시간 이상 간격이 있어야 합니다. 종료일을 다시 설정해 주세요."),
+	GROUP_BUY_DURATION_TOO_LONG(HttpStatus.BAD_REQUEST, "GROUPBUY005", "공동구매는 최대 7일 동안만 진행할 수 있습니다. 종료일 기준으로 7일 이내에 시작일을 설정해 주세요."),
 	ENTITY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUPBUY006", "요청된 엔티티를 찾을 수 없습니다."),
 	PRODUCT_SELLER_MISMATCH(HttpStatus.FORBIDDEN, "GROUPBUY007", "상품의 판매자와 공동구매 등록자가 일치하지 않습니다."),
 	PRODUCT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "GROUPBUY008", "판매 불가능한 상품입니다."),
@@ -99,9 +103,9 @@ public enum ErrorCode {
 	DUPLICATE_DISCOUNT_STAGE(HttpStatus.BAD_REQUEST, "GROUPBUY019", "동일한 최소 수량의 할인 단계가 중복됩니다."),
 	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
-	GROUPBUY_NOT_FOUND(HttpStatus.BAD_REQUEST, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
+	GROUPBUY_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUPBUY022", "해당 공동구매를 찾을 수 없습니다."),
 	GROUPBUY_DETAIL_IMAGES_TOO_MANY(HttpStatus.BAD_REQUEST, "GROUPBUY023", "상세 페이지 이미지 개수를 초과하였습니다."),
-	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.BAD_REQUEST,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
+	GROUPBUY_SELLER_ACCESS_DENIED(HttpStatus.FORBIDDEN,"GROUPBUY024", "다른 판매자의 공동구매에 접근할 수 없습니다."),
 	INVALID_STATUS_CHANGE(HttpStatus.BAD_REQUEST, "GROUPBUY025", "허용되지 않은 상태 변경입니다."),
 	INVALID_STATUS_TRANSITION(HttpStatus.BAD_REQUEST, "GROUPBUY026", "현재 상태에서 요청한 상태로 변경할 수 없습니다."),
 	GROUPBUY_NOT_STARTED_YET(HttpStatus.BAD_REQUEST, "GROUPBUY027", "공동구매 시작일이 아직 되지 않았습니다."),
@@ -110,9 +114,69 @@ public enum ErrorCode {
 	GROUPBUY_NO_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY030", "공동구매에 재고가 없습니다."),
 	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
 	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
+	GROUPBUY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "GROUPBUY033", "DRAFT 상태인 공동구매만 삭제할 수 있습니다."),
+
+
+	// --- 공동구매 통계 ---
+	GROUPBUY_STATISTICS_ALREADY_EXISTS(HttpStatus.CONFLICT, "GB_STAT_001", "이미 해당 공동구매의 통계가 존재합니다."),
+	GROUPBUY_STATISTICS_NOT_FOUND(HttpStatus.NOT_FOUND, "GB_STAT_002", "공동구매 통계를 찾을 수 없습니다."),
+	GROUPBUY_STATISTICS_CALCULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GB_STAT_003", "공동구매 통계 계산에 실패했습니다."),
+
+
+	// --- AI 서비스 ---
+
+	// AI 서비스 연결 및 통신 에러
+	AI_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI001", "AI 추천 서비스를 사용할 수 없습니다."),
+	AI_SERVICE_TIMEOUT(HttpStatus.REQUEST_TIMEOUT, "AI002", "AI 서비스 응답 시간이 초과되었습니다."),
+	AI_SERVICE_CONNECTION_FAILED(HttpStatus.BAD_GATEWAY, "AI003", "AI 서비스 연결에 실패했습니다."),
+
+	// AI 추천 처리 에러
+	AI_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI004", "상품 추천 생성에 실패했습니다."),
+	AI_INVALID_REQUEST_FORMAT(HttpStatus.BAD_REQUEST, "AI005", "AI 서비스 요청 형식이 올바르지 않습니다."),
+	AI_NO_RECOMMENDATIONS_FOUND(HttpStatus.NOT_FOUND, "AI006", "추천 가능한 상품이 없습니다."),
+
+	// 회원 프로필 관련 에러 (기존 코드와 중복 방지를 위해 수정)
+	BEAUTY_PROFILE_INCOMPLETE(HttpStatus.BAD_REQUEST, "AI007", "뷰티 프로필이 완성되지 않았습니다."),
+
+	// AI 서비스 상태 관련 에러
+	AI_SERVICE_HEALTH_CHECK_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI008", "AI 서비스 상태 확인에 실패했습니다."),
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),
+	INVALID_LOGIN_CREDENTIALS(HttpStatus.UNAUTHORIZED, "SELLER002", "이메일 또는 비밀번호가 올바르지 않습니다."),
+	INACTIVE_ACCOUNT(HttpStatus.FORBIDDEN, "SELLER003", "비활성화된 계정입니다."),
+	DUPLICATE_EMAIL(HttpStatus.CONFLICT, "SELLER004", "이미 사용 중인 이메일입니다."),
+	DUPLICATE_BUSINESS_NUMBER(HttpStatus.CONFLICT, "SELLER006", "이미 사용 중인 사업자등록번호입니다."),
+	DUPLICATE_BRAND_NAME(HttpStatus.CONFLICT, "SELLER007", "이미 사용 중인 브랜드명입니다."),
+	INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "SELLER005", "현재 비밀번호가 올바르지 않습니다."),
+	
+	// 판매자 검증 관련 에러
+	SELLER_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER008", "브랜드명은 필수입니다."),
+	SELLER_BUSINESS_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER009", "사업자명은 필수입니다."),
+	SELLER_OWNER_NAME_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER010", "대표자명은 필수입니다."),
+	SELLER_BUSINESS_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER011", "사업자등록번호는 필수입니다."),
+	SELLER_BUSINESS_NUMBER_PATTERN_ERROR(HttpStatus.BAD_REQUEST, "SELLER012", "사업자등록번호 형식이 올바르지 않습니다."),
+	SELLER_EMAIL_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER013", "이메일은 필수입니다."),
+	SELLER_EMAIL_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "SELLER014", "이메일 형식이 올바르지 않습니다."),
+	SELLER_PASSWORD_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER015", "비밀번호는 필수입니다."),
+	SELLER_PASSWORD_SIZE_ERROR(HttpStatus.BAD_REQUEST, "SELLER016", "비밀번호는 8자 이상 20자 이하여야 합니다."),
+	SELLER_PASSWORD_PATTERN_ERROR(HttpStatus.BAD_REQUEST, "SELLER017", "비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다."),
+	SELLER_PHONE_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER018", "전화번호는 필수입니다."),
+	SELLER_PHONE_FORMAT_ERROR(HttpStatus.BAD_REQUEST, "SELLER019", "전화번호 형식이 올바르지 않습니다."),
+	SELLER_ADDRESS1_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER020", "기본주소는 필수입니다."),
+	SELLER_ADDRESS2_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER021", "상세주소는 필수입니다."),
+	SELLER_MAIL_ORDER_NUMBER_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER022", "통신판매업 신고번호는 필수입니다."),
+	
+	// 판매자 길이 검증 관련 에러
+	SELLER_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER023", "브랜드명은 %d자 이하여야 합니다."),
+	SELLER_BUSINESS_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER024", "사업자명은 %d자 이하여야 합니다."),
+	SELLER_OWNER_NAME_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER025", "대표자명은 %d자 이하여야 합니다."),
+	SELLER_BUSINESS_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER026", "사업자등록번호는 %d자여야 합니다."),
+	SELLER_EMAIL_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER027", "이메일은 %d자 이하여야 합니다."),
+	SELLER_PHONE_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER028", "전화번호는 %d자 이하여야 합니다."),
+	SELLER_ADDRESS1_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER029", "기본주소는 %d자 이하여야 합니다."),
+	SELLER_ADDRESS2_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER030", "상세주소는 %d자 이하여야 합니다."),
+	SELLER_MAIL_ORDER_NUMBER_TOO_LONG(HttpStatus.BAD_REQUEST, "SELLER031", "통신판매업 신고번호는 %d자 이하여야 합니다."),
 
 	// --- 시스템 ---
 	SYSTEM_TEMPORARILY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "SYSTEM001", "시스템 점검 중입니다. 1-2분 후 다시 시도해주세요.");

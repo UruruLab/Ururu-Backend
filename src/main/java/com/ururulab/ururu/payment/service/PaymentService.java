@@ -4,6 +4,8 @@
     import com.ururulab.ururu.global.exception.BusinessException;
     import com.ururulab.ururu.global.exception.error.ErrorCode;
     import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
+    import com.ururulab.ururu.groupBuy.dto.common.StockCheckDto;
+    import com.ururulab.ururu.groupBuy.event.StockDepletedEvent;
     import com.ururulab.ururu.member.domain.entity.Member;
     import com.ururulab.ururu.member.domain.repository.MemberRepository;
     import com.ururulab.ururu.order.domain.entity.Cart;
@@ -31,6 +33,7 @@
     import lombok.extern.slf4j.Slf4j;
     import org.apache.commons.io.IOUtils;
     import org.springframework.beans.factory.annotation.Value;
+    import org.springframework.context.ApplicationEventPublisher;
     import org.springframework.stereotype.Service;
     import org.springframework.transaction.annotation.Transactional;
     import org.springframework.web.client.RestClient;
@@ -40,9 +43,8 @@
     import java.nio.charset.StandardCharsets;
     import java.time.Instant;
     import java.time.ZonedDateTime;
-    import java.util.Base64;
-    import java.util.Map;
-    import java.util.Optional;
+    import java.util.*;
+    import java.util.stream.Collectors;
 
     @Slf4j
     @Service
@@ -63,6 +65,7 @@
         private final CartRepository cartRepository;
         private final RestClient restClient;
         private final ObjectMapper objectMapper;
+        private final ApplicationEventPublisher eventPublisher;
 
         @Value("${toss.payments.secret-key}")
         private String tossSecretKey;
@@ -297,8 +300,41 @@
 
             removeOrderedItemsFromCart(payment);
 
+            // 재고 소진 체크 및 이벤트 발행
+            handleStockDepletionCheck(payment);
+
             log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
                     payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());
+        }
+
+        /**
+         * 재고 소진 체크 및 이벤트 발행 처리
+         *
+         * @param payment 결제 정보
+         */
+        private void handleStockDepletionCheck(Payment payment) {
+            // 옵션 ID 수집
+            List<Long> optionIds = payment.getOrder().getOrderItems().stream()
+                    .map(item -> item.getGroupBuyOption().getId())
+                    .collect(Collectors.toList());
+
+            // 재고 상태와 groupBuyId를 한 번에 조회
+            List<StockCheckDto> stockResults =
+                    groupBuyOptionRepository.getStockAndGroupBuyIdsByOptionIds(optionIds);
+
+            // 재고가 0이 된 공동구매 ID 수집
+            Set<Long> groupBuyIdsToCheck = stockResults.stream()
+                    .filter(dto -> dto.stock() != null && dto.stock() == 0)
+                    .map(StockCheckDto::groupBuyId)
+                    .collect(Collectors.toSet());
+
+            // 재고가 0이 된 공동구매가 있을 때만 이벤트 발행
+            if (!groupBuyIdsToCheck.isEmpty()) {
+                StockDepletedEvent event = new StockDepletedEvent(groupBuyIdsToCheck);
+                eventPublisher.publishEvent(event);
+                log.info("재고 소진 이벤트 발행 - paymentId: {}, 대상 공동구매: {}",
+                        payment.getId(), groupBuyIdsToCheck);
+            }
         }
 
 

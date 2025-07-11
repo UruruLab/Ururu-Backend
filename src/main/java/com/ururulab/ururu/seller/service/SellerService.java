@@ -1,12 +1,11 @@
 package com.ururulab.ururu.seller.service;
 
 import com.ururulab.ururu.global.util.MaskingUtils;
-import com.ururulab.ururu.seller.domain.dto.request.SellerSignupRequest;
-import com.ururulab.ururu.seller.domain.dto.response.SellerAvailabilityResponse;
-import com.ururulab.ururu.seller.domain.dto.response.SellerResponse;
+import com.ururulab.ururu.seller.dto.request.SellerSignupRequest;
+import com.ururulab.ururu.seller.dto.response.SellerAvailabilityResponse;
+import com.ururulab.ururu.seller.dto.response.SellerResponse;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -71,7 +70,8 @@ public class SellerService {
         } catch (DataIntegrityViolationException e) {
             // DB 레벨에서 중복 감지 (동시성 환경에서 최종 방어선)
             log.warn("DB 중복 제약조건 위반: {}", e.getMessage());
-            throw new IllegalArgumentException("이미 사용 중인 정보입니다.");
+            throw new com.ururulab.ururu.global.exception.BusinessException(
+                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_EMAIL);
         }
     }
 
@@ -127,26 +127,43 @@ public class SellerService {
         // 이메일 중복 체크
         if (!sellerRepository.isEmailAvailable(normalizedEmail)) {
             log.warn("이메일 중복: {}", MaskingUtils.maskEmail(normalizedEmail));
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new com.ururulab.ururu.global.exception.BusinessException(
+                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_EMAIL);
         }
 
         // 사업자등록번호 중복 체크
         if (!sellerRepository.isBusinessNumberAvailable(request.businessNumber())) {
             log.warn("사업자등록번호 중복: {}", MaskingUtils.maskBusinessNumber(request.businessNumber()));
-            throw new IllegalArgumentException("이미 사용 중인 사업자등록번호입니다.");
+            throw new com.ururulab.ururu.global.exception.BusinessException(
+                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_BUSINESS_NUMBER);
         }
 
         // 브랜드명 중복 체크
         if (!sellerRepository.isNameAvailable(request.name())) {
             log.warn("브랜드명 중복: {}", request.name());
-            throw new IllegalArgumentException("이미 사용 중인 브랜드명입니다.");
+            throw new com.ururulab.ururu.global.exception.BusinessException(
+                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_BRAND_NAME);
         }
+    }
+
+    /**
+     * 이메일로 판매자 조회
+     *
+     * @param email 판매자 이메일
+     * @return 판매자 엔티티
+     * @throws BusinessException 판매자가 존재하지 않는 경우
+     */
+    public Seller findByEmail(final String email) {
+        final String normalizedEmail = email.toLowerCase().trim();
+        return sellerRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new com.ururulab.ururu.global.exception.BusinessException(
+                    com.ururulab.ururu.global.exception.error.ErrorCode.SELLER_NOT_FOUND));
     }
 
     // 활성 판매자 조회
     private Seller findActiveSellerById(final Long sellerId) {
         return sellerRepository.findActiveSeller(sellerId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "판매자를 찾을 수 없습니다. ID: " + sellerId));
+                .orElseThrow(() -> new com.ururulab.ururu.global.exception.BusinessException(
+                    com.ururulab.ururu.global.exception.error.ErrorCode.SELLER_NOT_FOUND, sellerId));
     }
 } 
