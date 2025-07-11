@@ -1,5 +1,6 @@
 package com.ururulab.ururu.ai.service;
 
+import com.ururulab.ururu.ai.config.AiRecommendationProperties;
 import com.ururulab.ururu.ai.dto.GroupBuyRecommendationRequest;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
@@ -17,18 +18,19 @@ import org.springframework.transaction.annotation.Transactional;
 public class BeautyProfileConversionService {
 
     private final BeautyProfileRepository beautyProfileRepository;
+    private final AiRecommendationProperties aiProperties;
 
     public GroupBuyRecommendationRequest convertToRecommendationRequest(final Long memberId, final Integer topK) {
         final BeautyProfile beautyProfile = beautyProfileRepository.findByMemberId(memberId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BEAUTY_PROFILE_INCOMPLETE));
 
-        log.info("BeautyProfile 기반 AI 추천 요청 변환 - 회원ID: {}, 피부타입: {}", 
+        log.info("BeautyProfile 기반 AI 추천 요청 변환 - 회원ID: {}, 피부타입: {}",
                 memberId, beautyProfile.getSkinType());
 
-        final GroupBuyRecommendationRequest.BeautyProfile aiBeautyProfile = 
+        final GroupBuyRecommendationRequest.BeautyProfile aiBeautyProfile =
                 new GroupBuyRecommendationRequest.BeautyProfile(
-                        beautyProfile.getSkinType().name(),
-                        beautyProfile.getSkinTone().name(),
+                        beautyProfile.getSkinType() != null ? beautyProfile.getSkinType().name() : "",
+                        beautyProfile.getSkinTone() != null ? beautyProfile.getSkinTone().name() : "",
                         beautyProfile.getConcerns(),
                         beautyProfile.getHasAllergy(),
                         beautyProfile.getAllergies(),
@@ -37,13 +39,13 @@ public class BeautyProfileConversionService {
 
         return new GroupBuyRecommendationRequest(
                 aiBeautyProfile,
-                topK != null ? topK : 40,
+                topK != null ? topK : aiProperties.getDefaultTopK(),
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
                 beautyProfile.getAdditionalInfo(),
                 beautyProfile.getInterestCategories(),
-                0.3,
-                true
+                aiProperties.getDefaultMinSimilarity(),
+                aiProperties.isDefaultUsePriceFilter()
         );
     }
 }

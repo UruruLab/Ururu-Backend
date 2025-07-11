@@ -1,5 +1,6 @@
 package com.ururulab.ururu.ai.service;
 
+import com.ururulab.ururu.ai.config.AiRecommendationProperties;
 import com.ururulab.ururu.ai.dto.GroupBuyRecommendationRequest;
 import com.ururulab.ururu.ai.dto.GroupBuyRecommendationResponse.RecommendedGroupBuy;
 import com.ururulab.ururu.global.exception.BusinessException;
@@ -22,8 +23,12 @@ import java.util.Map;
 @Slf4j
 public class UruruAiService {
 
+    private static final String HEALTH_STATUS_NORMAL = "정상";
+    private static final String HEALTH_STATUS_ERROR_PREFIX = "정상 오류: ";
+
     @Qualifier("aiServiceRestClient")
     private final RestClient aiServiceRestClient;
+    private final AiRecommendationProperties aiProperties;
 
     public List<RecommendedGroupBuy> getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {
         try {
@@ -73,10 +78,10 @@ public class UruruAiService {
                         "allergies", request.beautyProfile().allergies() != null ? request.beautyProfile().allergies() : List.of(),
                         "interest_categories", request.beautyProfile().interestCategories() != null ? request.beautyProfile().interestCategories() : List.of()
                 ),
-                "top_k", request.topK(),
+                "top_k", request.topK() != null ? request.topK() : aiProperties.getDefaultTopK(),
                 "include_categories", request.interestCategories() != null ? request.interestCategories() : List.of(),
-                "min_similarity", request.minSimilarity(),
-                "use_price_filter", request.usePriceFilter(),
+                "min_similarity", request.minSimilarity() != null ? request.minSimilarity() : aiProperties.getDefaultMinSimilarity(),
+                "use_price_filter", request.usePriceFilter() != null ? request.usePriceFilter() : aiProperties.isDefaultUsePriceFilter(),
                 "min_price", request.minPrice() != null ? request.minPrice() : 10,
                 "max_price", request.maxPrice() != null ? request.maxPrice() : 1000000,
                 "additional_info", request.additionalInfo() != null ? request.additionalInfo() : ""
@@ -85,6 +90,8 @@ public class UruruAiService {
 
     public String checkHealth() {
         try {
+            log.debug("AI 서비스 헬스 체크 시작");
+
             final ResponseEntity<String> response = aiServiceRestClient
                     .get()
                     .uri("/health")
@@ -92,11 +99,17 @@ public class UruruAiService {
                     .toEntity(String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                return "정상";
+                log.debug("AI 서비스 헬스 체크 성공");
+                return HEALTH_STATUS_NORMAL;
             } else {
-                return "응답 오류: " + response.getStatusCode();
+                log.warn("AI 서비스 헬스 체크 실패 - Status: {}", response.getStatusCode());
+                return HEALTH_STATUS_ERROR_PREFIX + response.getStatusCode();
             }
-        } catch (Exception e) {
+        } catch (final ResourceAccessException e) {
+            log.error("AI 서비스 연결 실패", e);
+            throw new BusinessException(ErrorCode.AI_SERVICE_CONNECTION_FAILED);
+        } catch (final Exception e) {
+            log.error("AI 서비스 헬스 체크 중 예외 발생", e);
             throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
         }
     }
