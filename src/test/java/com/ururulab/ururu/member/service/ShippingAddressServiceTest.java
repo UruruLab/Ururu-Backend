@@ -171,6 +171,46 @@ public class ShippingAddressServiceTest {
     }
 
     @Test
+    @DisplayName("배송지 수정 성공")
+    void updateShippingAddress_success() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress existingAddress = ShippingAddressTestFixture.createShippingAddress(member);
+        ShippingAddressRequest updateRequest = ShippingAddressTestFixture.createUpdateRequest();
+
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.of(existingAddress));
+        given(shippingAddressRepository.save(any(ShippingAddress.class))).willReturn(existingAddress);
+
+        // When
+        ShippingAddress result = shippingAddressService.updateShippingAddress(memberId, addressId, updateRequest);
+
+        // Then
+        assertThat(result).isNotNull();
+        then(shippingAddressRepository).should().save(existingAddress);
+    }
+
+    @Test
+    @DisplayName("배송지 수정 실패 - 존재하지 않는 배송지")
+    void updateShippingAddress_addressNotFound_throwsException() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 999L;
+        ShippingAddressRequest updateRequest = ShippingAddressTestFixture.createUpdateRequest();
+
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.updateShippingAddress(memberId, addressId, updateRequest))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.SHIPPING_ADDRESS_NOT_FOUND);
+    }
+
+    @Test
     @DisplayName("배송지 삭제 성공")
     void deleteShippingAddress_success() {
         // Given
