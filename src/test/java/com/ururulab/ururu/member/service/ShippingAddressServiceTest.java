@@ -134,4 +134,38 @@ public class ShippingAddressServiceTest {
                 .isEqualTo(ErrorCode.SHIPPING_ADDRESS_NOT_FOUND);
         then(shippingAddressRepository).should(never()).save(any());
     }
+
+    @Test
+    @DisplayName("배송지 삭제 성공")
+    void deleteShippingAddress_success() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+
+        given(shippingAddressRepository.existsByIdAndMemberId(addressId, memberId)).willReturn(true);
+
+        // When
+        shippingAddressService.deleteShippingAddress(memberId, addressId);
+
+        // Then
+        then(shippingAddressRepository).should().deleteByIdAndMemberId(addressId, memberId);
+    }
+
+    @Test
+    @DisplayName("배송지 삭제 실패 - 존재하지 않는 배송지")
+    void deleteShippingAddress_AddressNotFound_ThrowsException() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 999L;
+
+        given(shippingAddressRepository.existsByIdAndMemberId(addressId, memberId)).willReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.deleteShippingAddress(memberId, addressId))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.SHIPPING_ADDRESS_NOT_FOUND);
+
+        then(shippingAddressRepository).should(never()).deleteByIdAndMemberId(any(), any());
+    }
 }
