@@ -9,8 +9,12 @@ import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
 import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyStatusUpdateRequest;
+import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
+import com.ururulab.ururu.product.domain.repository.ProductRepository;
+import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +38,14 @@ public class GroupBuyValidator {
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final ProductOptionRepository productOptionRepository;
     private final SellerRepository sellerRepository;
+    private final ProductRepository productRepository;
 
-    public void validateCritical(GroupBuyRequest request) {
+    public void validateCritical(GroupBuyRequest request, Long sellerId) {
         validateSchedule(request.endsAt());
         discountStageValidator.validateDiscountStages(request.discountStages());
         discountStageValidator.validateDiscountStageOrder(request.discountStages());
+        validateProductOwnership(sellerId, request.productId());
+        validateProductStatus(request.productId());
 
         // 상품 옵션 검증 추가
         List<Long> optionIds = request.options().stream()
@@ -210,5 +217,74 @@ public class GroupBuyValidator {
         log.info("상품 옵션 소속 검증 성공: productId={}, 검증된 옵션 수={}", productId, optionIds.size());
     }
 
+    /**
+     * 상품 소유자 검증
+     * 해당 상품이 요청한 판매자의 것인지 확인
+     * @param sellerId 요청한 판매자 ID
+     * @param productId 상품 ID
+     * @throws BusinessException 다른 판매자의 상품으로 공동구매를 생성하려는 경우
+     */
+    public void validateProductOwnership(Long sellerId, Long productId) {
+        log.debug("상품 소유자 검증 시작: sellerId={}, productId={}", sellerId, productId);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND, productId));
+
+        if (!product.getSeller().getId().equals(sellerId)) {
+            log.warn("다른 판매자의 상품으로 공동구매 생성 시도 - requestSellerId: {}, productSellerId: {}, productId: {}",
+                    sellerId, product.getSeller().getId(), productId);
+            throw new BusinessException(PRODUCT_SELLER_MISMATCH, productId);
+        }
+
+        log.info("상품 소유자 검증 성공: sellerId={}, productId={}", sellerId, productId);
+    }
+
+    /**
+     * 상품 상태 검증
+     * 공동구매에 사용할 수 있는 상품 상태인지 확인
+     * @param productId 상품 ID
+     */
+    public void validateProductStatus(Long productId) {
+        log.debug("상품 상태 검증 시작: productId={}", productId);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND, productId));
+
+        // DELETED 상품은 공동구매에 사용할 수 없음
+        if (product.getStatus() == Status.DELETED) {
+            log.warn("삭제된 상품으로 공동구매 생성 시도: productId={}", productId);
+            throw new BusinessException(PRODUCT_NOT_AVAILABLE, productId);
+        }
+
+        log.debug("상품 상태 검증 성공: productId={}, status={}", productId, product.getStatus());
+    }
+
+
+    /**
+     * SQL Injection 방지
+     * @param keyword
+     * @return
+     */
+    public boolean isValidKeyword(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return true;
+        }
+
+        // SQL Injection 방지 패턴
+        String[] dangerousPatterns = {
+                "script", "select", "insert", "update", "delete",
+                "drop", "union", "exec", "javascript:", "vbscript:"
+        };
+
+        String lowerKeyword = keyword.toLowerCase();
+        for (String pattern : dangerousPatterns) {
+            if (lowerKeyword.contains(pattern)) {
+                log.warn("위험한 키워드 감지: {}", keyword);
+                return false;
+            }
+        }
+
+        return true;
+    }
 
 }

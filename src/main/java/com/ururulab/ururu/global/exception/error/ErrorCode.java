@@ -117,6 +117,7 @@ public enum ErrorCode {
 	DISCOUNT_STAGE_QUANTITY_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY031", "할인 단계의 최소 달성 수량이 순서대로 입력되지 않았습니다."),
 	DISCOUNT_STAGE_RATE_ORDER_INVALID(HttpStatus.BAD_REQUEST, "GROUPBUY032", "할인 단계의 할인률이 순서대로 입력되지 않았습니다."),
 	GROUPBUY_DELETE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "GROUPBUY033", "DRAFT 상태인 공동구매만 삭제할 수 있습니다."),
+	INVALID_SEARCH_KEYWORD(HttpStatus.BAD_REQUEST, "GROUPBUY034", "유효하지 않은 검색어입니다."),
 
 
 	// --- 공동구매 통계 ---

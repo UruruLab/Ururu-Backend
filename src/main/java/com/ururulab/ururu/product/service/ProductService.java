@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StopWatch;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
@@ -52,9 +51,6 @@ public class ProductService {
      */
     @Transactional
     public ProductResponse createProduct(ProductRequest productRequest, List<MultipartFile> optionImages, Long sellerId) {
-        StopWatch stopWatch = new StopWatch("ProductCreation");
-        stopWatch.start("validation");
-
         log.info("Creating product for seller: {}, productName: {}", sellerId, productRequest.name());
 
         // 1. Seller 조회 추가
@@ -65,42 +61,31 @@ public class ProductService {
             productValidator.validateOptionImagePair(productRequest.productOptions(), optionImages);
         }
 
-        stopWatch.stop();
 
         // 3. 카테고리 및 태그카테고리 유효성 검증
-        stopWatch.start("categoryValidation");
         List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
         List<TagCategory> tagCategories = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
-        stopWatch.stop();
 
         // 4. 상품 저장 (Seller와 함께)
-        stopWatch.start("productSave");
         Product savedProduct = productRepository.save(productRequest.toEntity(seller)); // seller 전달
-        stopWatch.stop();
 
         // 5. 배치로 연관 데이터 저장 - 기존과 동일
-        stopWatch.start("relatedDataSave");
         productCategoryService.saveProductCategories(savedProduct, categories);
         List<ProductTag> savedProductTags = productTagService.saveProductTags(savedProduct, tagCategories);
         List<ProductOption> savedOptions = productOptionService.saveProductOptions(savedProduct, productRequest.productOptions());
         ProductNotice savedNotice = productNoticeRepository.save(productRequest.productNotice().toEntity(savedProduct));
-        stopWatch.stop();
 
         // 6. 비동기 이미지 업로드 이벤트 발행 - 기존과 동일
         if (optionImages != null && !optionImages.isEmpty()) {
-            stopWatch.start("eventPublish");
             List<ProductImageUploadRequest> uploadRequests = productOptionImageService.createImageUploadRequests(savedOptions, optionImages);
             eventPublisher.publishEvent(new ProductImageUploadEvent(savedProduct.getId(), uploadRequests));
-            stopWatch.stop();
         }
 
         // 7. 응답 생성 - 기존과 동일
-        stopWatch.start("responseCreation");
         ProductResponse response = createProductResponseOptimized(savedProduct, categories, savedOptions, savedNotice, savedProductTags);
-        stopWatch.stop();
 
-        log.info("Product created successfully with ID: {} for seller: {} | Performance: {}",
-                savedProduct.getId(), sellerId, stopWatch.prettyPrint());
+        log.info("Product created successfully with ID: {} for seller: {}",
+                savedProduct.getId(), sellerId);
 
         return response;
     }
@@ -113,10 +98,6 @@ public class ProductService {
         sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SELLER_NOT_FOUND));
 
-
-        StopWatch stopWatch = new StopWatch("ProductListRetrieval");
-        stopWatch.start("productQuery");
-
         log.info("Getting product list for seller: {} - page: {}, size: {}, sort: {}",
                 sellerId, pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
 
@@ -126,7 +107,6 @@ public class ProductService {
                 Arrays.asList(Status.ACTIVE, Status.INACTIVE),
                 pageable
         );
-        stopWatch.stop();
 
         if (productPage.isEmpty()) {
             log.info("No products found for seller: {}", sellerId);
@@ -134,7 +114,6 @@ public class ProductService {
         }
 
         // 2. 카테고리 및 태그 배치 조회 - 기존과 동일
-        stopWatch.start("categoryBatchQuery");
         List<Product> products = productPage.getContent();
         List<Long> productIds = products.stream()
                 .map(Product::getId)
@@ -142,16 +121,12 @@ public class ProductService {
 
         Map<Long, List<CategoryResponse>> categoriesMap =
                 productCategoryService.getProductCategoriesBatch(productIds);
-        stopWatch.stop();
 
-        stopWatch.start("tagBatchQuery");
         // ProductService getProducts 메서드에서
         Map<Long, List<ProductTagResponse>> tagsMap =
                 productTagService.getProductTagsBatch(productIds);
-        stopWatch.stop();
 
         // 3. 응답 생성 - 기존과 동일
-        stopWatch.start("responseCreation");
         List<ProductListResponse> content = products.stream()
                 .map(product -> {
                     List<CategoryResponse> categories = categoriesMap
@@ -165,10 +140,9 @@ public class ProductService {
                 .toList();
 
         Page<ProductListResponse> result = new PageImpl<>(content, pageable, productPage.getTotalElements());
-        stopWatch.stop();
 
-        log.info("Product list retrieved successfully for seller: {} - {} products | Performance: {}",
-                sellerId, content.size(), stopWatch.prettyPrint());
+        log.info("Product list retrieved successfully for seller: {} - {} products",
+                sellerId, content.size());
 
         return result;
     }
@@ -178,8 +152,6 @@ public class ProductService {
      */
     @Transactional(readOnly = true)
     public ProductResponse getProduct(Long productId, Long sellerId) {
-        StopWatch stopWatch = new StopWatch("validate");
-
         log.info("Getting product detail for ID: {} by seller: {}", productId, sellerId);
 
         // 1. 기본 검증
@@ -187,48 +159,37 @@ public class ProductService {
             throw new IllegalArgumentException("유효하지 않은 상품 ID입니다.");
         }
 
-        stopWatch.start("productQuery");
         // 2. 상품 조회 (해당 판매자의 상품만 + DELETED 제외)
         Product product = productRepository.findByIdAndSellerIdAndStatusIn(
                 productId,
                 sellerId,
                 Arrays.asList(Status.ACTIVE, Status.INACTIVE)
         ).orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
-        stopWatch.stop();
 
-        stopWatch.start("categoryQuery");
         // 3. 카테고리 조회
         List<CategoryResponse> categoryResponses = productCategoryRepository
                 .findByProductIdWithCategory(productId).stream()
                 .map(pc -> CategoryResponse.from(pc.getCategory()))
                 .toList();
-        stopWatch.stop();
 
-        stopWatch.start("optionQuery");
         // 4. 옵션 조회 (삭제되지 않은 것만)
         List<ProductOptionResponse> optionResponses = productOptionRepository
                 .findByProductIdAndIsDeletedFalse(productId).stream()
                 .map(ProductOptionResponse::from)
                 .toList();
-        stopWatch.stop();
 
-        stopWatch.start("noticeQuery");
         // 5. 정보고시 조회
         ProductNoticeResponse noticeResponse = productNoticeRepository
                 .findByProductId(productId)
                 .map(ProductNoticeResponse::from)
                 .orElseThrow(() -> new IllegalStateException("상품 정보고시가 존재하지 않습니다."));
-        stopWatch.stop();
 
-        stopWatch.start("tagQuery");
         // 6. 태그 조회
         List<ProductTagResponse> tagResponses = productTagRepository
                 .findByProductIdsWithTagCategory(Collections.singletonList(productId)).stream()
                 .map(ProductTagResponse::from)
                 .toList();
-        stopWatch.stop();
 
-        stopWatch.start("responseCreation");
 
         // 7. 응답 생성
         ProductResponse response = ProductResponse.from(
@@ -238,10 +199,9 @@ public class ProductService {
                 noticeResponse,
                 tagResponses
         );
-        stopWatch.stop();
 
-        log.info("Product detail retrieved for productId: {}, sellerId: {} | Performance: {}",
-                productId, sellerId, stopWatch.prettyPrint());
+        log.info("Product detail retrieved for productId: {}, sellerId: {}",
+                productId, sellerId);
         return response;
     }
 
@@ -275,8 +235,6 @@ public class ProductService {
     @Transactional
     public ProductResponse updateProduct(Long productId, ProductRequest productRequest,
                                          List<MultipartFile> optionImages, Long sellerId) {
-        StopWatch stopWatch = new StopWatch("ProductUpdate");
-        stopWatch.start("validation");
 
         log.info("Updating product ID: {} for seller: {}", productId, sellerId);
 
@@ -295,16 +253,12 @@ public class ProductService {
             productValidator.validateOptionImagePair(productRequest.productOptions(), optionImages);
         }
 
-        stopWatch.stop();
 
         // 3. 카테고리 및 태그카테고리 유효성 검증 (기존과 동일)
-        stopWatch.start("categoryValidation");
         List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
         List<TagCategory> tagCategories = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
-        stopWatch.stop();
 
         // 4. 상품 기본 정보 업데이트 (변경된 경우만)
-        stopWatch.start("basicInfoUpdate");
         boolean basicInfoChanged = updateProductBasicInfo(existingProduct, productRequest);
         if (basicInfoChanged) {
             productRepository.save(existingProduct);
@@ -312,34 +266,23 @@ public class ProductService {
         } else {
             log.info("Product basic info unchanged for ID: {}", productId);
         }
-        stopWatch.stop();
 
         // 5. 카테고리 업데이트 (변경된 것만)
-        stopWatch.start("categoryUpdate");
         List<CategoryResponse> categoryResponses = productCategoryService.updateCategories(existingProduct, categories);
-        stopWatch.stop();
 
         // 6. 태그 업데이트 (변경된 것만)
-        stopWatch.start("tagUpdate");
         List<ProductTagResponse> tagResponses = productTagService.updateTags(existingProduct, tagCategories);
-        stopWatch.stop();
 
         // 7. 정보고시 업데이트 (변경된 필드만)
-        stopWatch.start("noticeUpdate");
         ProductNoticeResponse noticeResponse = updateNoticeFieldsIfChanged(existingProduct, productRequest.productNotice());
-        stopWatch.stop();
 
         // 8. 옵션 업데이트 (변경된 것만 + 이미지 해시 비교)
-        stopWatch.start("optionUpdate");
         List<ProductOptionResponse> optionResponses = productOptionService.updateOptions(existingProduct, productRequest.productOptions(), optionImages);
-        stopWatch.stop();
 
         // 9. 응답 생성 (기존과 동일)
-        stopWatch.start("responseCreation");
         ProductResponse response = ProductResponse.from(existingProduct, categoryResponses, optionResponses, noticeResponse, tagResponses);
-        stopWatch.stop();
 
-        log.info("Product update completed for ID: {} | Performance: {}", productId, stopWatch.prettyPrint());
+        log.info("Product update completed for ID: {}", productId);
         return response;
     }
 

@@ -46,7 +46,7 @@ public class GroupBuyService {
         Product product = productRepository.findById(request.productId())
                 .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
 
-        groupBuyValidator.validateCritical(request);
+        groupBuyValidator.validateCritical(request, sellerId);
 
         if (product.getStatus() == Status.INACTIVE) {
             product.updateStatus(Status.ACTIVE);
