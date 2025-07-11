@@ -40,18 +40,18 @@ class GroupBuyRecommendationServiceMockTest {
     void shouldReturnCachedResultWhenCacheHit() {
         // Given
         final Long memberId = 1L;
-        final GroupBuyRecommendationRequest request = createMockRequest(memberId);
+        final GroupBuyRecommendationRequest request = createMockRequest();
         final GroupBuyRecommendationResponse cachedResponse = createMockResponse();
 
         given(cacheService.getCachedRecommendation(memberId)).willReturn(cachedResponse);
 
         // When
-        final GroupBuyRecommendationResponse result = recommendationService.getRecommendations(request);
+        final GroupBuyRecommendationResponse result = recommendationService.getRecommendations(memberId, request);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.cacheSource()).isEqualTo("CACHE");
-        then(aiService).should(never()).getRecommendations(any());
+        then(aiService).should(never()).getRecommendations(any(Long.class), any(GroupBuyRecommendationRequest.class));
         then(cacheService).should(never()).tryAcquireProcessingLock(any());
     }
 
@@ -60,15 +60,15 @@ class GroupBuyRecommendationServiceMockTest {
     void shouldCallAiServiceAndCacheResultWhenCacheMiss() {
         // Given
         final Long memberId = 1L;
-        final GroupBuyRecommendationRequest request = createMockRequest(memberId);
+        final GroupBuyRecommendationRequest request = createMockRequest();
         final List<RecommendedGroupBuy> mockRecommendations = createMockRecommendations();
 
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
         given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(true);
-        given(aiService.getRecommendations(request)).willReturn(mockRecommendations);
+        given(aiService.getRecommendations(memberId, request)).willReturn(mockRecommendations);
 
         // When
-        final GroupBuyRecommendationResponse result = recommendationService.getRecommendations(request);
+        final GroupBuyRecommendationResponse result = recommendationService.getRecommendations(memberId, request);
 
         // Then
         assertThat(result).isNotNull();
@@ -83,18 +83,18 @@ class GroupBuyRecommendationServiceMockTest {
     void shouldThrowExceptionWhenProcessingLockFailed() {
         // Given
         final Long memberId = 1L;
-        final GroupBuyRecommendationRequest request = createMockRequest(memberId);
+        final GroupBuyRecommendationRequest request = createMockRequest();
 
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
         given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(false);
 
         // When & Then
-        assertThatThrownBy(() -> recommendationService.getRecommendations(request))
+        assertThatThrownBy(() -> recommendationService.getRecommendations(memberId, request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.ORDER_PROCESSING_IN_PROGRESS);
+                .isEqualTo(ErrorCode.AI_RECOMMENDATION_PROCESSING_IN_PROGRESS);
 
-        then(aiService).should(never()).getRecommendations(any());
+        then(aiService).should(never()).getRecommendations(any(Long.class), any(GroupBuyRecommendationRequest.class));
     }
 
     @Test
@@ -102,14 +102,14 @@ class GroupBuyRecommendationServiceMockTest {
     void shouldThrowExceptionWhenAiServiceReturnsEmptyResult() {
         // Given
         final Long memberId = 1L;
-        final GroupBuyRecommendationRequest request = createMockRequest(memberId);
+        final GroupBuyRecommendationRequest request = createMockRequest();
 
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
         given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(true);
-        given(aiService.getRecommendations(request)).willReturn(List.of());
+        given(aiService.getRecommendations(memberId, request)).willReturn(List.of());
 
         // When & Then
-        assertThatThrownBy(() -> recommendationService.getRecommendations(request))
+        assertThatThrownBy(() -> recommendationService.getRecommendations(memberId, request))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.AI_NO_RECOMMENDATIONS_FOUND);
@@ -117,15 +117,28 @@ class GroupBuyRecommendationServiceMockTest {
         then(cacheService).should().releaseProcessingLock(memberId);
     }
 
-    private GroupBuyRecommendationRequest createMockRequest(final Long memberId) {
-        return GroupBuyRecommendationRequest.ofBeautyProfile(
-                memberId,
-                "건성",
-                List.of("수분부족", "각질"),
-                List.of("스킨케어"),
+    private GroupBuyRecommendationRequest createMockRequest() {
+        final GroupBuyRecommendationRequest.BeautyProfile beautyProfile = 
+                new GroupBuyRecommendationRequest.BeautyProfile(
+                        "건성",
+                        "쿨톤", 
+                        List.of("수분부족", "각질"),
+                        false,
+                        List.of(),
+                        List.of("스킨케어")
+                );
+        
+        return new GroupBuyRecommendationRequest(
+                beautyProfile,
+                10,
                 "20대",
                 "10000-30000원",
-                10
+                10000,
+                30000,
+                "수분이 부족해요",
+                List.of("스킨케어"),
+                0.3,
+                true
         );
     }
 
