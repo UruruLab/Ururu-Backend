@@ -129,6 +129,7 @@ public class GroupBuyDetailImageService {
                 .orElseThrow(() -> new BusinessException(GROUPBUY_NOT_FOUND, groupBuyId));
 
         List<GroupBuyImage> detailImages = new ArrayList<>();
+        List<String> failedUploads = new ArrayList<>();
 
         for (GroupBuyImageUploadRequest imageRequest : images) {
             File tempFile = new File(imageRequest.tempFilePath());
@@ -159,7 +160,8 @@ public class GroupBuyDetailImageService {
             } catch (Exception e) {
                 log.error("Failed to upload detail image for groupBuy ID: {} (order: {})",
                         groupBuyId, imageRequest.displayOrder(), e);
-                // 개별 실패는 전체를 중단시키지 않음 (계속 처리하지만 실패한 이미지는 다시 재시도)
+                failedUploads.add(String.format("이미지 %d번 업로드 실패: %s",
+                        imageRequest.displayOrder(), e.getMessage()));
             } finally {
                 // 임시 파일 정리
                 cleanupTempFile(tempFile);
@@ -169,6 +171,9 @@ public class GroupBuyDetailImageService {
         // DB에 저장
         groupBuyDetailImageRepository.saveAll(detailImages);
         log.info("Saved {} detail images to DB for groupBuy: {}", detailImages.size(), groupBuyId);
+        if (!failedUploads.isEmpty()) {
+            log.warn("Failed to upload {} images for groupBuy {}: {}", failedUploads.size(), groupBuyId, failedUploads);
+        }
     }
 
     /**
