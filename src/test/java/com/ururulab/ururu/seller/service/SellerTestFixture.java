@@ -1,5 +1,6 @@
 package com.ururulab.ururu.seller.service;
 
+import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.dto.request.SellerSignupRequest;
 
@@ -311,11 +312,12 @@ public class SellerTestFixture {
      */
     public static void setSellerTimestamps(Seller seller, Instant createdAt, Instant updatedAt) {
         try {
-            Field createdAtField = Seller.class.getSuperclass().getDeclaredField("createdAt");
+            // BaseEntity를 명시적으로 참조하여 안정성 향상
+            Field createdAtField = BaseEntity.class.getDeclaredField("createdAt");
             createdAtField.setAccessible(true);
             createdAtField.set(seller, createdAt);
 
-            Field updatedAtField = Seller.class.getSuperclass().getDeclaredField("updatedAt");
+            Field updatedAtField = BaseEntity.class.getDeclaredField("updatedAt");
             updatedAtField.setAccessible(true);
             updatedAtField.set(seller, updatedAt);
         } catch (Exception e) {
@@ -333,6 +335,20 @@ public class SellerTestFixture {
             isDeletedField.set(seller, isDeleted);
         } catch (Exception e) {
             throw new RuntimeException("Failed to set seller deleted status for test", e);
+        }
+    }
+
+    /**
+     * BaseEntity의 공통 필드를 설정하는 헬퍼 메서드
+     * 향후 BaseEntity 구조 변경 시 이 메서드만 수정하면 됨
+     */
+    public static void setBaseEntityField(Object entity, String fieldName, Object value) {
+        try {
+            Field field = BaseEntity.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(entity, value);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set BaseEntity field: " + fieldName, e);
         }
     }
 } 
