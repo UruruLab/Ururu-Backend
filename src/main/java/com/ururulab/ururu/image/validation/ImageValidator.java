@@ -153,15 +153,36 @@ public class ImageValidator {
      * 크기 문자열을 바이트로 변환 (예: "8MB" -> 8388608)
      */
     private long parseSize(String sizeStr) {
-        sizeStr = sizeStr.toUpperCase().trim();
-        if (sizeStr.endsWith("MB")) {
-            return Long.parseLong(sizeStr.replace("MB", "")) * 1024 * 1024;
-        } else if (sizeStr.endsWith("KB")) {
-            return Long.parseLong(sizeStr.replace("KB", "")) * 1024;
-        } else if (sizeStr.endsWith("GB")) {
-            return Long.parseLong(sizeStr.replace("GB", "")) * 1024 * 1024 * 1024;
-        } else {
-            return Long.parseLong(sizeStr); // 바이트 단위
+        try{
+            sizeStr = sizeStr.toUpperCase().trim();
+            if (sizeStr.endsWith("MB")) {
+                double value = Double.parseDouble(sizeStr.replace("MB", "").trim());
+                if (value < 0) {
+                    throw new IllegalArgumentException("크기는 음수일 수 없습니다: " + sizeStr);
+                    }
+                return (long) (value * 1024 * 1024);
+            } else if (sizeStr.endsWith("KB")) {
+                double value = Double.parseDouble(sizeStr.replace("KB", "").trim());
+                if (value < 0) {
+                    throw new IllegalArgumentException("크기는 음수일 수 없습니다: " + sizeStr);
+                    }
+                return (long) (value * 1024);
+            } else if (sizeStr.endsWith("GB")) {
+                double value = Double.parseDouble(sizeStr.replace("GB", "").trim());
+                if (value < 0) {
+                    throw new IllegalArgumentException("크기는 음수일 수 없습니다: " + sizeStr);
+                }
+                return (long) (value * 1024 * 1024 * 1024);
+            } else {
+                long value = Long.parseLong(sizeStr);
+                if (value < 0) {
+                    throw new IllegalArgumentException("크기는 음수일 수 없습니다: " + sizeStr);
+                    }
+                return value;
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("잘못된 크기 형식: " + sizeStr, e);
         }
+
     }
 }
