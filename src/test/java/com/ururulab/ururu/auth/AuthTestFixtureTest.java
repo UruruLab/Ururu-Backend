@@ -5,7 +5,6 @@ import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.request.SellerLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
-import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.TokenValidator;
 import com.ururulab.ururu.auth.service.UserInfoService;
