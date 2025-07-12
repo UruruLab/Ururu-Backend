@@ -249,7 +249,17 @@ public final class AuthTestHelper {
     ) {
         assertThat(socialId).isNotNull().isNotEmpty();
         assertThat(provider).isNotNull().isNotEmpty();
-        // email, nickname, profileImage는 null일 수 있음
+        
+        // Optional 필드들도 null이 아닌 경우 빈 문자열이 아님을 확인
+        if (email != null) {
+            assertThat(email).isNotEmpty().contains("@");
+        }
+        if (nickname != null) {
+            assertThat(nickname).isNotEmpty();
+        }
+        if (profileImage != null) {
+            assertThat(profileImage).isNotEmpty();
+        }
     }
 
     /**
