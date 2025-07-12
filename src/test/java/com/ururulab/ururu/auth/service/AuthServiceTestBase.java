@@ -315,7 +315,7 @@ public abstract class AuthServiceTestBase {
     /**
      * Refresh Token이 저장되었는지 검증합니다.
      */
-    protected void thenRefreshTokenShouldBeStored(String userType, Long userId, String refreshToken) {
+    protected void thenRefreshTokenShouldBeStored(Long userId, String userType, String refreshToken) {
         verify(refreshTokenStorage).storeRefreshToken(userId, userType, refreshToken);
     }
 
