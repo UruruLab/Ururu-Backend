@@ -9,7 +9,7 @@ import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import com.ururulab.ururu.member.dto.request.MemberPreferenceRequest;
 
 import java.lang.reflect.Field;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,7 +22,7 @@ public class MemberPreferenceTestFixture {
                 SocialProvider.GOOGLE,
                 "social123",
                 Gender.FEMALE,
-                Instant.parse("1990-01-01T00:00:00Z"),
+                LocalDate.parse("1990-01-01"),
                 "01012345678",
                 "profile.jpg",
                 Role.NORMAL
