@@ -72,7 +72,6 @@ public final class AuthTestFixture {
      * 만료된 Access Token 생성 (과거 시간으로 설정)
      */
     public static String createExpiredAccessToken(Long userId, String email, UserRole role, UserType userType) {
-        JwtTokenProvider provider = createTestJwtTokenProvider();
         // 만료된 토큰을 생성하기 위해 임시로 만료 시간을 0으로 설정
         JwtProperties expiredProperties = createTestJwtProperties();
         expiredProperties.setAccessTokenExpiry(-3600L); // 과거 시간
