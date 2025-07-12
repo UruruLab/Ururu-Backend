@@ -110,6 +110,50 @@ public class ShippingAddressServiceTest {
     }
 
     @Test
+    @DisplayName("배송지 생성 실패 - 최대 개수 제한 (5개) 초과")
+    void createShippingAddress_exceedMaxLimit_throwsException() {
+        // Given
+        Long memberId = 1L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddressRequest request = ShippingAddressTestFixture.createValidRequest();
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.countByMemberId(memberId)).willReturn(5); // 이미 5개 존재
+
+        // When & Then
+        assertThatThrownBy(() -> shippingAddressService.createShippingAddress(memberId, request))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.SHIPPING_ADDRESS_LIMIT_EXCEEDED);
+
+        then(shippingAddressRepository).should(never()).save(any());
+        then(shippingAddressRepository).should(never()).findByMemberAndIsDefaultTrue(any());
+    }
+
+    @Test
+    @DisplayName("배송지 생성 성공 - 최대 개수 제한 경계값 (4개에서 5개로)")
+    void createShippingAddress_atMaxLimitBoundary_success() {
+        // Given
+        Long memberId = 1L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddressRequest request = ShippingAddressTestFixture.createValidRequest();
+        ShippingAddress savedAddress = ShippingAddressTestFixture.createShippingAddress(member);
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.countByMemberId(memberId)).willReturn(4); // 4개 존재 (5개 미만)
+        given(shippingAddressRepository.save(any(ShippingAddress.class))).willReturn(savedAddress);
+
+        // When
+        ShippingAddress result = shippingAddressService.createShippingAddress(memberId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getLabel()).isEqualTo("집");
+
+        then(shippingAddressRepository).should().save(any(ShippingAddress.class));
+    }
+
+    @Test
     @DisplayName("배송지 목록 조회 성공")
     void getShippingAddresses_success() {
         // Given
