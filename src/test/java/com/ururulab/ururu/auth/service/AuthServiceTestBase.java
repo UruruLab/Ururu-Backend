@@ -107,7 +107,7 @@ public abstract class AuthServiceTestBase {
      */
     protected void givenDeletedSellerExists(Long sellerId, String email, String name) {
         Seller seller = AuthTestFixture.createDeletedSeller(sellerId, email, name);
-        given(sellerRepository.findActiveSeller(sellerId)).willReturn(Optional.of(seller));
+        given(sellerRepository.findActiveSeller(sellerId)).willReturn(Optional.empty());
         given(sellerRepository.findByEmail(email)).willReturn(Optional.of(seller));
     }
 
