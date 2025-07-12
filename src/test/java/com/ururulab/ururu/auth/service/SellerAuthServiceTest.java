@@ -1,6 +1,5 @@
 package com.ururulab.ururu.auth.service;
 
-import com.ururulab.ururu.auth.AuthTestHelper;
 import com.ururulab.ururu.auth.constants.UserRole;
 import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.request.SellerLoginRequest;

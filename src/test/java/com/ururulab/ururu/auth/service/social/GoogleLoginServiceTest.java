@@ -262,12 +262,15 @@ class GoogleLoginServiceTest {
 
         @Test
         @DisplayName("정상적으로 사용자 정보를 획득한다")
+        @SuppressWarnings("unchecked")
         void getMemberInfo_success() throws JsonProcessingException {
             // given
             String accessToken = "test-access-token";
             String memberInfoUri = "https://www.googleapis.com/oauth2/v2/userinfo";
             
+            @SuppressWarnings("rawtypes")
             RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+            @SuppressWarnings("rawtypes")
             RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
             
@@ -328,6 +331,7 @@ class GoogleLoginServiceTest {
 
         @Test
         @DisplayName("정상적으로 소셜 로그인을 처리한다")
+        @SuppressWarnings("unchecked")
         void processLogin_success() throws JsonProcessingException {
             // given
             String authCode = "test-auth-code";
@@ -339,7 +343,9 @@ class GoogleLoginServiceTest {
             RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
             RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
             
+            @SuppressWarnings("rawtypes")
             RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+            @SuppressWarnings("rawtypes")
             RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
             RestClient.ResponseSpec memberInfoResponseSpec = mock(RestClient.ResponseSpec.class);
             

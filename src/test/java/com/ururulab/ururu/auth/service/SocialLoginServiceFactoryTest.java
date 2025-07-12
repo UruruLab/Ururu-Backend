@@ -54,8 +54,8 @@ class SocialLoginServiceFactoryTest {
     @Test
     @DisplayName("미지원 provider로 예외 발생")
     void getService_unsupportedProvider_throws() {
-        SocialProvider unsupported = SocialProvider.valueOf("GOOGLE").equals(SocialProvider.KAKAO) ? SocialProvider.GOOGLE : SocialProvider.KAKAO;
-        // 임의로 없는 provider를 흉내내기 위해 임시로 factory를 하나만 넣고 테스트
+        when(googleLoginService.getProvider()).thenReturn(SocialProvider.GOOGLE);
+        when(kakaoLoginService.getProvider()).thenReturn(SocialProvider.KAKAO);
         SocialLoginServiceFactory singleFactory = new SocialLoginServiceFactory(List.of(googleLoginService));
         assertThatThrownBy(() -> singleFactory.getService(SocialProvider.KAKAO))
                 .isInstanceOf(BusinessException.class)

@@ -1,12 +1,9 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.AuthTestFixture;
-import com.ururulab.ururu.auth.AuthTestHelper;
 import com.ururulab.ururu.auth.constants.UserRole;
 import com.ururulab.ururu.auth.constants.UserType;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.storage.TokenBlacklistStorage;
-import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,8 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 /**

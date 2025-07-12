@@ -3,13 +3,11 @@ package com.ururulab.ururu.auth;
 import com.ururulab.ururu.auth.constants.UserRole;
 import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
-import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
 import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.TokenValidator;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
-import com.ururulab.ururu.auth.service.SecurityLoggingService;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.service.MemberService;
@@ -21,7 +19,6 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -152,12 +149,15 @@ public final class AuthTestHelper {
     /**
      * RestClient 체인 모킹을 위한 헬퍼 메서드
      */
+    @SuppressWarnings("unchecked")
     public static void setupRestClientChain(RestClient restClient, String tokenUri, String memberInfoUri) {
         RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
         RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
         RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
         
+        @SuppressWarnings("rawtypes")
         RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+        @SuppressWarnings("rawtypes")
         RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
         RestClient.ResponseSpec memberInfoResponseSpec = mock(RestClient.ResponseSpec.class);
         

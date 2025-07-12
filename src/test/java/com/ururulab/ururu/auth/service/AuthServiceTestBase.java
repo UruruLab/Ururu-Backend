@@ -1,8 +1,6 @@
 package com.ururulab.ururu.auth.service;
 
 import com.ururulab.ururu.auth.AuthTestFixture;
-import com.ururulab.ururu.auth.constants.UserRole;
-import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.jwt.JwtProperties;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.storage.RefreshTokenStorage;
@@ -23,7 +21,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;

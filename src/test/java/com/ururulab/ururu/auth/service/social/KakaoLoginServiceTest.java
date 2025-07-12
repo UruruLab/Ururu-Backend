@@ -54,6 +54,7 @@ class KakaoLoginServiceTest {
     private KakaoLoginService kakaoLoginService;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
         MockitoAnnotations.openMocks(this);
         // RestClient 체이닝 모킹
