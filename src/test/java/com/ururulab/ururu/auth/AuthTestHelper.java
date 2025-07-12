@@ -175,14 +175,6 @@ public final class AuthTestHelper {
         when(memberInfoResponseSpec.onStatus(any(), any())).thenReturn(memberInfoResponseSpec);
     }
 
-    /**
-     * Redis Mock 설정을 합니다.
-     */
-    public static void setupRedisMock(StringRedisTemplate redisTemplate, String key, String value) {
-        // Redis Mock 설정은 각 테스트에서 직접 설정하는 것을 권장합니다.
-        // 예시: given(redisTemplate.opsForValue().get(key)).willReturn(value);
-    }
-
     // ==================== 통합 검증 헬퍼 ====================
 
     /**
