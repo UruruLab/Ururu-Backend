@@ -1,19 +1,20 @@
 package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
-import com.ururulab.ururu.member.dto.request.MemberRequest;
+import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
 import com.ururulab.ururu.order.domain.repository.CartItemRepository;
 import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -133,8 +134,8 @@ public class MemberServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> memberService.getMyProfile(invalidId))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("회원을 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.MEMBER_NOT_EXIST.getMessage());
     }
 
     @Test
@@ -143,7 +144,7 @@ public class MemberServiceTest {
         // Given
         Long memberId = 1L;
         Member existingMember = MemberTestFixture.createMember(memberId, "oldnick", "test@example.com");
-        MemberRequest updateRequest = MemberTestFixture.createMemberUpdateRequest("newnick", "01099999999");
+        MemberUpdateRequest updateRequest = MemberTestFixture.createMemberUpdateRequest("newnick", "01099999999");
 
         given(memberRepository.findById(memberId)).willReturn(Optional.of(existingMember));
         given(memberRepository.isNicknameAvailable("newnick")).willReturn(true);
@@ -165,15 +166,15 @@ public class MemberServiceTest {
         // Given
         Long memberId = 1L;
         Member existingMember = MemberTestFixture.createMember(memberId, "oldnick", "test@example.com");
-        MemberRequest updateRequest = MemberTestFixture.createMemberUpdateRequest("duplicateNick", "01099999999");
+        MemberUpdateRequest updateRequest = MemberTestFixture.createMemberUpdateRequest("duplicateNick", "01099999999");
 
         given(memberRepository.findById(memberId)).willReturn(Optional.of(existingMember));
         given(memberRepository.isNicknameAvailable("duplicateNick")).willReturn(false);
 
         // When & Then
         assertThatThrownBy(() -> memberService.updateMyProfile(memberId, updateRequest))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이미 사용 중인 닉네임입니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.DUPLICATE_NICKNAME.getMessage());
     }
 
     // TODO: uploadProfileImage(), deleteProfileImage Test code 추후 작성
@@ -283,8 +284,8 @@ public class MemberServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> memberService.deleteMember(memberId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("진행 중인 주문이 2건 있어 탈퇴할 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST.formatMessage(2));
 
         then(shippingAddressRepository).should(never()).deleteByMemberId(any());
         then(beautyProfileRepository).should(never()).deleteByMemberId(any());

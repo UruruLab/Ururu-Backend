@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ururulab.ururu.member.domain.entity.Member;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 public record MemberGetResponse(
         Long id,
         String email,
         String nickname,
         String gender,
-        Instant birth,
+        LocalDate birth,
         String phone,
         @JsonProperty("profile_image") String profileImage,
         @JsonProperty("social_provider") String socialProvider,

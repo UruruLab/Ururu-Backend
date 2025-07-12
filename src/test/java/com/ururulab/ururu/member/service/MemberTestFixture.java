@@ -5,10 +5,10 @@ import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
-import com.ururulab.ururu.member.dto.request.MemberRequest;
+import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 
 import java.lang.reflect.Field;
-import java.time.Instant;
+import java.time.LocalDate;
 
 public class MemberTestFixture {
 
@@ -29,7 +29,7 @@ public class MemberTestFixture {
                 SocialProvider.GOOGLE,
                 "social123",
                 Gender.FEMALE,
-                Instant.parse("1990-01-01T00:00:00Z"),
+                LocalDate.parse("1990-01-01"),
                 "01012345678",
                 null,
                 Role.NORMAL
@@ -38,19 +38,14 @@ public class MemberTestFixture {
         return member;
     }
 
-    public static MemberRequest createMemberUpdateRequest(String nickname, String phone) {
-        return new MemberRequest(
+    public static MemberUpdateRequest createMemberUpdateRequest(String nickname, String phone) {
+        return new MemberUpdateRequest(
                 nickname,
-                "updated@example.com",
-                SocialProvider.GOOGLE,
-                "social123",
                 "MALE",
-                Instant.parse("1985-01-01T00:00:00Z"),
-                phone,
-                null
+                LocalDate.parse("1985-01-01"),
+                phone
         );
     }
-
 
 
     private static void setMemberId(Member member, Long id){

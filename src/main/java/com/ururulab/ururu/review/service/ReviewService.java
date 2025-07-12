@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.IMAGE_CONVERSION_FAILED;
@@ -54,7 +54,7 @@ public class ReviewService {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			Instant.now(),
+			LocalDate.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL
