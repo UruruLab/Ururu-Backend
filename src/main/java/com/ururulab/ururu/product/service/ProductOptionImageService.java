@@ -42,6 +42,9 @@ public class ProductOptionImageService {
             return List.of();
         }
 
+        // 이미지 업로드 시 용량 검증
+        imageValidator.validateFileSizes(optionImages);
+
         // 이미지 검증 (이 서비스의 핵심 책임)
         imageValidator.validateAllImages(optionImages);
 
