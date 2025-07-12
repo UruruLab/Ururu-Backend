@@ -224,7 +224,7 @@ public class ShippingAddressServiceTest {
 
     @Test
     @DisplayName("배송지 수정 성공 - 기본 배송지로 변경")
-    void updateShippingAddress_SetAsDefault_Success() {
+    void updateShippingAddress_setAsDefault_success() {
         // Given
         Long memberId = 1L;
         Long addressId = 100L;
@@ -246,15 +246,14 @@ public class ShippingAddressServiceTest {
         // Then
         assertThat(result).isNotNull();
 
-        // 기존 기본 배송지 해제와 새 배송지 저장이 호출되었는지 확인
-        then(shippingAddressRepository).should().save(existingDefault); // 기존 기본 배송지 해제
-        then(shippingAddressRepository).should().save(targetAddress); // 수정된 배송지 저장
-        then(memberRepository).should().findById(memberId); // 회원 조회 확인
+        then(shippingAddressRepository).should().save(existingDefault);
+        then(shippingAddressRepository).should().save(targetAddress);
+        then(memberRepository).should().findById(memberId);
     }
 
     @Test
     @DisplayName("배송지 수정 성공 - 이미 기본 배송지인 경우 기존 기본 배송지 해제 로직 실행 안함")
-    void updateShippingAddress_AlreadyDefault_NoUnsetLogic() {
+    void updateShippingAddress_alreadyDefault_noUnsetLogic() {
         // Given
         Long memberId = 1L;
         Long addressId = 100L;
@@ -271,11 +270,9 @@ public class ShippingAddressServiceTest {
 
         // Then
         assertThat(result).isNotNull();
-
-        // 이미 기본 배송지이므로 회원 조회와 기존 기본 배송지 해제 로직이 실행되지 않음
         then(memberRepository).should(never()).findById(memberId);
         then(shippingAddressRepository).should(never()).findByMemberAndIsDefaultTrue(any());
-        then(shippingAddressRepository).should().save(alreadyDefaultAddress); // 수정된 배송지만 저장
+        then(shippingAddressRepository).should().save(alreadyDefaultAddress);
     }
 
     @Test
@@ -320,6 +317,33 @@ public class ShippingAddressServiceTest {
         assertThat(result).isNotNull();
         then(shippingAddressRepository).should().save(existingDefault);
         then(shippingAddressRepository).should().save(targetAddress);
+    }
+
+    @Test
+    @DisplayName("기본 배송지 설정 성공 - 기존 기본 배송지가 없는 경우")
+    void setDefaultShippingAddress_noExistingDefault_success() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress targetAddress = ShippingAddressTestFixture.createShippingAddress(member);
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.of(targetAddress));
+        given(shippingAddressRepository.findByMemberAndIsDefaultTrue(member))
+                .willReturn(Optional.empty()); // 기존 기본 배송지 없음
+        given(shippingAddressRepository.save(any(ShippingAddress.class))).willReturn(targetAddress);
+
+        // When
+        ShippingAddress result = shippingAddressService.setDefaultShippingAddress(memberId, addressId);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        // 기존 기본 배송지가 없으므로 해제 로직은 실행되지 않고, 새 기본 배송지만 설정
+        then(shippingAddressRepository).should().findByMemberAndIsDefaultTrue(member);
+        then(shippingAddressRepository).should().save(targetAddress); // 새 기본 배송지 설정
     }
 
     @Test
