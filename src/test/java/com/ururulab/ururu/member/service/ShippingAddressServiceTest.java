@@ -60,6 +60,36 @@ public class ShippingAddressServiceTest {
     }
 
     @Test
+    @DisplayName("배송지 생성 성공 - 기본 배송지로 생성 시 기존 기본 배송지 해제")
+    void createShippingAddress_SetAsDefault_UnsetExistingDefault() {
+        // Given
+        Long memberId = 1L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress existingDefault = ShippingAddressTestFixture.createDefaultShippingAddress(member);
+        ShippingAddressRequest request = ShippingAddressTestFixture.createDefaultRequest();
+        ShippingAddress newDefaultAddress = ShippingAddressTestFixture.createNewDefaultShippingAddress(member);
+
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.countByMemberId(memberId)).willReturn(1);
+        given(shippingAddressRepository.findByMemberAndIsDefaultTrue(member))
+                .willReturn(Optional.of(existingDefault));
+        given(shippingAddressRepository.save(any(ShippingAddress.class)))
+                .willReturn(existingDefault)  // 기존 기본 배송지 해제
+                .willReturn(newDefaultAddress);  // 새 기본 배송지 저장
+
+        // When
+        ShippingAddress result = shippingAddressService.createShippingAddress(memberId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.isDefault()).isTrue();
+
+        // 기존 기본 배송지가 해제되었는지 확인
+        then(shippingAddressRepository).should(times(2)).save(any(ShippingAddress.class));
+        then(shippingAddressRepository).should().findByMemberAndIsDefaultTrue(member);
+    }
+
+    @Test
     @DisplayName("배송지 생성 실패 - 배송지 개수 제한 초과")
     void createShippingAddress_limitExceeded_throwsException() {
         // Given

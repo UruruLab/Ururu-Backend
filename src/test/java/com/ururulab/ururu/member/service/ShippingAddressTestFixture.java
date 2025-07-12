@@ -63,17 +63,6 @@ public class ShippingAddressTestFixture {
         );
     }
 
-    public static ShippingAddressRequest createCompanyRequest() {
-        return new ShippingAddressRequest(
-                "회사",
-                "0212345678",
-                "67890",
-                "서울시 종로구 종로 789",
-                "10층",
-                false
-        );
-    }
-
     public static ShippingAddress createShippingAddress(Member member) {
         ShippingAddress address = ShippingAddress.of(
                 member,
@@ -102,15 +91,15 @@ public class ShippingAddressTestFixture {
         return address;
     }
 
-    public static ShippingAddress createCompanyShippingAddress(Member member) {
+    public static ShippingAddress createNewDefaultShippingAddress(Member member) {
         ShippingAddress address = ShippingAddress.of(
                 member,
-                "회사",
-                "0212345678",
-                "67890",
-                "서울시 종로구 종로 789",
-                "10층",
-                false
+                "새 기본 배송지",
+                "01012345678",
+                "12345",
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                true
         );
         setAddressId(address, 2L);
         return address;
