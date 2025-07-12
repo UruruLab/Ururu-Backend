@@ -265,8 +265,7 @@ public final class AuthTestHelper {
     /**
      * JWT 토큰이 올바른지 검증합니다.
      */
-    public static void verifyJwtToken(String token, Long expectedUserId, String expectedEmail, UserRole expectedRole, UserType expectedUserType) {
-        JwtTokenProvider provider = AuthTestFixture.createTestJwtTokenProvider();
+    public static void verifyJwtToken(JwtTokenProvider provider, String token, Long expectedUserId, String expectedEmail, UserRole expectedRole, UserType expectedUserType) {
         
         assertThat(token).isNotNull().isNotEmpty();
         assertThat(provider.validateToken(token)).isTrue();
@@ -279,8 +278,7 @@ public final class AuthTestHelper {
     /**
      * Refresh Token이 올바른지 검증합니다.
      */
-    public static void verifyRefreshToken(String token, Long expectedUserId, UserType expectedUserType) {
-        JwtTokenProvider provider = AuthTestFixture.createTestJwtTokenProvider();
+    public static void verifyRefreshToken(JwtTokenProvider provider, String token, Long expectedUserId, UserType expectedUserType) {
         
         assertThat(token).isNotNull().isNotEmpty();
         assertThat(provider.validateToken(token)).isTrue();
