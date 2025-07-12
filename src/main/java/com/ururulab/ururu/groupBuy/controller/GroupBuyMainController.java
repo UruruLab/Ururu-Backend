@@ -4,7 +4,6 @@ import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.groupBuy.dto.response.GroupBuyListResponse;
 import com.ururulab.ururu.groupBuy.service.GroupBuyMainService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/groupbuy")
+@RequestMapping("/api/groupbuys")
 @RequiredArgsConstructor
 @Slf4j
 public class GroupBuyMainController {

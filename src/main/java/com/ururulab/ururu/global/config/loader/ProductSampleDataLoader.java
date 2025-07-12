@@ -18,8 +18,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,7 +40,6 @@ public class ProductSampleDataLoader implements CommandLineRunner{
     private final CategoryRepository categoryRepository;
     private final SellerRepository sellerRepository;
     private final ObjectMapper objectMapper;
-    private final Environment environment;
     private final ImageService imageService;
     private final ImageHashService imageHashService;
 
@@ -107,11 +108,10 @@ public class ProductSampleDataLoader implements CommandLineRunner{
                 }
 
                 List<Map<String, Object>> productDataList = objectMapper.readValue(
-                        inputStream, new TypeReference<List<Map<String, Object>>>() {
-                        }
+                        inputStream, new TypeReference<List<Map<String, Object>>>() {}
                 );
 
-                log.debug("Found {} proudcts in sample data file", productDataList.size());
+                log.debug("Found {} products in sample data file", productDataList.size());
 
                 int fileSuccessCount = 0;
                 int fileErrorCount = 0;
@@ -126,7 +126,7 @@ public class ProductSampleDataLoader implements CommandLineRunner{
                         totalProductsProcessed++;
 
                         if ((i + 1) % 10 == 0) {
-                            log.debug("Progress: {}/{} products processd", i + 1, productDataList.size());
+                            log.debug("Progress: {}/{} products processed", i + 1, productDataList.size());
                         }
                     } catch (Exception e) {
                         fileErrorCount++;
@@ -146,45 +146,102 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         }
     }
 
+    /**
+     * 스트리밍 방식으로 이미지 다운로드 및 업로드 (메모리 효율적)
+     * 기존 byte[] 방식에서 MultipartFile + 스트리밍 방식으로 변경됨
+     */
     @Async("imageUploadExecutor")
     public void downloadAndUploadImages(Long productId, List<ProductOption> options, String imageUrl) {
+        File tempFile = null;
         try {
-            byte[] imageData = downloadImageFromUrl(imageUrl);
-            if (imageData == null || imageData.length == 0) {
+            // URL에서 임시 파일로 다운로드 (메모리에 로드하지 않음 - 기존 byte[] 방식 대체)
+            tempFile = downloadImageToTempFile(imageUrl);
+            if (tempFile == null || !tempFile.exists()) {
                 log.debug("Failed to download image from URL: {}", imageUrl);
                 return;
             }
 
-            String imageHash = imageHashService.calculateImageHashFromBytes(imageData);
+            // 임시 파일에서 직접 해시 계산 (스트리밍 방식 - 기존 calculateImageHashFromBytes 대체)
+            String imageHash = calculateImageHashFromFile(tempFile);
+
+            // 스트리밍 방식으로 S3 업로드 (기존 uploadImage(byte[]) 대체)
             String fileName = extractFileNameFromUrl(imageUrl);
-            String uploadImageUrl = imageService.uploadImage(
-                    "products/",
+            String uploadImageUrl = imageService.uploadFileStreaming(
+                    tempFile,
                     fileName,
-                    imageData
+                    "products"
             );
 
-            for (ProductOption option: options) {
+            // DB 업데이트
+            for (ProductOption option : options) {
                 option.updateImageInfo(uploadImageUrl, imageHash);
                 productOptionRepository.save(option);
             }
-        } catch (Exception e){
+
+            log.info("Successfully uploaded image for product: {} -> {}", productId, uploadImageUrl);
+
+        } catch (Exception e) {
             log.error("Failed to download and upload image for product: {}, URL: {}, Error: {}",
                     productId, imageUrl, e.getMessage(), e);
+        } finally {
+            // 임시 파일 정리
+            cleanupTempFile(tempFile);
         }
     }
 
-    private byte[] downloadImageFromUrl(String imageUrl) {
+    /**
+     * URL에서 임시 파일로 다운로드 (스트리밍 방식 - 기존 downloadImageFromUrl byte[] 방식 대체)
+     */
+    private File downloadImageToTempFile(String imageUrl) {
         try {
             URL url = new URL(imageUrl);
+            String fileName = extractFileNameFromUrl(imageUrl);
 
-            try(InputStream inputStream = url.openStream()) {
-                byte[] imageData = inputStream.readAllBytes();
-                log.debug("Downloaded {} bytes from URL: {}", imageData.length, imageUrl);
-                return imageData;
+            // 임시 파일 생성
+            File tempFile = Files.createTempFile(
+                    "sample_" + System.currentTimeMillis() + "_",
+                    "_" + fileName
+            ).toFile();
+            tempFile.deleteOnExit();
+
+            // 스트리밍 방식으로 다운로드
+            try (InputStream inputStream = url.openStream()) {
+                Files.copy(inputStream, tempFile.toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+                log.debug("Downloaded {} bytes from URL: {} to temp file: {}",
+                        tempFile.length(), imageUrl, tempFile.getName());
+                return tempFile;
             }
+
         } catch (Exception e) {
             log.error("Failed to download image from URL: {}, Error: {}", imageUrl, e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * 파일에서 직접 해시 계산 (스트리밍 방식 - 기존 calculateImageHashFromBytes 대체)
+     */
+    private String calculateImageHashFromFile(File imageFile) {
+        try (InputStream inputStream = Files.newInputStream(imageFile.toPath())) {
+            return imageHashService.calculateHashFromStream(inputStream);
+        } catch (Exception e) {
+            log.error("Failed to calculate hash from file: {}", imageFile.getName(), e);
+            throw new RuntimeException("이미지 해시 계산 실패", e);
+        }
+    }
+
+    /**
+     * 임시 파일 정리
+     */
+    private void cleanupTempFile(File tempFile) {
+        try {
+            if (tempFile != null && tempFile.exists() && tempFile.delete()) {
+                log.debug("Cleaned up temp file: {}", tempFile.getName());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to cleanup temp file: {}", tempFile != null ? tempFile.getName() : "null", e);
         }
     }
 
@@ -213,7 +270,7 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         }
     }
 
-    private int processProductData(Map<String, Object>data, Seller seller) {
+    private int processProductData(Map<String, Object> data, Seller seller) {
         Product product = createProduct(data, seller);
         Product savedProduct = productRepository.save(product);
 
@@ -233,7 +290,6 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
         long categoryCount = productCategoryRepository.findByProductId(savedProduct.getId()).size();
         log.info("📊 Product '{}' now has {} categories linked", savedProduct.getName(), categoryCount);
-
 
         String imageUrl = (String) data.get("img_url");
         if (imageUrl != null && !imageUrl.trim().isEmpty()) {
@@ -258,7 +314,6 @@ public class ProductSampleDataLoader implements CommandLineRunner{
                 String optionName = matcher.group(1).trim();
                 String optionIngredients = matcher.group(2).trim();
 
-                // 성분 정리
                 optionIngredients = cleanIngredients(optionIngredients);
 
                 if (!optionName.isEmpty() && !optionIngredients.isEmpty()) {
@@ -275,7 +330,6 @@ public class ProductSampleDataLoader implements CommandLineRunner{
         }
 
         return options;
-
     }
 
     private String cleanIngredients(String ingredients) {
@@ -289,21 +343,19 @@ public class ProductSampleDataLoader implements CommandLineRunner{
     }
 
     private Product createProduct(Map<String, Object> data, Seller seller) {
-        String proudctName = cleanProductName((String) data.get("prd_name"));
-        String brand = (String) data.get("brand");
-
+        String productName = cleanProductName((String) data.get("prd_name"));
         String description = (String) data.getOrDefault("specifications",
                 (String) data.getOrDefault("usage_instructions", "화장품 입니다."));
 
         return Product.of(
                 seller,
-                proudctName,
+                productName,
                 description,
                 Status.ACTIVE
         );
     }
 
-    private ProductNotice createProductNotice(Map<String, Object> data, Product product){
+    private ProductNotice createProductNotice(Map<String, Object> data, Product product) {
         return ProductNotice.of(
                 product,
                 (String) data.getOrDefault("capacity", "용량 정보 없음"),
@@ -345,7 +397,7 @@ public class ProductSampleDataLoader implements CommandLineRunner{
 
         Category category = categoryRepository.findById(categoryId).orElse(null);
         if (category != null) {
-            try{
+            try {
                 ProductCategory productCategory = ProductCategory.of(product, category);
                 ProductCategory savedProductCategory = productCategoryRepository.save(productCategory);
 
@@ -357,7 +409,7 @@ public class ProductSampleDataLoader implements CommandLineRunner{
                 boolean exists = productCategoryRepository.existsByProductIdAndCategoryId(
                         product.getId(), category.getId());
                 log.debug("🔍 Verification - exists in DB: {}", exists);
-            } catch (Exception e){
+            } catch (Exception e) {
                 log.error("❌ Failed to link product '{}' to category '{}': {}",
                         product.getName(), category.getName(), e.getMessage(), e);
             }
@@ -365,7 +417,6 @@ public class ProductSampleDataLoader implements CommandLineRunner{
             log.warn("⚠️ Category not found for ID: {}, using default", categoryId);
         }
     }
-
 
     private Seller getDefaultSeller() {
         return sellerRepository.findById(1L).orElse(null);
@@ -393,14 +444,12 @@ public class ProductSampleDataLoader implements CommandLineRunner{
     private String cleanProductName(String productName) {
         if (productName == null) return "상품명 없음";
 
-        // [브랜드픽], [한정판] 등의 프로모션 텍스트 제거
         return productName.replaceAll("\\[.*?\\]", "").trim();
     }
 
     private String cleanText(String text) {
         if (text == null) return "";
 
-        // 불필요한 공백 및 개행 정리
         return text.replaceAll("\\s+", " ").trim();
     }
 
@@ -421,5 +470,4 @@ public class ProductSampleDataLoader implements CommandLineRunner{
             return ingredients;
         }
     }
-
 }

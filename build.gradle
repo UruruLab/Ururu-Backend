@@ -71,6 +71,10 @@ dependencies {
 
     // 웹훅 처리용 의존성 추가
     implementation 'commons-io:commons-io:2.17.0'
+
+    // S3 이미지 등록 실패 시 재시도를 위한 의존성 주입
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework:spring-aspects'
 }
 
 tasks.named('test') {

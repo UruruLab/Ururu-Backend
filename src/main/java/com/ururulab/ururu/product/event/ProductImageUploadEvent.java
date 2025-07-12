@@ -5,19 +5,20 @@ import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
 import java.util.List;
 
 public class ProductImageUploadEvent {
-    private final Long productId;
-    private final List<ProductImageUploadRequest> images;
 
-    public ProductImageUploadEvent(Long productId, List<ProductImageUploadRequest> images) {
+    private final Long productId;
+    private final List<ProductImageUploadRequest> uploadRequests; // images → uploadRequests로 명확화
+
+    public ProductImageUploadEvent(Long productId, List<ProductImageUploadRequest> uploadRequests) {
         this.productId = productId;
-        this.images = images;
+        this.uploadRequests = uploadRequests;
     }
 
     public Long getProductId() {
         return productId;
     }
 
-    public List<ProductImageUploadRequest> getImages() {
-        return images;
+    public List<ProductImageUploadRequest> getUploadRequests() {
+        return uploadRequests;
     }
 }

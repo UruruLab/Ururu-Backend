@@ -9,7 +9,6 @@ import com.ururulab.ururu.product.dto.common.CategoryTreeDto;
 import com.ururulab.ururu.product.dto.response.ProductMetadataResponse;
 import com.ururulab.ururu.product.dto.common.TagDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
