@@ -56,6 +56,9 @@ public class GroupBuyDetailImageService {
             throw new BusinessException(GROUPBUY_DETAIL_IMAGES_TOO_MANY);
         }
 
+        // 이미지 업로드 시 용량 검증
+        imageValidator.validateFileSizes(detailImageFiles);
+
         // 이미지 검증
         imageValidator.validateAllImages(detailImageFiles);
 

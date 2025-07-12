@@ -1,17 +1,27 @@
 package com.ururulab.ururu.image.validation;
 
+import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
 
+import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
+
 @Component
 @Slf4j
 public class ImageValidator {
+
+    @Value("${spring.servlet.multipart.max-file-size:8MB}")
+    private String maxFileSize;
+
+    @Value("${spring.servlet.multipart.max-request-size:40MB}")
+    private String maxRequestSize;
 
     /**
      *  공동구매 이미지 검증
@@ -91,6 +101,67 @@ public class ImageValidator {
                             file.getOriginalFilename()
                     )
             );
+        }
+    }
+
+    /**
+     * 단일 파일 크기 검증
+     */
+    public void validateSingleFileSize(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return;
+        }
+
+        long maxFileSizeBytes = parseSize(maxFileSize);
+
+        if (file.getSize() > maxFileSizeBytes) {
+            throw new BusinessException(IMAGE_SIZE_EXCEEDED,
+                    String.format("파일 '%s'의 크기가 %s를 초과했습니다. (실제: %.1fMB)",
+                            file.getOriginalFilename(), maxFileSize, file.getSize() / 1024.0 / 1024.0));
+        }
+
+        log.debug("Single file size validation passed: {} ({}MB)",
+                file.getOriginalFilename(), file.getSize() / 1024.0 / 1024.0);
+    }
+
+
+    /**
+     * 파일 크기 검증 (개별 파일 및 전체 요청 크기)
+     */
+    public void validateFileSizes(List<MultipartFile> files) {
+        long maxFileSizeBytes = parseSize(maxFileSize);
+        long maxRequestSizeBytes = parseSize(maxRequestSize);
+        long totalSize = 0;
+
+        for (MultipartFile file : files) {
+            if (file.getSize() > maxFileSizeBytes) {
+                throw new BusinessException(IMAGE_SIZE_EXCEEDED,
+                        String.format("파일 '%s'의 크기가 %s를 초과했습니다. (실제: %.1fMB)",
+                                file.getOriginalFilename(), maxFileSize, file.getSize() / 1024.0 / 1024.0));
+            }
+            totalSize += file.getSize();
+        }
+
+        if (totalSize > maxRequestSizeBytes) {
+            throw new BusinessException(REQUEST_TOO_LARGE,
+                    String.format("전체 요청 크기가 %s를 초과했습니다. (실제: %.1fMB)",
+                            maxRequestSize, totalSize / 1024.0 / 1024.0));
+        }
+    }
+
+    /**
+     * 크기 문자열을 바이트로 변환 (예: "8MB" -> 8388608)
+     */
+    private long parseSize(String sizeStr) {
+        sizeStr = sizeStr.toUpperCase().trim();
+        if (sizeStr.endsWith("MB")) {
+            return Long.parseLong(sizeStr.replace("MB", "")) * 1024 * 1024;
+        } else if (sizeStr.endsWith("KB")) {
+            return Long.parseLong(sizeStr.replace("KB", "")) * 1024;
+        } else if (sizeStr.endsWith("GB")) {
+            return Long.parseLong(sizeStr.replace("GB", "")) * 1024 * 1024 * 1024;
+        } else {
+            return Long.parseLong(sizeStr); // 바이트 단위
         }
     }
 }

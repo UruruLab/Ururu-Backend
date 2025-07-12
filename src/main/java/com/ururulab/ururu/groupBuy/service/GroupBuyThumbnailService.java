@@ -43,6 +43,9 @@ public class GroupBuyThumbnailService {
         }
 
         try {
+            // 이미지 업로드 시 용량 검증
+            imageValidator.validateSingleFileSize(thumbnailFile);
+
             // 이미지 검증
             imageValidator.validateImage(thumbnailFile);
 
