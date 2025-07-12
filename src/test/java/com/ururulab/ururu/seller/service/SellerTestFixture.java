@@ -292,6 +292,63 @@ public class SellerTestFixture {
         );
     }
 
+    /**
+     * 빈 필드가 포함된 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithEmptyFields() {
+        return new SellerSignupRequest(
+                "", // 빈 브랜드명
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "seller@ururu.shop",
+                "Password123!",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 잘못된 이메일 형식이 포함된 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithInvalidEmail() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "invalid-email", // 잘못된 이메일 형식
+                "Password123!",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 대용량 데이터가 포함된 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithLargeData() {
+        return new SellerSignupRequest(
+                "A".repeat(50), // 최대 길이 브랜드명
+                "B".repeat(100), // 최대 길이 회사명
+                "C".repeat(50), // 최대 길이 대표자명
+                "1234567890",
+                "large@ururu.shop",
+                "Password123!",
+                "01012345678",
+                null,
+                "D".repeat(100), // 최대 길이 주소
+                "E".repeat(100), // 최대 길이 상세주소
+                "F".repeat(50) // 최대 길이 통신판매업번호
+        );
+    }
+
     // === 유틸리티 메서드 ===
 
     /**
