@@ -29,7 +29,7 @@ import java.util.List;
 @Tag(name = "상품", description = "상품 관리 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/products")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
+@RequestMapping("/api/products")
 public class ProductController {
 
     private final ProductService productService;

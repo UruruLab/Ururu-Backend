@@ -1,15 +1,12 @@
 package com.ururulab.ururu.groupBuy.controller;
 
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
-import com.ururulab.ururu.global.exception.BusinessException;
-import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyRequest;
 import com.ururulab.ururu.groupBuy.dto.request.GroupBuyStatusUpdateRequest;
 import com.ururulab.ururu.groupBuy.dto.response.*;
 import com.ururulab.ururu.groupBuy.service.*;
 import com.ururulab.ururu.groupBuy.util.AuthUtils;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,8 +20,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,7 +28,7 @@ import java.util.List;
 @Tag(name = "공동구매", description = "공동구매 관리 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/groupbuys")  // sellerId를 경로에 포함, JWT 구현 완료 후 수정
+@RequestMapping("/api/groupbuys")
 @Slf4j
 public class GroupBuyController {
 
