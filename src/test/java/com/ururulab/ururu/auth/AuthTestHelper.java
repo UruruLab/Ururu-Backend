@@ -281,24 +281,6 @@ public final class AuthTestHelper {
         assertThat(provider.getRole(token)).isNull();
     }
 
-    // ==================== Mock 검증 헬퍼 ====================
-
-    /**
-     * Mock이 호출되었는지 검증합니다.
-     */
-    public static void verifyMockCalled(Object mock, String methodName) {
-        // Mockito의 verify를 사용하여 메서드 호출 검증
-        // 구체적인 구현은 각 테스트에서 verify() 사용
-    }
-
-    /**
-     * Mock이 호출되지 않았는지 검증합니다.
-     */
-    public static void verifyMockNotCalled(Object mock, String methodName) {
-        // Mockito의 verify를 사용하여 메서드 호출 안됨 검증
-        // 구체적인 구현은 각 테스트에서 verify(mock, never()).method() 사용
-    }
-
     // ==================== 성능 테스트 헬퍼 ====================
 
     /**
