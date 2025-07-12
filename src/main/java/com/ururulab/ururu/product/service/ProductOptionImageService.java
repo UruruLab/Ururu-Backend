@@ -26,6 +26,9 @@ import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.IMAGE_UPLOAD_FAILED;
 import static com.ururulab.ururu.image.domain.ImageCategory.PRODUCTS;
@@ -91,10 +94,28 @@ public class ProductOptionImageService {
      * 비동기 이미지 업로드 처리
      */
     public void uploadImagesAsync(Long productId, List<ProductImageUploadRequest> uploadRequests) {
+        if (uploadRequests.isEmpty()) return;
+
         log.info("Processing {} image uploads for product: {}", uploadRequests.size(), productId);
 
+        List<Long> optionIds = uploadRequests.stream()
+                .map(ProductImageUploadRequest::productOptionId)
+                .toList();
+
+        Map<Long, ProductOption> optionCache = productOptionRepository
+                .findAllByIdInAndProductId(optionIds, productId)
+                .stream()
+                .collect(Collectors.toMap(ProductOption::getId, Function.identity()));
+
+        List<ProductOption> updatedOptions = new ArrayList<>();
+
         for (ProductImageUploadRequest request : uploadRequests) {
-            processImageUpload(request);
+            processImageUpload(productId, request, optionCache, updatedOptions);
+        }
+
+        if (!updatedOptions.isEmpty()) {
+            productOptionRepository.saveAll(updatedOptions);
+            log.info("Batch saved {} options for product: {}", updatedOptions.size(), productId);
         }
 
         log.info("Completed all image uploads for product: {}", productId);
@@ -103,18 +124,24 @@ public class ProductOptionImageService {
     /**
      * 개별 이미지 업로드 처리
      */
-    private void processImageUpload(ProductImageUploadRequest request) {
+    private void processImageUpload(Long productId, ProductImageUploadRequest request,
+                                    Map<Long, ProductOption> optionCache,
+                                    List<ProductOption> updatedOptions) {
+
         File tempFile = new File(request.tempFilePath());
 
         try {
             log.debug("Processing image upload for option: {} (file: {})",
                     request.productOptionId(), request.originalFilename());
 
-            // 재시도 적용
             String imageUrl = uploadToS3WithRetry(tempFile, request.originalFilename(), request.productOptionId());
 
-            // DB 업데이트
-            updateOptionImage(request.productOptionId(), request.imageHash(), imageUrl);
+            ProductOption updatedOption = updateOptionImage(productId, request.productOptionId(),
+                    request.imageHash(), imageUrl, optionCache);
+
+            if (updatedOption != null) {
+                updatedOptions.add(updatedOption);
+            }
 
             log.info("Image uploaded successfully: {} -> {}", request.originalFilename(), imageUrl);
 
@@ -128,15 +155,25 @@ public class ProductOptionImageService {
     /**
      * ProductOption 이미지 정보 업데이트
      */
-    private void updateOptionImage(Long productOptionId, String imageHash, String imageUrl) {
-        ProductOption option = productOptionRepository.findById(productOptionId)
-                .orElseThrow(() -> new IllegalStateException("ProductOption not found: " + productOptionId));
+    private ProductOption updateOptionImage(Long productId, Long productOptionId, String imageHash, String imageUrl,
+                                   Map<Long, ProductOption> optionCache) {
+        ProductOption option = optionCache.get(productOptionId);
+        if (option == null) {
+            log.warn("ProductOption not found in cache: {}", productOptionId);
+            return null;
+        }
+
+        if (!option.getProduct().getId().equals(productId)) {
+            log.error("ProductOption {} does not belong to Product {}. Actual product: {}",
+                    productOptionId, productId, option.getProduct().getId());
+            return null;
+        }
 
         option.updateImageHash(imageHash);
         option.updateImageUrl(imageUrl);
-        productOptionRepository.save(option);
 
         log.debug("Updated option {} with image: {}", productOptionId, imageUrl);
+        return option;
     }
 
     /**
