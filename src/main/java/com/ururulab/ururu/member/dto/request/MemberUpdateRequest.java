@@ -1,6 +1,5 @@
 package com.ururulab.ururu.member.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.global.validation.EnumValue;
 import com.ururulab.ururu.member.dto.validation.MemberValidationConstants;
@@ -10,7 +9,7 @@ import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-import java.time.Instant;
+import java.time.LocalDate;
 
 public record MemberUpdateRequest(
         @Size(min = MemberValidationConstants.NICKNAME_MIN_LENGTH,
@@ -26,8 +25,8 @@ public record MemberUpdateRequest(
         String gender,
 
         @Past(message = MemberValidationMessages.BIRTH_INVALID)
-        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
-        Instant birth,
+        //@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'", timezone = "UTC")
+        LocalDate birth,
 
         @Size(max = MemberValidationConstants.PHONE_STRING_MAX_LENGTH,
                 message = MemberValidationMessages.PHONE_SIZE)

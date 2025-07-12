@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -171,7 +171,7 @@ public class MemberService {
 
 
     private Member createNewMember(final SocialMemberInfo socialMemberInfo) {
-        final Instant defaultBirthDate = Instant.parse("1990-01-01T00:00:00Z");
+        final LocalDate defaultBirthDate = LocalDate.parse("1990-01-01");
 
         final Member member = Member.of(
                 socialMemberInfo.nickname(),

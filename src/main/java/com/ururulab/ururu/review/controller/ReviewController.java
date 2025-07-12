@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -32,7 +32,7 @@ public class ReviewController {
 			SocialProvider.KAKAO,
 			"socialId",
 			Gender.MALE,
-			Instant.now(),
+			LocalDate.now(),
 			"phone",
 			"profileImage",
 			Role.NORMAL
