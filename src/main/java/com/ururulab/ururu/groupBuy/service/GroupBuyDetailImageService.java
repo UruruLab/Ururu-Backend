@@ -14,13 +14,19 @@ import com.ururulab.ururu.image.validation.ImageValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -129,10 +135,11 @@ public class GroupBuyDetailImageService {
 
             try {
                 // File에서 직접 스트리밍 업로드
-                String imageUrl = imageService.uploadFileStreaming(
+                String imageUrl = uploadToS3WithRetry(
                         tempFile,
                         imageRequest.originalFilename(),
-                        GROUPBUY_DETAIL.getPath()
+                        groupBuyId,
+                        imageRequest.displayOrder()
                 );
 
                 log.info("Detail image uploaded for groupBuy ID: {} -> {} (order: {})",
@@ -152,7 +159,7 @@ public class GroupBuyDetailImageService {
             } catch (Exception e) {
                 log.error("Failed to upload detail image for groupBuy ID: {} (order: {})",
                         groupBuyId, imageRequest.displayOrder(), e);
-                throw new BusinessException(IMAGE_PROCESSING_FAILED);
+                // 개별 실패는 전체를 중단시키지 않음 (계속 처리하지만 실패한 이미지는 다시 재시도)
             } finally {
                 // 임시 파일 정리
                 cleanupTempFile(tempFile);
@@ -191,5 +198,51 @@ public class GroupBuyDetailImageService {
         } catch (Exception e) {
             log.warn("Failed to cleanup temp file: {}", tempFile.getName(), e);
         }
+    }
+
+    /**
+     * 재시도 메커니즘이 적용된 S3 업로드
+     */
+    @Retryable(
+            value = {S3Exception.class, SocketTimeoutException.class, ConnectException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000)
+    )
+    private String uploadToS3WithRetry(File tempFile, String originalFilename, Long groupBuyId, int displayOrder) {
+        log.info("Attempting S3 upload for groupBuy: {} (file: {}, order: {})", groupBuyId, originalFilename, displayOrder);
+
+        try {
+            String imageUrl = imageService.uploadFileStreaming(
+                    tempFile,
+                    originalFilename,
+                    GROUPBUY_DETAIL.getPath()
+            );
+
+            log.info("S3 upload successful for groupBuy: {} (order: {})", groupBuyId, displayOrder);
+            return imageUrl;
+
+        } catch (S3Exception e) {
+            log.warn("S3 upload failed for groupBuy: {} (order: {}) - S3 Error: {}",
+                    groupBuyId, displayOrder, e.getMessage());
+            throw e; // 재시도를 위해 예외 재발생
+        } catch (Exception e) {
+            log.warn("S3 upload failed for groupBuy: {} (order: {}) - Network Error: {}",
+                    groupBuyId, displayOrder, e.getMessage());
+            throw new RuntimeException("S3 업로드 네트워크 오류", e);
+        }
+    }
+
+    /**
+     * 재시도 최종 실패 시 실행되는 복구 메서드
+     */
+    @Recover
+    private String recoverFromS3UploadFailure(Exception ex, File tempFile, String originalFilename,
+                                              Long groupBuyId, int displayOrder) {
+        log.error("S3 upload final failure after all retries for groupBuy: {} (order: {}) - {}",
+                groupBuyId, displayOrder, ex.getMessage());
+
+        throw new BusinessException(IMAGE_UPLOAD_FAILED,
+                String.format("상세 이미지 업로드 최종 실패 (groupBuy: %d, order: %d): %s",
+                        groupBuyId, displayOrder, ex.getMessage()));
     }
 }
