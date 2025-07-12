@@ -13,7 +13,7 @@ import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
-import com.ururulab.ururu.member.dto.request.MemberRequest;
+import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
 import com.ururulab.ururu.order.domain.entity.Cart;
 import com.ururulab.ururu.order.domain.repository.CartItemRepository;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,8 +61,26 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberUpdateResponse updateMyProfile(final Long memberId, final MemberRequest request) {
-        final Member updatedMember = updateProfile(memberId, request);
+    public MemberUpdateResponse updateMyProfile(final Long memberId, final MemberUpdateRequest request) {
+        final Member member = findActiveMemberById(memberId);
+
+        // 업데이트할 필드가 없으면 현재 정보 반환
+        if (!request.hasUpdates()) {
+            return MemberUpdateResponse.from(member);
+        }
+
+        // 닉네임 중복 검사 (변경하려는 경우에만)
+        if (request.hasNicknameUpdate() && !request.nickname().equals(member.getNickname())) {
+            if (!memberRepository.isNicknameAvailable(request.nickname())) {
+                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
+            }
+        }
+
+        updateMemberFields(member, request);
+
+        final Member updatedMember = memberRepository.save(member);
+        log.debug("Member profile updated for ID: {}", memberId);
+
         return MemberUpdateResponse.from(updatedMember);
     }
 
@@ -152,27 +170,8 @@ public class MemberService {
     }
 
 
-
-    private Member updateProfile(final Long memberId, final MemberRequest request) {
-        final Member member = findActiveMemberById(memberId);
-
-        if (request.nickname() != null && !request.nickname().equals(member.getNickname())) {
-            if (!memberRepository.isNicknameAvailable(request.nickname())) {
-                throw new BusinessException(ErrorCode.DUPLICATE_NICKNAME);
-            }
-        }
-
-        updateMemberFields(member, request);
-
-        final Member updatedMember = memberRepository.save(member);
-        log.debug("Member profile updated for ID: {}", memberId);
-
-        return updatedMember;
-    }
-
-
     private Member createNewMember(final SocialMemberInfo socialMemberInfo) {
-        final Instant defaultBirthDate = Instant.parse("1990-01-01T00:00:00Z");
+        final LocalDate defaultBirthDate = LocalDate.parse("1990-01-01");
 
         final Member member = Member.of(
                 socialMemberInfo.nickname(),
@@ -218,14 +217,26 @@ public class MemberService {
     }
 
 
-    private void updateMemberFields(final Member member, final MemberRequest request) {
-        if (request.nickname() != null) { member.updateNickname(request.nickname());}
+    private void updateMemberFields(final Member member, final MemberUpdateRequest request) {
+        // 닉네임 업데이트
+        if (request.hasNicknameUpdate()) {
+            member.updateNickname(request.nickname());
+        }
 
-        if (request.gender() != null) { member.updateGender(parseGender(request.gender()));}
+        // 성별 업데이트
+        if (request.hasGenderUpdate()) {
+            member.updateGender(parseGender(request.gender()));
+        }
 
-        if (request.birth() != null) { member.updateBirth(request.birth());}
+        // 생년월일 업데이트
+        if (request.hasBirthUpdate()) {
+            member.updateBirth(request.birth());
+        }
 
-        if (request.phone() != null) { member.updatePhone(request.phone());}
+        // 전화번호 업데이트
+        if (request.hasPhoneUpdate()) {
+            member.updatePhone(request.phone());
+        }
     }
 
     private Member findActiveMemberById(final Long memberId) {
