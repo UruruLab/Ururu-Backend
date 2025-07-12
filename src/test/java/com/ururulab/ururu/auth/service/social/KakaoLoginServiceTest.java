@@ -3,6 +3,8 @@ package com.ururulab.ururu.auth.service.social;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ururulab.ururu.auth.AuthTestHelper;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
@@ -54,7 +56,7 @@ class KakaoLoginServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        // RestClient 체이닝 최소 모킹
+        // RestClient 체이닝 모킹
         when(socialLoginRestClient.post()).thenReturn(requestBodyUriSpec);
         when(socialLoginRestClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodyUriSpec);
@@ -63,7 +65,7 @@ class KakaoLoginServiceTest {
         when(requestBodyUriSpec.retrieve()).thenReturn(responseSpec);
         when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.header(anyString(), anyString())).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec); // ★ 추가
+        when(requestHeadersUriSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
         kakaoLoginService = new KakaoLoginService(
             kakaoOAuthProperties,
@@ -79,6 +81,7 @@ class KakaoLoginServiceTest {
     @Test
     @DisplayName("정상적으로 카카오 로그인 성공")
     void processLogin_success() throws Exception {
+        // Given
         String code = "valid_code";
         String accessToken = "access_token_value";
         String tokenResponse = "{\"access_token\":\"access_token_value\"}";
@@ -89,10 +92,11 @@ class KakaoLoginServiceTest {
         JsonNode profileJson = mock(JsonNode.class);
         Member member = mock(Member.class);
         SocialMemberInfo socialMemberInfo = SocialMemberInfo.of("123", "test@kakao.com", "닉네임", "img_url", SocialProvider.KAKAO);
-        SocialLoginResponse loginResponse = mock(SocialLoginResponse.class);
 
+        // Mock 설정
         when(kakaoOAuthProperties.buildTokenRequestBody(code)).thenReturn("body");
         when(kakaoOAuthProperties.getTokenUri()).thenReturn("token_uri");
+        when(kakaoOAuthProperties.getMemberInfoUri()).thenReturn("memberInfoUri");
         when(responseSpec.body(String.class)).thenReturn(tokenResponse, memberInfoResponse);
         when(objectMapper.readTree(tokenResponse)).thenReturn(tokenJson);
         when(tokenJson.get("access_token")).thenReturn(mock(JsonNode.class));
@@ -108,22 +112,41 @@ class KakaoLoginServiceTest {
         when(profileJson.get("nickname").asText()).thenReturn("닉네임");
         when(profileJson.get("profile_image_url")).thenReturn(mock(JsonNode.class));
         when(profileJson.get("profile_image_url").asText()).thenReturn("img_url");
-        when(memberService.findOrCreateMember(any())).thenReturn(member);
-        when(accessTokenGenerator.generateAccessToken(any(), any(), any(), any())).thenReturn("jwt");
-        when(refreshTokenGenerator.generateRefreshToken(any(), any())).thenReturn("refresh");
-        doNothing().when(jwtRefreshService).storeRefreshToken(any(), any(), any());
+        
+        // Member 관련 Mock 설정
+        when(memberService.findOrCreateMember(any(SocialMemberInfo.class))).thenReturn(member);
         when(member.getId()).thenReturn(1L);
         when(member.getEmail()).thenReturn("test@kakao.com");
         when(member.getNickname()).thenReturn("닉네임");
         when(member.getProfileImage()).thenReturn("img_url");
-        when(member.getRole()).thenReturn(Role.NORMAL); // Role enum 타입으로 stubbing
+        when(member.getRole()).thenReturn(Role.NORMAL);
+        
+        // JWT 토큰 생성 Mock 설정
+        when(accessTokenGenerator.generateAccessToken(anyLong(), anyString(), any(), any())).thenReturn("jwt-access-token");
+        when(refreshTokenGenerator.generateRefreshToken(anyLong(), any())).thenReturn("jwt-refresh-token");
         when(accessTokenGenerator.getExpirySeconds()).thenReturn(3600L);
-        // 추가: memberInfoUri 모킹 및 체인 모킹
-        when(kakaoOAuthProperties.getMemberInfoUri()).thenReturn("memberInfoUri");
-        when(requestHeadersUriSpec.uri("memberInfoUri")).thenReturn(requestHeadersUriSpec);
+        
+        // JwtRefreshService Mock 설정
+        doNothing().when(jwtRefreshService).storeRefreshToken(anyLong(), anyString(), anyString());
 
+        // When
         SocialLoginResponse response = kakaoLoginService.processLogin(code);
+
+        // Then
         assertThat(response).isNotNull();
+        assertThat(response.accessToken()).isEqualTo("jwt-access-token");
+        assertThat(response.refreshToken()).isEqualTo("jwt-refresh-token");
+        assertThat(response.expiresIn()).isEqualTo(3600L);
+        assertThat(response.memberInfo().memberId()).isEqualTo(1L);
+        assertThat(response.memberInfo().email()).isEqualTo("test@kakao.com");
+        assertThat(response.memberInfo().nickname()).isEqualTo("닉네임");
+        assertThat(response.memberInfo().userType()).isEqualTo(UserType.MEMBER.getValue());
+        
+        // 실제 구현과 일치하는 검증
+        verify(memberService).findOrCreateMember(any(SocialMemberInfo.class));
+        verify(jwtRefreshService).storeRefreshToken(eq(1L), eq(UserType.MEMBER.getValue()), eq("jwt-refresh-token"));
+        verify(accessTokenGenerator).generateAccessToken(eq(1L), eq("test@kakao.com"), any(), eq(UserType.MEMBER));
+        verify(refreshTokenGenerator).generateRefreshToken(eq(1L), eq(UserType.MEMBER));
     }
 
     @Test

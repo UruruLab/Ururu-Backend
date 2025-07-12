@@ -3,6 +3,7 @@ package com.ururulab.ururu.auth.service.social;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
@@ -330,9 +331,9 @@ class GoogleLoginServiceTest {
         void processLogin_success() throws JsonProcessingException {
             // given
             String authCode = "test-auth-code";
-            String accessToken = "test-access-token";
-            String memberInfoUri = "https://www.googleapis.com/oauth2/v2/userinfo";
             String tokenUri = "https://oauth2.googleapis.com/token";
+            String memberInfoUri = "https://www.googleapis.com/oauth2/v2/userinfo";
+            String expectedAccessToken = "test-access-token";
             
             RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
             RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
@@ -342,21 +343,23 @@ class GoogleLoginServiceTest {
             RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
             RestClient.ResponseSpec memberInfoResponseSpec = mock(RestClient.ResponseSpec.class);
             
-            JsonNode tokenJsonNode = mock(JsonNode.class);
+            JsonNode mockTokenJsonNode = mock(JsonNode.class);
             JsonNode accessTokenNode = mock(JsonNode.class);
-            JsonNode memberInfoJsonNode = mock(JsonNode.class);
+            JsonNode mockMemberInfoJsonNode = mock(JsonNode.class);
+            JsonNode idNode = mock(JsonNode.class);
+            JsonNode emailNode = mock(JsonNode.class);
+            JsonNode nameNode = mock(JsonNode.class);
+            JsonNode pictureNode = mock(JsonNode.class);
+            
             String tokenResponse = "{\"access_token\":\"test-access-token\"}";
-            String memberInfoResponse = "{\"id\":\"123\",\"email\":\"test@example.com\",\"name\":\"Test User\",\"picture\":\"https://example.com/picture.jpg\"}";
-
+            String memberInfoResponse = "{\"id\":\"123\",\"email\":\"test@example.com\",\"name\":\"테스트유저\",\"picture\":\"https://example.com/picture.jpg\"}";
+            
             Member mockMember = mock(Member.class);
-            SocialMemberInfo mockSocialMemberInfo = new SocialMemberInfo("123", "test@example.com", "Test User", "https://example.com/picture.jpg", SocialProvider.GOOGLE);
-            SocialLoginResponse mockLoginResponse = mock(SocialLoginResponse.class);
 
+            // Token exchange mocking
             when(googleOAuthProperties.getTokenUri()).thenReturn(tokenUri);
             when(googleOAuthProperties.getMemberInfoUri()).thenReturn(memberInfoUri);
             when(googleOAuthProperties.buildTokenRequestBody(authCode)).thenReturn("grant_type=authorization_code&client_id=test&client_secret=test&redirect_uri=test&code=test-auth-code");
-            
-            // Token request mocking
             when(restClient.post()).thenReturn(requestBodyUriSpec);
             when(requestBodyUriSpec.uri(tokenUri)).thenReturn(requestBodySpec);
             when(requestBodySpec.contentType(MediaType.APPLICATION_FORM_URLENCODED)).thenReturn(requestBodySpec);
@@ -364,44 +367,61 @@ class GoogleLoginServiceTest {
             when(requestBodySpec.retrieve()).thenReturn(responseSpec);
             when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
             when(responseSpec.body(String.class)).thenReturn(tokenResponse);
-            when(objectMapper.readTree(tokenResponse)).thenReturn(tokenJsonNode);
-            when(tokenJsonNode.get("access_token")).thenReturn(accessTokenNode);
-            when(accessTokenNode.asText()).thenReturn(accessToken);
-            
-            // Member info request mocking
+            when(objectMapper.readTree(tokenResponse)).thenReturn(mockTokenJsonNode);
+            when(mockTokenJsonNode.get("access_token")).thenReturn(accessTokenNode);
+            when(accessTokenNode.asText()).thenReturn(expectedAccessToken);
+
+            // Member info mocking
             when(restClient.get()).thenReturn(requestHeadersUriSpec);
             when(requestHeadersUriSpec.uri(memberInfoUri)).thenReturn(requestHeadersSpec);
             when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
             when(requestHeadersSpec.retrieve()).thenReturn(memberInfoResponseSpec);
             when(memberInfoResponseSpec.onStatus(any(), any())).thenReturn(memberInfoResponseSpec);
             when(memberInfoResponseSpec.body(String.class)).thenReturn(memberInfoResponse);
-            when(objectMapper.readTree(memberInfoResponse)).thenReturn(memberInfoJsonNode);
-            when(memberInfoJsonNode.get("id")).thenReturn(mock(JsonNode.class));
-            when(memberInfoJsonNode.get("email")).thenReturn(mock(JsonNode.class));
-            when(memberInfoJsonNode.get("name")).thenReturn(mock(JsonNode.class));
-            when(memberInfoJsonNode.get("picture")).thenReturn(mock(JsonNode.class));
-            when(memberInfoJsonNode.get("id").asText()).thenReturn("123");
-            when(memberInfoJsonNode.get("email").asText()).thenReturn("test@example.com");
-            when(memberInfoJsonNode.get("name").asText()).thenReturn("Test User");
-            when(memberInfoJsonNode.get("picture").asText()).thenReturn("https://example.com/picture.jpg");
-            
+            when(objectMapper.readTree(memberInfoResponse)).thenReturn(mockMemberInfoJsonNode);
+            when(mockMemberInfoJsonNode.get("id")).thenReturn(idNode);
+            when(mockMemberInfoJsonNode.get("email")).thenReturn(emailNode);
+            when(mockMemberInfoJsonNode.get("name")).thenReturn(nameNode);
+            when(mockMemberInfoJsonNode.get("picture")).thenReturn(pictureNode);
+            when(idNode.asText()).thenReturn("123");
+            when(emailNode.asText()).thenReturn("test@example.com");
+            when(nameNode.asText()).thenReturn("테스트유저");
+            when(pictureNode.asText()).thenReturn("https://example.com/picture.jpg");
+
+            // Member service mocking
             when(memberService.findOrCreateMember(any(SocialMemberInfo.class))).thenReturn(mockMember);
             when(mockMember.getId()).thenReturn(1L);
             when(mockMember.getEmail()).thenReturn("test@example.com");
-            when(mockMember.getNickname()).thenReturn("Test User");
+            when(mockMember.getNickname()).thenReturn("테스트유저");
             when(mockMember.getProfileImage()).thenReturn("https://example.com/picture.jpg");
             when(mockMember.getRole()).thenReturn(Role.NORMAL);
-            
+
+            // JWT token generation mocking
             when(accessTokenGenerator.generateAccessToken(anyLong(), anyString(), any(), any())).thenReturn("jwt-access-token");
             when(refreshTokenGenerator.generateRefreshToken(anyLong(), any())).thenReturn("jwt-refresh-token");
             when(accessTokenGenerator.getExpirySeconds()).thenReturn(3600L);
+
+            // JwtRefreshService mocking
+            doNothing().when(jwtRefreshService).storeRefreshToken(anyLong(), anyString(), anyString());
 
             // when
             SocialLoginResponse result = googleLoginService.processLogin(authCode);
 
             // then
             assertThat(result).isNotNull();
+            assertThat(result.accessToken()).isEqualTo("jwt-access-token");
+            assertThat(result.refreshToken()).isEqualTo("jwt-refresh-token");
+            assertThat(result.expiresIn()).isEqualTo(3600L);
+            assertThat(result.memberInfo().memberId()).isEqualTo(1L);
+            assertThat(result.memberInfo().email()).isEqualTo("test@example.com");
+            assertThat(result.memberInfo().nickname()).isEqualTo("테스트유저");
+            assertThat(result.memberInfo().userType()).isEqualTo(UserType.MEMBER.getValue());
+
+            // 실제 구현과 일치하는 검증
             verify(memberService).findOrCreateMember(any(SocialMemberInfo.class));
+            verify(jwtRefreshService).storeRefreshToken(eq(1L), eq(UserType.MEMBER.getValue()), eq("jwt-refresh-token"));
+            verify(accessTokenGenerator).generateAccessToken(eq(1L), eq("test@example.com"), any(), eq(UserType.MEMBER));
+            verify(refreshTokenGenerator).generateRefreshToken(eq(1L), eq(UserType.MEMBER));
         }
 
         @Test

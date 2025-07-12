@@ -2,19 +2,32 @@ package com.ururulab.ururu.auth;
 
 import com.ururulab.ururu.auth.constants.UserRole;
 import com.ururulab.ururu.auth.constants.UserType;
+import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
+import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
+import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
+import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
+import com.ururulab.ururu.auth.service.SecurityLoggingService;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.member.service.MemberService;
+import com.ururulab.ururu.seller.service.SellerService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
+
+import org.springframework.http.MediaType;
 
 /**
  * Auth 테스트를 위한 헬퍼 클래스.
@@ -137,12 +150,29 @@ public final class AuthTestHelper {
     // ==================== Mock 설정 헬퍼 ====================
 
     /**
-     * RestClient 체인 모킹을 설정합니다.
-     * 실제 사용 시에는 각 테스트에서 구체적인 Mock 설정을 해야 합니다.
+     * RestClient 체인 모킹을 위한 헬퍼 메서드
      */
-    public static void setupRestClientChain(RestClient restClient) {
-        // RestClient 체인 모킹은 복잡하므로 각 테스트에서 직접 설정하는 것을 권장합니다.
-        // 예시: given(restClient.post()).willReturn(mockRequestBodyUriSpec);
+    public static void setupRestClientChain(RestClient restClient, String tokenUri, String memberInfoUri) {
+        RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
+        RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
+        RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
+        
+        RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
+        RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
+        RestClient.ResponseSpec memberInfoResponseSpec = mock(RestClient.ResponseSpec.class);
+        
+        when(restClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(tokenUri)).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_FORM_URLENCODED)).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
+        
+        when(restClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(memberInfoUri)).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(memberInfoResponseSpec);
+        when(memberInfoResponseSpec.onStatus(any(), any())).thenReturn(memberInfoResponseSpec);
     }
 
     /**
@@ -325,5 +355,43 @@ public final class AuthTestHelper {
         assertThat(maskedToken).isNotNull();
         assertThat(maskedToken).isNotEqualTo(token);
         assertThat(maskedToken).contains("***");
+    }
+
+    /**
+     * 소셜 로그인 성공 시 검증을 위한 헬퍼 메서드
+     */
+    public static void verifySocialLoginSuccess(
+            MemberService memberService,
+            JwtRefreshService jwtRefreshService,
+            AccessTokenGenerator accessTokenGenerator,
+            RefreshTokenGenerator refreshTokenGenerator,
+            Long expectedUserId,
+            String expectedEmail,
+            UserType expectedUserType
+    ) {
+        verify(memberService).findOrCreateMember(any(SocialMemberInfo.class));
+        verify(jwtRefreshService).storeRefreshToken(eq(expectedUserId), eq(expectedUserType.getValue()), anyString());
+        verify(accessTokenGenerator).generateAccessToken(eq(expectedUserId), eq(expectedEmail), any(), eq(expectedUserType));
+        verify(refreshTokenGenerator).generateRefreshToken(eq(expectedUserId), eq(expectedUserType));
+    }
+
+    /**
+     * 판매자 로그인 성공 시 검증을 위한 헬퍼 메서드
+     */
+    public static void verifySellerLoginSuccess(
+            SellerService sellerService,
+            PasswordEncoder passwordEncoder,
+            JwtRefreshService jwtRefreshService,
+            AccessTokenGenerator accessTokenGenerator,
+            RefreshTokenGenerator refreshTokenGenerator,
+            String expectedEmail,
+            String expectedPassword,
+            Long expectedUserId
+    ) {
+        verify(sellerService).findByEmail(expectedEmail);
+        verify(passwordEncoder).matches(expectedPassword, anyString());
+        verify(jwtRefreshService).storeRefreshToken(eq(expectedUserId), eq(UserType.SELLER.getValue()), anyString());
+        verify(accessTokenGenerator).generateAccessToken(eq(expectedUserId), eq(expectedEmail), eq(UserRole.SELLER), eq(UserType.SELLER));
+        verify(refreshTokenGenerator).generateRefreshToken(eq(expectedUserId), eq(UserType.SELLER));
     }
 } 
