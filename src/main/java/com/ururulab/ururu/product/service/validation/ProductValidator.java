@@ -4,6 +4,8 @@ import com.ururulab.ururu.global.domain.entity.TagCategory;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.validation.ImageValidator;
+import com.ururulab.ururu.product.dto.common.CategoryCacheDto;
+import com.ururulab.ururu.product.dto.common.TagCategoryCacheDto;
 import com.ururulab.ururu.product.dto.request.ProductOptionRequest;
 import com.ururulab.ururu.product.domain.entity.Category;
 import com.ururulab.ururu.product.service.CategoryCacheService;
@@ -25,19 +27,19 @@ public class ProductValidator {
     /**
      * 카테고리 유효성 검증
      */
-    public List<Category> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
+    public List<CategoryCacheDto> validateAndGetCategoriesOptimized(List<Long> categoryIds) {
         return categoryIds.stream()
                 .distinct()
                 .sorted()
-                .map(categoryCacheService::findCategoryById) // 캐시 + 존재 검증 포함
+                .map(categoryCacheService::findCategoryDto)
                 .toList();
     }
 
-    public List<TagCategory> validateAndGetTagCategories(List<Long> tagCategoryIds) {
+    public List<TagCategoryCacheDto> validateAndGetTagCategories(List<Long> tagCategoryIds) {
         return tagCategoryIds.stream()
                 .distinct()
                 .sorted()
-                .map(categoryCacheService::findTagCategoryById)
+                .map(categoryCacheService::findTagCategoryDto)
                 .toList();
     }
 

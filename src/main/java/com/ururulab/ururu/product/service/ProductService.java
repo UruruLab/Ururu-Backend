@@ -1,8 +1,11 @@
 package com.ururulab.ururu.product.service;
 
 import com.ururulab.ururu.global.domain.entity.TagCategory;
+import com.ururulab.ururu.global.domain.repository.TagCategoryRepository;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.product.dto.common.CategoryCacheDto;
+import com.ururulab.ururu.product.dto.common.TagCategoryCacheDto;
 import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
 import com.ururulab.ururu.product.dto.request.ProductNoticeRequest;
 import com.ururulab.ururu.product.dto.request.ProductRequest;
@@ -25,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
@@ -45,6 +50,8 @@ public class ProductService {
     private final ProductTagService productTagService;
     private final ProductOptionService productOptionService;
     private final ProductOptionImageService productOptionImageService;
+    private final CategoryRepository categoryRepository;
+    private final TagCategoryRepository tagCategoryRepository;
 
     /**
      * 상품 등록 - 비동기 이미지 업로드 (sellerId 추가)
@@ -63,8 +70,23 @@ public class ProductService {
 
 
         // 3. 카테고리 및 태그카테고리 유효성 검증
-        List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
-        List<TagCategory> tagCategories = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
+        List<CategoryCacheDto> categoryDtos = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
+        List<TagCategoryCacheDto> tagCategoryDtos = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
+
+        List<Category> categories = fetchByIdsInOrder(
+                categoryDtos.stream().map(CategoryCacheDto::id).toList(),
+                categoryRepository::findAllById,
+                Category::getId,
+                id -> new BusinessException(CATEGORY_NOT_FOUND, "categoryId: " + id)
+        );
+
+        List<TagCategory> tagCategories = fetchByIdsInOrder(
+                tagCategoryDtos.stream().map(TagCategoryCacheDto::id).toList(),
+                tagCategoryRepository::findAllById,
+                TagCategory::getId,
+                id -> new BusinessException(TAG_NOT_FOUND, "tagCategoryId: " + id)
+        );
+
 
         // 4. 상품 저장 (Seller와 함께)
         Product savedProduct = productRepository.save(productRequest.toEntity(seller)); // seller 전달
@@ -254,9 +276,23 @@ public class ProductService {
         }
 
 
-        // 3. 카테고리 및 태그카테고리 유효성 검증 (기존과 동일)
-        List<Category> categories = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
-        List<TagCategory> tagCategories = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
+        // 3. 카테고리 및 태그카테고리 유효성 검증
+        List<CategoryCacheDto> categoryDtos = productValidator.validateAndGetCategoriesOptimized(productRequest.categoryIds());
+        List<TagCategoryCacheDto> tagCategoryDtos = productValidator.validateAndGetTagCategories(productRequest.tagCategoryIds());
+
+        List<Category> categories = fetchByIdsInOrder(
+                categoryDtos.stream().map(CategoryCacheDto::id).toList(),
+                categoryRepository::findAllById,
+                Category::getId,
+                id -> new BusinessException(CATEGORY_NOT_FOUND, "categoryId: " + id)
+        );
+
+        List<TagCategory> tagCategories = fetchByIdsInOrder(
+                tagCategoryDtos.stream().map(TagCategoryCacheDto::id).toList(),
+                tagCategoryRepository::findAllById,
+                TagCategory::getId,
+                id -> new BusinessException(TAG_NOT_FOUND, "tagCategoryId: " + id)
+        );
 
         // 4. 상품 기본 정보 업데이트 (변경된 경우만)
         boolean basicInfoChanged = updateProductBasicInfo(existingProduct, productRequest);
@@ -411,4 +447,23 @@ public class ProductService {
         productOptionRepository.markAllAsDeletedByProductId(productId);
         productRepository.save(product);
     }
+
+    private <T, ID> List<T> fetchByIdsInOrder(
+            List<ID> ids,
+            Function<List<ID>, List<T>> batchFetcher,
+            Function<T, ID> idExtractor,
+            Function<ID, BusinessException> notFoundExceptionSupplier
+    ) {
+        Map<ID, T> entityMap = batchFetcher.apply(ids).stream()
+                .collect(Collectors.toMap(idExtractor, Function.identity()));
+
+        return ids.stream()
+                .map(id -> {
+                    T entity = entityMap.get(id);
+                    if (entity == null) throw notFoundExceptionSupplier.apply(id);
+                    return entity;
+                })
+                .toList();
+    }
+
 }
