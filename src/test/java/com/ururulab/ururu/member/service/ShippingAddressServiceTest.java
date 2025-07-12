@@ -61,7 +61,7 @@ public class ShippingAddressServiceTest {
 
     @Test
     @DisplayName("배송지 생성 성공 - 기본 배송지로 생성 시 기존 기본 배송지 해제")
-    void createShippingAddress_SetAsDefault_UnsetExistingDefault() {
+    void createShippingAddress_setAsDefault_unsetExistingDefault() {
         // Given
         Long memberId = 1L;
         Member member = ShippingAddressTestFixture.createMember(memberId);
@@ -220,6 +220,62 @@ public class ShippingAddressServiceTest {
         // Then
         assertThat(result).isNotNull();
         then(shippingAddressRepository).should().save(existingAddress);
+    }
+
+    @Test
+    @DisplayName("배송지 수정 성공 - 기본 배송지로 변경")
+    void updateShippingAddress_SetAsDefault_Success() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress targetAddress = ShippingAddressTestFixture.createShippingAddress(member);
+        ShippingAddress existingDefault = ShippingAddressTestFixture.createDefaultShippingAddress(member);
+        ShippingAddressRequest updateRequest = ShippingAddressTestFixture.createSetAsDefaultRequest();
+
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.of(targetAddress));
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(shippingAddressRepository.findByMemberAndIsDefaultTrue(member))
+                .willReturn(Optional.of(existingDefault));
+        given(shippingAddressRepository.save(any(ShippingAddress.class))).willReturn(targetAddress);
+
+        // When
+        ShippingAddress result = shippingAddressService.updateShippingAddress(memberId, addressId, updateRequest);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        // 기존 기본 배송지 해제와 새 배송지 저장이 호출되었는지 확인
+        then(shippingAddressRepository).should().save(existingDefault); // 기존 기본 배송지 해제
+        then(shippingAddressRepository).should().save(targetAddress); // 수정된 배송지 저장
+        then(memberRepository).should().findById(memberId); // 회원 조회 확인
+    }
+
+    @Test
+    @DisplayName("배송지 수정 성공 - 이미 기본 배송지인 경우 기존 기본 배송지 해제 로직 실행 안함")
+    void updateShippingAddress_AlreadyDefault_NoUnsetLogic() {
+        // Given
+        Long memberId = 1L;
+        Long addressId = 100L;
+        Member member = ShippingAddressTestFixture.createMember(memberId);
+        ShippingAddress alreadyDefaultAddress = ShippingAddressTestFixture.createDefaultShippingAddress(member);
+        ShippingAddressRequest updateRequest = ShippingAddressTestFixture.createSetAsDefaultRequest();
+
+        given(shippingAddressRepository.findByIdAndMemberId(addressId, memberId))
+                .willReturn(Optional.of(alreadyDefaultAddress));
+        given(shippingAddressRepository.save(any(ShippingAddress.class))).willReturn(alreadyDefaultAddress);
+
+        // When
+        ShippingAddress result = shippingAddressService.updateShippingAddress(memberId, addressId, updateRequest);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        // 이미 기본 배송지이므로 회원 조회와 기존 기본 배송지 해제 로직이 실행되지 않음
+        then(memberRepository).should(never()).findById(memberId);
+        then(shippingAddressRepository).should(never()).findByMemberAndIsDefaultTrue(any());
+        then(shippingAddressRepository).should().save(alreadyDefaultAddress); // 수정된 배송지만 저장
     }
 
     @Test

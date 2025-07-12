@@ -166,6 +166,17 @@ public class ShippingAddressTestFixture {
         return address;
     }
 
+    public static ShippingAddressRequest createSetAsDefaultRequest() {
+        return new ShippingAddressRequest(
+                "업데이트된 집",
+                "01098765432",
+                "54321",
+                "부산시 해운대구 센텀로 456",
+                "789호",
+                true  // 기본 배송지로 설정
+        );
+    }
+
     private static void setMemberId(Member member, Long id) {
         try {
             Field idField = Member.class.getDeclaredField("id");
