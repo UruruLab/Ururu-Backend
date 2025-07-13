@@ -180,13 +180,9 @@ public class GroupBuyDetailImageService {
      * 임시 파일 생성
      */
     private File createTempFile(MultipartFile multipartFile) throws IOException {
-        File tempFile = Files.createTempFile(
-                "detail_" + System.currentTimeMillis() + "_",
-                "_" + multipartFile.getOriginalFilename()
-        ).toFile();
+        File tempFile = Files.createTempFile("detail_", ".tmp").toFile();
 
         multipartFile.transferTo(tempFile);
-        tempFile.deleteOnExit();
 
         log.debug("Created temp file: {} (size: {} bytes)", tempFile.getName(), tempFile.length());
         return tempFile;
