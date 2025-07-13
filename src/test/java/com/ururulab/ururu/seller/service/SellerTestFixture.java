@@ -451,18 +451,4 @@ public class SellerTestFixture {
             throw new RuntimeException("Failed to set seller deleted status for test", e);
         }
     }
-
-    /**
-     * BaseEntity의 공통 필드를 설정하는 헬퍼 메서드
-     * 향후 BaseEntity 구조 변경 시 이 메서드만 수정하면 됨
-     */
-    public static void setBaseEntityField(Object entity, String fieldName, Object value) {
-        try {
-            Field field = BaseEntity.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(entity, value);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set BaseEntity field: " + fieldName, e);
-        }
-    }
 } 
