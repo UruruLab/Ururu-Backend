@@ -46,6 +46,9 @@ public class Seller extends BaseEntity {
     @Column(length = SellerConstants.IMAGE_COLUMN_LENGTH) // 이미지 URL은 고정 길이
     private String image; // 브랜드 대표 이미지
 
+    @Column(length = SellerConstants.ZONECODE_COLUMN_LENGTH, nullable = false)
+    private String zonecode; // 우편번호
+
     @Column(length = SellerConstants.ADDRESS_COLUMN_LENGTH, nullable = false) // 주소는 고정 길이
     private String address1;
 
@@ -67,6 +70,7 @@ public class Seller extends BaseEntity {
             String password,
             String phone,
             String image,
+            String zonecode,
             String address1,
             String address2,
             String mailOrderNumber
@@ -78,6 +82,7 @@ public class Seller extends BaseEntity {
         SellerValidator.validateBusinessNumber(businessNumber);
         String normalizedEmail = SellerValidator.normalizeAndValidateEmail(email);
         SellerValidator.validatePhone(phone);
+        SellerValidator.validateZonecode(zonecode);
         SellerValidator.validateAddress1(address1);
         SellerValidator.validateAddress2(address2);
         SellerValidator.validateMailOrderNumber(mailOrderNumber);
@@ -91,6 +96,7 @@ public class Seller extends BaseEntity {
         seller.password = password; // 암호화는 Service 레이어에서 처리
         seller.phone = phone.trim();
         seller.image = image;
+        seller.zonecode = zonecode.trim();
         seller.address1 = address1.trim();
         seller.address2 = address2.trim();
         seller.mailOrderNumber = mailOrderNumber.trim();
@@ -126,9 +132,11 @@ public class Seller extends BaseEntity {
         this.image = image;
     }
 
-    public void updateAddress(final String address1, final String address2) {
+    public void updateAddress(final String zonecode, final String address1, final String address2) {
+        SellerValidator.validateZonecode(zonecode);
         SellerValidator.validateAddress1(address1);
         SellerValidator.validateAddress2(address2);
+        this.zonecode = zonecode.trim();
         this.address1 = address1.trim();
         this.address2 = address2 != null ? address2.trim() : "";
     }

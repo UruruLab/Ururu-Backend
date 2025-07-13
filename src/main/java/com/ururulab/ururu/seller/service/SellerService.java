@@ -106,6 +106,9 @@ public class SellerService {
         // 전화번호 정규화
         final String normalizedPhone = normalizeField(request.phone());
 
+        // 우편번호 정규화
+        final String normalizedZonecode = normalizeField(request.zonecode());
+
         // 주소 정규화 (앞뒤 공백만 제거, 중간 공백 유지)
         final String normalizedAddress1 = normalizeField(request.address1());
         final String normalizedAddress2 = normalizeField(request.address2());
@@ -119,6 +122,7 @@ public class SellerService {
                 encodedPassword,
                 normalizedPhone,
                 request.image(),
+                normalizedZonecode,
                 normalizedAddress1,
                 normalizedAddress2,
                 normalizedMailOrderNumber
