@@ -50,7 +50,8 @@ jobs:
       - name: Copy monitoring config files
         run: |
           mkdir -p docker/monitoring/
-          cp config/monitoring/* docker/monitoring/ || true
+          # 하위 디렉터리 포함 전체 복사, 실패 시 워크플로를 중단하도록 처리
+          rsync -a config/monitoring/ docker/monitoring/
 
       # 4. 모니터링 설정 파일 업로드
       - name: Upload monitoring docker-compose to monitoring server
