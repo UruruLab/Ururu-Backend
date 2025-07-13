@@ -83,12 +83,14 @@ public class GroupBuyDetailImageService {
     private List<GroupBuyImageUploadRequest> createDetailImageRequests(List<MultipartFile> detailImageFiles) {
         AtomicInteger displayOrder = new AtomicInteger(1);
         List<GroupBuyImageUploadRequest> uploadRequests = new ArrayList<>();
+        List<File> createdTempFiles = new ArrayList<>();  // 생성된 임시 파일 추적
 
         for (MultipartFile file : detailImageFiles) {
             if (file != null && !file.isEmpty()) {
                 try {
                     String imageHash = imageHashService.calculateImageHash(file);
                     File tempFile = createTempFile(file);
+                    createdTempFiles.add(tempFile); // 생성된 파일 추가
                     int order = displayOrder.getAndIncrement();
 
                     log.info("Detail image processed - index: {}, filename: {}, hash: {}, size: {} bytes",
@@ -105,6 +107,8 @@ public class GroupBuyDetailImageService {
 
                 } catch (Exception e) {
                     log.error("Failed to process detail image file: {}", file.getOriginalFilename(), e);
+                    // 예외 발생 시 생성된 임시 파일들 정리
+                    createdTempFiles.forEach(this::cleanupTempFile);
                     throw new BusinessException(IMAGE_READ_FAILED);
                 }
             }
