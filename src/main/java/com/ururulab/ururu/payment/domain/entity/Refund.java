@@ -55,7 +55,7 @@ public class Refund extends BaseEntity {
     @OneToMany(mappedBy = "refund", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefundItem> refundItems = new ArrayList<>();
 
-    public static Refund create(Payment payment, RefundType type, String reason, Integer amount, String returnTrackingNumber) {
+    public static Refund create(Payment payment, RefundType type, String reason, Integer amount, String returnTrackingNumber, RefundStatus status) {
         if (payment == null) {
             throw new IllegalArgumentException(RefundPolicy.PAYMENT_REQUIRED);
         }
@@ -77,11 +77,13 @@ public class Refund extends BaseEntity {
         if (amount > payment.getAmount()) {
             throw new IllegalArgumentException(RefundPolicy.AMOUNT_EXCEEDS_PAYMENT);
         }
-        if (type != RefundType.GROUPBUY_FAILED && (returnTrackingNumber == null || returnTrackingNumber.trim().isEmpty())) {
-            throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_REQUIRED);
-        }
-        if (returnTrackingNumber != null && returnTrackingNumber.length() > RefundPolicy.RETURN_TRACKING_NUMBER_MAX_LENGTH) {
-            throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_TOO_LONG);
+        if (status == RefundStatus.INITIATED && type != RefundType.GROUPBUY_FAILED) {
+            if (returnTrackingNumber == null || returnTrackingNumber.trim().isEmpty()) {
+                throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_REQUIRED);
+            }
+            if (returnTrackingNumber != null && returnTrackingNumber.length() > RefundPolicy.RETURN_TRACKING_NUMBER_MAX_LENGTH) {
+                throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_TOO_LONG);
+            }
         }
 
         Refund refund = new Refund();
@@ -90,7 +92,8 @@ public class Refund extends BaseEntity {
         refund.type = type;
         refund.reason = reason.trim();
         refund.amount = amount;
-        refund.status = RefundStatus.INITIATED;
+        refund.status = status;
+        refund.returnTrackingNumber = returnTrackingNumber;
 
         return refund;
     }
