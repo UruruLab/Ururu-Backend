@@ -57,6 +57,12 @@ public enum ErrorCode {
 	INVALID_JSON(HttpStatus.BAD_REQUEST, "WEBHOOK002", "웹훅 데이터 형식이 올바르지 않습니다"),
 	WEBHOOK_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WEBHOOK003", "웹훅 처리 중 오류가 발생했습니다"),
 
+	// --- 환불 ---
+	REFUND_NOT_FOUND(HttpStatus.NOT_FOUND, "REFUND001", "존재하지 않는 환불입니다."),
+	REFUND_ALREADY_PROCESSED(HttpStatus.CONFLICT, "REFUND002", "이미 처리된 환불입니다."),
+	REFUND_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, "REFUND003", "환불 처리 기간이 만료되었습니다. (%d일 이내)"),
+	DUPLICATE_REFUND_REQUEST(HttpStatus.CONFLICT, "REFUND004", "이미 진행 중인 환불 요청이 있습니다."),
+
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
