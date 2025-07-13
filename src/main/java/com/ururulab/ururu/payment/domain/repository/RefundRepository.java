@@ -90,4 +90,13 @@ public interface RefundRepository extends JpaRepository<Refund, String> {
             @Param("sellerId") Long sellerId,
             @Param("status") RefundStatus status
     );
+
+    /**
+     * 주문 ID로 환불 목록 조회
+     * 동일 주문에 대한 기존 환불 내역 확인용
+     */
+    @Query("SELECT r FROM Refund r " +
+            "JOIN r.payment p " +
+            "WHERE p.order.id = :orderId")
+    List<Refund> findByOrderId(@Param("orderId") String orderId);
 }
