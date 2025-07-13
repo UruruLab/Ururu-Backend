@@ -1,5 +1,7 @@
 package com.ururulab.ururu.seller.service;
 
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.seller.dto.request.SellerSignupRequest;
 import com.ururulab.ururu.seller.dto.response.SellerAvailabilityResponse;
@@ -32,31 +34,25 @@ public class SellerService {
      */
     @Transactional
     public SellerResponse signup(final SellerSignupRequest request) {
+        // null 체크 강화
+        if (request == null) {
+            log.error("판매자 회원가입 요청이 null입니다.");
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "회원가입 요청은 null일 수 없습니다.");
+        }
+
         log.info("판매자 회원가입 시작: {}", MaskingUtils.maskEmail(request.email()));
 
-        // 이메일 정규화 (소문자 변환)
-        final String normalizedEmail = request.email().toLowerCase().trim();
+        // 이메일 정규화
+        final String normalizedEmail = normalizeEmail(request.email());
 
         // 트랜잭션 범위 내에서 중복 체크 (1차 방어)
         validateSignupRequest(request, normalizedEmail);
 
         // 비밀번호 암호화
-        final String encodedPassword = passwordEncoder.encode(request.password());
+        final String encodedPassword = encodePassword(request.password());
 
-        // 판매자 엔티티 생성
-        final Seller seller = Seller.of(
-                request.name(),
-                request.businessName(),
-                request.ownerName(),
-                request.businessNumber(),
-                normalizedEmail,
-                encodedPassword,
-                request.phone(),
-                request.image(),
-                request.address1(),
-                request.address2(),
-                request.mailOrderNumber()
-        );
+        // 정규화된 데이터로 판매자 엔티티 생성
+        final Seller seller = createSellerEntity(request, normalizedEmail, encodedPassword);
 
         try {
             // 저장 (DB UNIQUE 제약조건이 2차 방어선)
@@ -70,9 +66,131 @@ public class SellerService {
         } catch (DataIntegrityViolationException e) {
             // DB 레벨에서 중복 감지 (동시성 환경에서 최종 방어선)
             log.warn("DB 중복 제약조건 위반: {}", e.getMessage());
-            throw new com.ururulab.ururu.global.exception.BusinessException(
-                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_EMAIL);
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
         }
+    }
+
+    /**
+     * 이메일 정규화
+     */
+    private String normalizeEmail(final String email) {
+        if (email == null || email.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "이메일은 필수입니다.");
+        }
+        return email.toLowerCase().trim();
+    }
+
+    /**
+     * 비밀번호 암호화
+     */
+    private String encodePassword(final String password) {
+        if (password == null || password.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "비밀번호는 필수입니다.");
+        }
+        return passwordEncoder.encode(password);
+    }
+
+    /**
+     * 판매자 엔티티 생성
+     */
+    private Seller createSellerEntity(final SellerSignupRequest request, final String normalizedEmail, final String encodedPassword) {
+        // 통신판매업 번호 정규화
+        final String normalizedMailOrderNumber = normalizeField(request.mailOrderNumber());
+
+        // 사업자명 정규화
+        final String normalizedBusinessName = normalizeField(request.businessName());
+
+        // 대표자명 정규화
+        final String normalizedOwnerName = normalizeField(request.ownerName());
+
+        // 전화번호 정규화
+        final String normalizedPhone = normalizeField(request.phone());
+
+        // 주소 정규화 (앞뒤 공백만 제거, 중간 공백 유지)
+        final String normalizedAddress1 = normalizeField(request.address1());
+        final String normalizedAddress2 = normalizeField(request.address2());
+
+        return Seller.of(
+                request.name(),
+                normalizedBusinessName,
+                normalizedOwnerName,
+                request.businessNumber(),
+                normalizedEmail,
+                encodedPassword,
+                normalizedPhone,
+                request.image(),
+                normalizedAddress1,
+                normalizedAddress2,
+                normalizedMailOrderNumber
+        );
+    }
+
+    /**
+     * 필드 정규화 (null 체크 포함)
+     */
+    private String normalizeField(final String field) {
+        return field != null ? field.trim() : null;
+    }
+
+     //회원가입 요청 유효성 검증
+    private void validateSignupRequest(final SellerSignupRequest request, final String normalizedEmail) {
+        // 필수 필드 검증
+        validateRequiredFields(request);
+        
+        // 이메일 중복 체크
+        if (!sellerRepository.isEmailAvailable(normalizedEmail)) {
+            log.warn("이메일 중복: {}", MaskingUtils.maskEmail(normalizedEmail));
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
+        // 사업자등록번호 정규화 후 중복 체크
+        final String normalizedBusinessNumber = normalizeBusinessNumber(request.businessNumber());
+        if (!sellerRepository.isBusinessNumberAvailable(normalizedBusinessNumber)) {
+            log.warn("사업자등록번호 중복: {}", MaskingUtils.maskBusinessNumber(normalizedBusinessNumber));
+            throw new BusinessException(ErrorCode.DUPLICATE_BUSINESS_NUMBER);
+        }
+
+        // 브랜드명 정규화 후 중복 체크
+        final String normalizedName = normalizeName(request.name());
+        if (!sellerRepository.isNameAvailable(normalizedName)) {
+            log.warn("브랜드명 중복: {}", normalizedName);
+            throw new BusinessException(ErrorCode.DUPLICATE_BRAND_NAME);
+        }
+    }
+
+    /**
+     * 필수 필드 검증
+     */
+    private void validateRequiredFields(final SellerSignupRequest request) {
+        if (request.name() == null || request.name().isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "브랜드명은 필수입니다.");
+        }
+        if (request.businessNumber() == null || request.businessNumber().isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "사업자등록번호는 필수입니다.");
+        }
+        if (request.password() == null || request.password().isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "비밀번호는 필수입니다.");
+        }
+    }
+
+    /**
+     * 사업자등록번호 정규화
+     */
+    private String normalizeBusinessNumber(final String businessNumber) {
+        if (businessNumber == null || businessNumber.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "사업자등록번호는 필수입니다.");
+        }
+        return businessNumber.trim();
+    }
+
+    /**
+     * 브랜드명 정규화
+     */
+    private String normalizeName(final String name) {
+        if (name == null || name.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "브랜드명은 필수입니다.");
+        }
+        return name.trim();
     }
 
     /**
@@ -121,31 +239,6 @@ public class SellerService {
         return SellerResponse.from(seller);
     }
 
-
-     //회원가입 요청 유효성 검증
-    private void validateSignupRequest(final SellerSignupRequest request, final String normalizedEmail) {
-        // 이메일 중복 체크
-        if (!sellerRepository.isEmailAvailable(normalizedEmail)) {
-            log.warn("이메일 중복: {}", MaskingUtils.maskEmail(normalizedEmail));
-            throw new com.ururulab.ururu.global.exception.BusinessException(
-                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        // 사업자등록번호 중복 체크
-        if (!sellerRepository.isBusinessNumberAvailable(request.businessNumber())) {
-            log.warn("사업자등록번호 중복: {}", MaskingUtils.maskBusinessNumber(request.businessNumber()));
-            throw new com.ururulab.ururu.global.exception.BusinessException(
-                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_BUSINESS_NUMBER);
-        }
-
-        // 브랜드명 중복 체크
-        if (!sellerRepository.isNameAvailable(request.name())) {
-            log.warn("브랜드명 중복: {}", request.name());
-            throw new com.ururulab.ururu.global.exception.BusinessException(
-                com.ururulab.ururu.global.exception.error.ErrorCode.DUPLICATE_BRAND_NAME);
-        }
-    }
-
     /**
      * 이메일로 판매자 조회
      *
@@ -156,14 +249,12 @@ public class SellerService {
     public Seller findByEmail(final String email) {
         final String normalizedEmail = email.toLowerCase().trim();
         return sellerRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new com.ururulab.ururu.global.exception.BusinessException(
-                    com.ururulab.ururu.global.exception.error.ErrorCode.SELLER_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(ErrorCode.SELLER_NOT_FOUND));
     }
 
     // 활성 판매자 조회
     private Seller findActiveSellerById(final Long sellerId) {
         return sellerRepository.findActiveSeller(sellerId)
-                .orElseThrow(() -> new com.ururulab.ururu.global.exception.BusinessException(
-                    com.ururulab.ururu.global.exception.error.ErrorCode.SELLER_NOT_FOUND, sellerId));
+                .orElseThrow(() -> new BusinessException(ErrorCode.SELLER_NOT_FOUND, sellerId));
     }
 } 

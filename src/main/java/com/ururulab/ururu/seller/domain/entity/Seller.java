@@ -37,19 +37,19 @@ public class Seller extends BaseEntity {
     @Column(length = SellerConstants.EMAIL_MAX_LENGTH, nullable = false, unique = true)
     private String email;
 
-    @Column(length = 255, nullable = false) // 암호화된 비밀번호는 고정 길이
+    @Column(length = SellerConstants.PASSWORD_COLUMN_LENGTH, nullable = false) // 암호화된 비밀번호는 고정 길이
     private String password; // 암호화된 비밀번호
 
     @Column(length = SellerConstants.PHONE_MAX_LENGTH, nullable = false)
     private String phone;
 
-    @Column(length = 255) // 이미지 URL은 고정 길이
+    @Column(length = SellerConstants.IMAGE_COLUMN_LENGTH) // 이미지 URL은 고정 길이
     private String image; // 브랜드 대표 이미지
 
-    @Column(length = 255, nullable = false) // 주소는 고정 길이
+    @Column(length = SellerConstants.ADDRESS_COLUMN_LENGTH, nullable = false) // 주소는 고정 길이
     private String address1;
 
-    @Column(length = 255, nullable = false) // 주소는 고정 길이
+    @Column(length = SellerConstants.ADDRESS_COLUMN_LENGTH, nullable = false) // 주소는 고정 길이
     private String address2;
 
     @Column(length = SellerConstants.MAIL_ORDER_NUMBER_MAX_LENGTH, nullable = false)

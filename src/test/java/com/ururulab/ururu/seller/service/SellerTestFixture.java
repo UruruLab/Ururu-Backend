@@ -282,12 +282,126 @@ public class SellerTestFixture {
                 "우르르 뷰티 주식회사",
                 "김태현",
                 "1234567890",
-                "seller@우르르.shop",
+                "seller@ururu-korean.shop",
                 "Password123!",
                 "01012345678",
                 null,
                 "서울특별시 강남구 테헤란로 123",
                 "456호 (우르르빌딩)",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 빈 필드가 포함된 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithEmptyFields() {
+        return new SellerSignupRequest(
+                "", // 빈 브랜드명
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "seller@ururu.shop",
+                "Password123!",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 잘못된 이메일 형식이 포함된 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithInvalidEmail() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "invalid-email", // 잘못된 이메일 형식
+                "Password123!",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 대용량 데이터가 포함된 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithLargeData() {
+        return new SellerSignupRequest(
+                "A".repeat(50), // 최대 길이 브랜드명
+                "B".repeat(100), // 최대 길이 회사명
+                "C".repeat(50), // 최대 길이 대표자명
+                "1234567890",
+                "large@ururu.shop",
+                "Password123!",
+                "01012345678",
+                null,
+                "D".repeat(100), // 최대 길이 주소
+                "E".repeat(100), // 최대 길이 상세주소
+                "F".repeat(50) // 최대 길이 통신판매업번호
+        );
+    }
+
+    /**
+     * 이메일 최대 길이(100자) 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithMaxEmailLength() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "a".repeat(48) + "@" + "b".repeat(47) + ".com",
+                "Password123!",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 비밀번호 최대 길이(50자) 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithMaxPasswordLength() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "maxpassword@ururu.shop",
+                "A".repeat(25) + "a".repeat(20) + "1!@#$",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 이메일/비밀번호 모두 최대 길이 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithMaxEmailAndPasswordLength() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "a".repeat(48) + "@" + "b".repeat(47) + ".com",
+                "A".repeat(25) + "a".repeat(20) + "1!@#$",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
                 "2024-서울강남-1234"
         );
     }
@@ -335,20 +449,6 @@ public class SellerTestFixture {
             isDeletedField.set(seller, isDeleted);
         } catch (Exception e) {
             throw new RuntimeException("Failed to set seller deleted status for test", e);
-        }
-    }
-
-    /**
-     * BaseEntity의 공통 필드를 설정하는 헬퍼 메서드
-     * 향후 BaseEntity 구조 변경 시 이 메서드만 수정하면 됨
-     */
-    public static void setBaseEntityField(Object entity, String fieldName, Object value) {
-        try {
-            Field field = BaseEntity.class.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(entity, value);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set BaseEntity field: " + fieldName, e);
         }
     }
 } 
