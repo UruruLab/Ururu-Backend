@@ -49,9 +49,19 @@ jobs:
       # 3. 모니터링 설정 파일 템플릿 처리
       - name: Process monitoring config templates
         run: |
+          # Private Config Repository의 .env 파일에서 환경변수 로드
+          export $(cat config/.env | xargs)
+          
+          # 환경변수 확인
+          echo "PROD_HOST: $PROD_HOST"
+          
           # Prometheus 설정 파일에서 환경변수 처리
           envsubst < docker/monitoring/prometheus/prometheus.yml > docker/monitoring/prometheus/prometheus.yml.tmp
           mv docker/monitoring/prometheus/prometheus.yml.tmp docker/monitoring/prometheus/prometheus.yml
+          
+          # 처리된 파일 확인
+          echo "=== 처리된 Prometheus 설정 ==="
+          cat docker/monitoring/prometheus/prometheus.yml
 
       # 4. 모니터링 설정 파일 업로드
       - name: Upload monitoring docker-compose to monitoring server
