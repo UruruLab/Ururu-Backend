@@ -2,7 +2,6 @@ package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.Member;
-import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
 import com.ururulab.ururu.order.domain.policy.OrderPolicy;
 import jakarta.persistence.*;
@@ -133,7 +132,11 @@ public class Order extends BaseEntity {
     }
 
     public void updateTrackingNumber(String trackingNumber) {
-        if (trackingNumber != null && trackingNumber.trim().length() > OrderPolicy.TRACKING_NUMBER_MAX_LENGTH) {
+
+        if (trackingNumber == null || trackingNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.TRACKING_NUMBER_REQUIRED);
+        }
+        if (trackingNumber.trim().length() > OrderPolicy.TRACKING_NUMBER_MAX_LENGTH) {
             throw new IllegalArgumentException(OrderPolicy.TRACKING_NUMBER_TOO_LONG);
         }
         this.trackingNumber = trackingNumber;
