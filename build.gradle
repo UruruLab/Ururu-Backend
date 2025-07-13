@@ -71,6 +71,12 @@ dependencies {
 
     // 웹훅 처리용 의존성 추가
     implementation 'commons-io:commons-io:2.17.0'
+
+    // Spring Boot Actuator (모니터링 엔드포인트 제공)
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    
+    // Micrometer Prometheus (메트릭 수집)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {

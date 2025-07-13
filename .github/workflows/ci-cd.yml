@@ -3,7 +3,9 @@ name: CI/CD - DockerHub Push & Blue-Green Deploy
 on:
   push:
     branches: [main]
-
+    paths-ignore:
+      - 'docker/monitoring/**'
+      
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest

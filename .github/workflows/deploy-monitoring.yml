@@ -1,0 +1,128 @@
+name: Deploy Monitoring
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/monitoring/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 코드 체크아웃
+      - name: Checkout app repository
+        uses: actions/checkout@v3
+
+      - name: Checkout private config repository
+        uses: actions/checkout@v3
+        with:
+          repository: UruruLab/Ururu-Backend-Config
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: config
+
+      # 2. 환경변수 검증
+      - name: Validate environment variables
+        run: |
+          if [ ! -f config/.env ]; then
+            echo "Error: .env file not found in config repository"
+            exit 1
+          fi
+          
+          # 필수 환경변수 확인
+          source config/.env
+          
+          if [ -z "$PROD_HOST" ]; then
+            echo "Error: PROD_HOST is not set in .env file"
+            exit 1
+          fi
+          
+          if [ -z "$GRAFANA_ADMIN_PASSWORD" ]; then
+            echo "Error: GRAFANA_ADMIN_PASSWORD is not set in .env file"
+            exit 1
+          fi
+          
+          echo "Environment variables validation passed"
+
+      # 3. 모니터링 설정 파일 복사
+      - name: Copy monitoring config files
+        run: |
+          mkdir -p docker/monitoring/
+          # 하위 디렉터리 포함 전체 복사, 실패 시 워크플로를 중단하도록 처리
+          rsync -a config/monitoring/ docker/monitoring/
+
+      # 4. 모니터링 설정 파일 업로드
+      - name: Upload monitoring docker-compose to monitoring server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.MONITORING_EC2_HOST }}
+          username: ${{ secrets.MONITORING_EC2_USER }}
+          key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
+          source: docker/docker-compose-monitoring.yml
+          target: /home/ec2-user/monitoring/
+          strip_components: 1
+          overwrite: true
+
+      - name: Upload .env to monitoring server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.MONITORING_EC2_HOST }}
+          username: ${{ secrets.MONITORING_EC2_USER }}
+          key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
+          source: config/.env
+          target: /home/ec2-user/monitoring/
+          strip_components: 1
+          overwrite: true
+
+      - name: Upload monitoring configs to monitoring server
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.MONITORING_EC2_HOST }}
+          username: ${{ secrets.MONITORING_EC2_USER }}
+          key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
+          source: "docker/monitoring/**"
+          target: /home/ec2-user/monitoring/
+          strip_components: 2
+          overwrite: true
+
+      # 5. 모니터링 서비스 배포
+      - name: Deploy monitoring services
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.MONITORING_EC2_HOST }}
+          username: ${{ secrets.MONITORING_EC2_USER }}
+          key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/monitoring
+            
+            # 기존 모니터링 컨테이너 중지 및 제거
+            docker compose -f docker-compose-monitoring.yml down || true
+            
+            # 새로운 모니터링 서비스 배포
+            docker compose -f docker-compose-monitoring.yml up -d
+
+      # 6. 모니터링 서비스 헬스체크
+      - name: Health check monitoring services
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.MONITORING_EC2_HOST }}
+          username: ${{ secrets.MONITORING_EC2_USER }}
+          key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/monitoring
+            
+            # Prometheus 헬스체크
+            echo "Checking Prometheus health..."
+            sleep 10
+            curl -f http://localhost:9090/-/healthy || exit 1
+            echo "Prometheus is healthy"
+            
+            # Grafana 헬스체크
+            echo "Checking Grafana health..."
+            sleep 5
+            curl -f http://localhost:3000/api/health || exit 1
+            echo "Grafana is healthy"
+            
+            echo "모니터링 서비스 배포 완료" 
