@@ -40,6 +40,11 @@ ai:
 app:
   cookie:
     domain: ""
+  ai:
+    recommendation:
+      default-top-k: 10
+      default-min-similarity: 0.5
+      default-use-price-filter: true
   cors:
     enabled: false
   frontend:
