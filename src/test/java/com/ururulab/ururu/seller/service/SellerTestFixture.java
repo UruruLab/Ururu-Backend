@@ -349,6 +349,63 @@ public class SellerTestFixture {
         );
     }
 
+    /**
+     * 이메일 최대 길이(100자) 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithMaxEmailLength() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "a".repeat(48) + "@" + "b".repeat(47) + ".com", // 48 + 1 + 47 + 4 = 100자
+                "Password123!",
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 비밀번호 최대 길이(50자) 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithMaxPasswordLength() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "maxpassword@ururu.shop",
+                "A".repeat(25) + "a".repeat(20) + "1!@#", // 50자
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
+    /**
+     * 이메일/비밀번호 모두 최대 길이 회원가입 요청 생성
+     */
+    public static SellerSignupRequest createRequestWithMaxEmailAndPasswordLength() {
+        return new SellerSignupRequest(
+                "우르르 뷰티",
+                "우르르 뷰티(주)",
+                "김태현",
+                "1234567890",
+                "a".repeat(48) + "@" + "b".repeat(47) + ".com", // 48 + 1 + 47 + 4 = 100자
+                "A".repeat(25) + "a".repeat(20) + "1!@#", // 50자
+                "01012345678",
+                null,
+                "서울시 강남구 테헤란로 123",
+                "456호",
+                "2024-서울강남-1234"
+        );
+    }
+
     // === 유틸리티 메서드 ===
 
     /**

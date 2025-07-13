@@ -311,6 +311,72 @@ class SellerSignupServiceTest {
             assertThat(response.email()).isEqualTo("seller+test@ururu.shop");
         }
 
+        @Test
+        @DisplayName("이메일 최대 길이(100자)로 회원가입 성공")
+        void signup_maxEmailLength_success() {
+            // Given
+            SellerSignupRequest request = SellerTestFixture.createRequestWithMaxEmailLength();
+            Seller savedSeller = SellerTestFixture.createSeller(1L, request.email(), request.name());
+            String encodedPassword = "encodedPassword123";
+
+            given(sellerRepository.isEmailAvailable(request.email())).willReturn(true);
+            given(sellerRepository.isBusinessNumberAvailable("1234567890")).willReturn(true);
+            given(sellerRepository.isNameAvailable(request.name())).willReturn(true);
+            given(passwordEncoder.encode(request.password())).willReturn(encodedPassword);
+            given(sellerRepository.save(any(Seller.class))).willReturn(savedSeller);
+
+            // When
+            SellerResponse response = sellerService.signup(request);
+
+            // Then
+            assertThat(response).isNotNull();
+            assertThat(response.email()).isEqualTo(request.email());
+        }
+
+        @Test
+        @DisplayName("비밀번호 최대 길이(50자)로 회원가입 성공")
+        void signup_maxPasswordLength_success() {
+            // Given
+            SellerSignupRequest request = SellerTestFixture.createRequestWithMaxPasswordLength();
+            Seller savedSeller = SellerTestFixture.createSeller(1L, request.email(), request.name());
+            String encodedPassword = "encodedPassword123";
+
+            given(sellerRepository.isEmailAvailable(request.email())).willReturn(true);
+            given(sellerRepository.isBusinessNumberAvailable("1234567890")).willReturn(true);
+            given(sellerRepository.isNameAvailable(request.name())).willReturn(true);
+            given(passwordEncoder.encode(request.password())).willReturn(encodedPassword);
+            given(sellerRepository.save(any(Seller.class))).willReturn(savedSeller);
+
+            // When
+            SellerResponse response = sellerService.signup(request);
+
+            // Then
+            assertThat(response).isNotNull();
+            assertThat(response.email()).isEqualTo(request.email());
+        }
+
+        @Test
+        @DisplayName("이메일/비밀번호 모두 최대 길이로 회원가입 성공")
+        void signup_maxEmailAndPasswordLength_success() {
+            // Given
+            SellerSignupRequest request = SellerTestFixture.createRequestWithMaxEmailAndPasswordLength();
+            Seller savedSeller = SellerTestFixture.createSeller(1L, request.email(), request.name());
+            String encodedPassword = "encodedPassword123";
+
+            given(sellerRepository.isEmailAvailable(request.email())).willReturn(true);
+            given(sellerRepository.isBusinessNumberAvailable("1234567890")).willReturn(true);
+            given(sellerRepository.isNameAvailable(request.name())).willReturn(true);
+            given(passwordEncoder.encode(request.password())).willReturn(encodedPassword);
+            given(sellerRepository.save(any(Seller.class))).willReturn(savedSeller);
+
+            // When
+            SellerResponse response = sellerService.signup(request);
+
+            // Then
+            assertThat(response).isNotNull();
+            assertThat(response.email()).isEqualTo(request.email());
+        }
+
 
     }
 
