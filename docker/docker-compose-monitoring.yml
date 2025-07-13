@@ -11,8 +11,6 @@ services:
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
-    environment:
-      - PROD_HOST=${PROD_HOST:-localhost}
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -20,15 +18,6 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
-    env_file:
-      - .env
-    # 환경변수 처리 스크립트 추가
-    entrypoint: |
-      sh -c "
-        envsubst < /etc/prometheus/prometheus.yml > /tmp/prometheus.yml &&
-        mv /tmp/prometheus.yml /etc/prometheus/prometheus.yml &&
-        /bin/prometheus --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --web.console.libraries=/etc/prometheus/console_libraries --web.console.templates=/etc/prometheus/consoles --storage.tsdb.retention.time=200h --web.enable-lifecycle
-      "
 
   # Grafana (대시보드)
   grafana:
