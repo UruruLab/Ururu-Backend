@@ -89,10 +89,6 @@ class RefundServiceTest {
             given(memberRepository.increasePoints(eq(scenario.member.getId()), anyInt())).willReturn(1);
             given(groupBuyOptionRepository.increaseStock(eq(scenario.groupBuyOption.getId()), anyInt())).willReturn(1);
 
-            // 디버깅용 로그
-            System.out.println("Test Order ID: " + scenario.order.getId());
-            System.out.println("Test Payment ID: " + scenario.payment.getId());
-
             // when
             RefundCreateResponseDto result = refundService.createRefundRequest(
                     scenario.member.getId(), scenario.order.getId(), request);
@@ -296,9 +292,5 @@ class RefundServiceTest {
         // 더 명시적인 Mock 설정
         given(paymentRepository.findByOrderId(eq("test-order-id")))
                 .willReturn(Optional.of(scenario.payment));
-
-        // 디버깅용 로그
-        System.out.println("Mocking Order ID: " + scenario.order.getId());
-        System.out.println("Mocking Payment: " + scenario.payment);
     }
 }

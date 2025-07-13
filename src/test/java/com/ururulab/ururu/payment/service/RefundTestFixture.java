@@ -139,9 +139,6 @@ public class RefundTestFixture {
         setFieldValue(order, "id", id);
         setFieldValue(order, "status", status);
 
-        // 디버깅용 로그
-        System.out.println("Created Order with ID: " + id);
-
         return order;
     }
 
