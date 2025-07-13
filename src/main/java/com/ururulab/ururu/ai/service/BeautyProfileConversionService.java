@@ -29,8 +29,8 @@ public class BeautyProfileConversionService {
 
         final GroupBuyRecommendationRequest.BeautyProfile aiBeautyProfile =
                 new GroupBuyRecommendationRequest.BeautyProfile(
-                        beautyProfile.getSkinType() != null ? beautyProfile.getSkinType().name() : "",
-                        beautyProfile.getSkinTone() != null ? beautyProfile.getSkinTone().name() : "",
+                        beautyProfile.getSkinType() != null ? beautyProfile.getSkinType().toString() : "OILY",
+                        beautyProfile.getSkinTone() != null ? beautyProfile.getSkinTone().toString() : "WARM",
                         beautyProfile.getConcerns(),
                         beautyProfile.getHasAllergy(),
                         beautyProfile.getAllergies(),
@@ -39,13 +39,13 @@ public class BeautyProfileConversionService {
 
         return new GroupBuyRecommendationRequest(
                 aiBeautyProfile,
-                topK != null ? topK : aiProperties.getDefaultTopK(),
+                topK != null ? topK : (aiProperties.getDefaultTopK() != null ? aiProperties.getDefaultTopK() : 40),
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
                 beautyProfile.getAdditionalInfo(),
                 beautyProfile.getInterestCategories(),
-                aiProperties.getDefaultMinSimilarity(),
-                aiProperties.isDefaultUsePriceFilter()
+                aiProperties.getDefaultMinSimilarity() != null ? aiProperties.getDefaultMinSimilarity() : 0.65,
+                aiProperties.getDefaultUsePriceFilter() != null ? aiProperties.getDefaultUsePriceFilter() : true
         );
     }
 }
