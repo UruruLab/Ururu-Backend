@@ -3,7 +3,9 @@ name: CI/CD - DockerHub Push & Blue-Green Deploy
 on:
   push:
     branches: [main]
-
+    paths-ignore:
+      - 'docker/monitoring/**'
+      
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -133,17 +135,6 @@ jobs:
           strip_components: 1
           overwrite: true
 
-      - name: Upload monitoring configs to EC2
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "docker/monitoring/prometheus/prometheus-prod.yml"
-          target: /home/ec2-user/app/monitoring/
-          strip_components: 3
-          overwrite: true
-
       - name: Ensure nginx shell scripts are executable
         uses: appleboy/ssh-action@v1
         with:
@@ -228,16 +219,3 @@ jobs:
             docker rm -f $ACTIVE || true
         env:
           ACTIVE: ${{ env.ACTIVE }}
-
-      # 13. 모니터링 컨테이너 배포
-      - name: Deploy monitoring containers
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ec2-user/app
-            
-            # docker-compose로 모니터링 서비스 실행
-            docker compose -f docker-compose-prod.yml up -d prometheus grafana
