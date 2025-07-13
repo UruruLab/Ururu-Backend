@@ -1,7 +1,6 @@
 package com.ururulab.ururu.payment.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
-import com.ururulab.ururu.order.domain.policy.OrderPolicy;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundType;
 import com.ururulab.ururu.payment.domain.policy.RefundPolicy;
@@ -39,6 +38,9 @@ public class Refund extends BaseEntity {
     @Column(nullable = false)
     private Integer amount;
 
+    @Column(nullable = false)
+    private Integer point;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RefundStatus status;
@@ -55,7 +57,7 @@ public class Refund extends BaseEntity {
     @OneToMany(mappedBy = "refund", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefundItem> refundItems = new ArrayList<>();
 
-    public static Refund create(Payment payment, RefundType type, String reason, Integer amount, String returnTrackingNumber, RefundStatus status) {
+    public static Refund create(Payment payment, RefundType type, String reason, Integer amount, Integer point, String returnTrackingNumber, RefundStatus status) {
         if (payment == null) {
             throw new IllegalArgumentException(RefundPolicy.PAYMENT_REQUIRED);
         }
@@ -74,14 +76,29 @@ public class Refund extends BaseEntity {
         if (amount < RefundPolicy.MIN_AMOUNT) {
             throw new IllegalArgumentException(RefundPolicy.AMOUNT_MIN);
         }
+        if (amount > RefundPolicy.MAX_AMOUNT) {
+            throw new IllegalArgumentException(RefundPolicy.AMOUNT_MAX);
+        }
         if (amount > payment.getAmount()) {
             throw new IllegalArgumentException(RefundPolicy.AMOUNT_EXCEEDS_PAYMENT);
+        }
+        if (point == null) {
+            throw new IllegalArgumentException(RefundPolicy.POINT_REQUIRED);
+        }
+        if (point < RefundPolicy.MIN_POINT) {
+            throw new IllegalArgumentException(RefundPolicy.POINT_MIN);
+        }
+        if (point > RefundPolicy.MAX_POINT) {
+            throw new IllegalArgumentException(RefundPolicy.POINT_MAX);
+        }
+        if (point > payment.getPoint()) {
+            throw new IllegalArgumentException(RefundPolicy.POINT_EXCEEDS_PAYMENT);
         }
         if (status == RefundStatus.INITIATED && type != RefundType.GROUPBUY_FAILED) {
             if (returnTrackingNumber == null || returnTrackingNumber.trim().isEmpty()) {
                 throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_REQUIRED);
             }
-            if (returnTrackingNumber != null && returnTrackingNumber.length() > RefundPolicy.RETURN_TRACKING_NUMBER_MAX_LENGTH) {
+            if (returnTrackingNumber.length() > RefundPolicy.RETURN_TRACKING_NUMBER_MAX_LENGTH) {
                 throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_TOO_LONG);
             }
         }
@@ -92,6 +109,7 @@ public class Refund extends BaseEntity {
         refund.type = type;
         refund.reason = reason.trim();
         refund.amount = amount;
+        refund.point = point;
         refund.status = status;
         refund.returnTrackingNumber = returnTrackingNumber;
 
