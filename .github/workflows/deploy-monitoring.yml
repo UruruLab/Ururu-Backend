@@ -97,11 +97,19 @@ jobs:
           script: |
             cd /home/ec2-user/monitoring
             
-            # 기존 모니터링 컨테이너 중지 및 제거
-            docker compose -f docker-compose-monitoring.yml down || true
-            
-            # 새로운 모니터링 서비스 배포
-            docker compose -f docker-compose-monitoring.yml up -d
+            # Docker Compose 명령어 확인 및 실행
+            if command -v docker-compose &> /dev/null; then
+              # docker-compose (하이픈 포함) 사용
+              docker-compose -f docker-compose-monitoring.yml down || true
+              docker-compose -f docker-compose-monitoring.yml up -d
+            elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+              # docker compose (공백 포함) 사용
+              docker compose -f docker-compose-monitoring.yml down || true
+              docker compose -f docker-compose-monitoring.yml up -d
+            else
+              echo "Error: Docker Compose is not installed"
+              exit 1
+            fi
 
       # 6. 모니터링 서비스 헬스체크
       - name: Health check monitoring services
