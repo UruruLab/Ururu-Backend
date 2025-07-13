@@ -17,6 +17,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -452,26 +458,51 @@ class SellerSignupServiceTest {
     }
 
     @Nested
-    @DisplayName("동시성 테스트")
-    class SellerSignupConcurrencyTest {
+    @DisplayName("회원가입 기본 동작 검증")
+    class SellerSignupBasicValidationTest {
 
         @Test
-        @DisplayName("동시 회원가입 시도 시 하나만 성공")
-        void signup_concurrentSignup_onlyOneSucceeds() throws InterruptedException {
+        @DisplayName("회원가입 기본 동작 검증")
+        void signup_basicValidation_success() throws InterruptedException {
             // Given
             SellerSignupRequest request = SellerTestFixture.createValidSignupRequest();
             String encodedPassword = "encodedPassword123";
+            int threadCount = 5;
+            CountDownLatch latch = new CountDownLatch(threadCount);
+            AtomicInteger successCount = new AtomicInteger(0);
+            AtomicInteger failureCount = new AtomicInteger(0);
 
             given(sellerRepository.isEmailAvailable("seller@ururu.shop")).willReturn(true);
             given(sellerRepository.isBusinessNumberAvailable("1234567890")).willReturn(true);
             given(sellerRepository.isNameAvailable("우르르 뷰티")).willReturn(true);
             given(passwordEncoder.encode("Password123!")).willReturn(encodedPassword);
-            given(sellerRepository.save(any(Seller.class))).willReturn(SellerTestFixture.createSeller(1L, "seller@ururu.shop", "우르르 뷰티"));
+            
+            // 첫 번째 save는 성공, 나머지는 DataIntegrityViolationException 발생
+            given(sellerRepository.save(any(Seller.class)))
+                .willReturn(SellerTestFixture.createSeller(1L, "seller@ururu.shop", "우르르 뷰티"))
+                .willThrow(new DataIntegrityViolationException("Duplicate entry"));
 
-            // When & Then
-            // 동시성 테스트는 실제 환경에서만 의미가 있으므로 여기서는 기본 검증만 수행
-            SellerResponse response = sellerService.signup(request);
-            assertThat(response).isNotNull();
+            // When
+            ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+            for (int i = 0; i < threadCount; i++) {
+                executor.submit(() -> {
+                    try {
+                        sellerService.signup(request);
+                        successCount.incrementAndGet();
+                    } catch (BusinessException e) {
+                        failureCount.incrementAndGet();
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            
+            latch.await(5, TimeUnit.SECONDS);
+            executor.shutdown();
+
+            // Then
+            assertThat(successCount.get()).isEqualTo(1);
+            assertThat(failureCount.get()).isEqualTo(threadCount - 1);
         }
     }
 
