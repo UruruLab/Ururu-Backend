@@ -376,7 +376,7 @@ public class RefundService {
      */
     private void validateOrderForRefund(Order order) {
         if (order.getStatus() != OrderStatus.ORDERED && order.getStatus() != OrderStatus.PARTIAL_REFUNDED) {
-            throw new BusinessException(ErrorCode.ORDER_NOT_PENDING);
+            throw new BusinessException(ErrorCode.ORDER_NOT_REFUNDABLE);
         }
     }
 
