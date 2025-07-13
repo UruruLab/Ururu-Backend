@@ -47,8 +47,12 @@ ORDER BY RAND()
 LIMIT 400;
 
 -- =====================================================
--- 2. 각 공동구매별 옵션 1개씩 생성
+-- 2. 각 공동구매별 옵션 1개씩 생성 (CodeRabbit 개선사항 적용)
 -- =====================================================
+-- 새로 생성된 GroupBuy ID들을 임시 테이블로 관리
+CREATE TEMPORARY TABLE tmp_new_groupbuy_ids AS
+SELECT id FROM groupbuys WHERE created_at >= (SELECT MIN(created_at) FROM groupbuys WHERE created_at >= NOW() - INTERVAL 1 MINUTE);
+
 INSERT INTO groupbuy_options (
     initial_stock, price_override, sale_price, stock,
     created_at, groupbuy_id, product_option_id, updated_at
@@ -63,9 +67,9 @@ SELECT
     po.id as product_option_id,
     NOW() as updated_at
 FROM groupbuys gb
+JOIN tmp_new_groupbuy_ids t ON gb.id = t.id
 JOIN products p ON gb.product_id = p.id
 JOIN product_options po ON p.id = po.product_id AND po.is_deleted = 0
-WHERE gb.id > (SELECT MAX(id) - 400 FROM groupbuys)
 GROUP BY gb.id
 ORDER BY gb.id;
 

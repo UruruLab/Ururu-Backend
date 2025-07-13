@@ -57,7 +57,7 @@ WHERE p.status = 'ACTIVE' AND po.is_deleted = 0;
 SELECT 
     CASE 
         WHEN COUNT(*) >= 10 THEN CONCAT('✅ 충분한 활성 판매자 존재: ', COUNT(*), '개')
-        ELSE CONCAT('❌ 활성 판매자 부족: ', COUNT(*), '개 (10개 권장)')
+        ELSE CONCAT('❌ 활성 판매자 부족: ', COUNT(*), '개 (10개 필요)')
     END as seller_check,
     COUNT(*) as active_seller_count
 FROM sellers 
@@ -107,7 +107,7 @@ SELECT
         WHEN (SELECT COUNT(*) FROM groupbuys) = 0 AND 
              (SELECT COUNT(*) FROM products WHERE status = 'ACTIVE') >= 400 AND
              (SELECT COUNT(*) FROM product_options po JOIN products p ON po.product_id = p.id WHERE p.status = 'ACTIVE' AND po.is_deleted = 0) >= 400 AND
-             (SELECT COUNT(*) FROM sellers WHERE is_deleted = 0) >= 5
+             (SELECT COUNT(*) FROM sellers WHERE is_deleted = 0) >= 10
         THEN '✅ 모든 조건 만족 - 안전하게 실행 가능'
         WHEN (SELECT COUNT(*) FROM groupbuys) > 0
         THEN '⚠️ 기존 데이터 존재 - 백업 후 실행 권장'
