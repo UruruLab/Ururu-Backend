@@ -43,6 +43,9 @@ public class Refund extends BaseEntity {
     @Column(nullable = false)
     private RefundStatus status;
 
+    @Column(length = RefundPolicy.RETURN_TRACKING_NUMBER_MAX_LENGTH)
+    private String returnTrackingNumber;
+
     @Column(length = RefundPolicy.REJECT_REASON_MAX_LENGTH)
     private String rejectReason;
 
@@ -52,7 +55,7 @@ public class Refund extends BaseEntity {
     @OneToMany(mappedBy = "refund", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefundItem> refundItems = new ArrayList<>();
 
-    public static Refund create(Payment payment, RefundType type, String reason, Integer amount) {
+    public static Refund create(Payment payment, RefundType type, String reason, Integer amount, String returnTrackingNumber) {
         if (payment == null) {
             throw new IllegalArgumentException(RefundPolicy.PAYMENT_REQUIRED);
         }
@@ -73,6 +76,12 @@ public class Refund extends BaseEntity {
         }
         if (amount > payment.getAmount()) {
             throw new IllegalArgumentException(RefundPolicy.AMOUNT_EXCEEDS_PAYMENT);
+        }
+        if (type != RefundType.GROUPBUY_FAILED && (returnTrackingNumber == null || returnTrackingNumber.trim().isEmpty())) {
+            throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_REQUIRED);
+        }
+        if (returnTrackingNumber != null && returnTrackingNumber.length() > RefundPolicy.RETURN_TRACKING_NUMBER_MAX_LENGTH) {
+            throw new IllegalArgumentException(RefundPolicy.RETURN_TRACKING_NUMBER_TOO_LONG);
         }
 
         Refund refund = new Refund();
