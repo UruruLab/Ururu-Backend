@@ -1,5 +1,6 @@
 package com.ururulab.ururu.ai.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -7,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record GroupBuyRecommendationRequest(
     @Valid @NotNull(message = "뷰티 프로필은 필수입니다")
     BeautyProfile beautyProfile,
@@ -49,45 +51,5 @@ public record GroupBuyRecommendationRequest(
     @AssertTrue(message = "최소 가격은 최대 가격보다 작거나 같아야 합니다")
     public boolean isValidPriceRange() {
         return minPrice == null || maxPrice == null || minPrice <= maxPrice;
-    }
-    
-    public GroupBuyRecommendationRequest withMemberId(final Long memberId) {
-        // memberId는 인증을 통해 처리되므로 DTO에서 제거
-        return this;
-    }
-    
-    public static GroupBuyRecommendationRequest ofBeautyProfile(
-            final String skinType,
-            final String skinTone,
-            final List<String> concerns,
-            final Boolean hasAllergy,
-            final List<String> allergies,
-            final List<String> interestCategories,
-            final Integer topK,
-            final Integer minPrice,
-            final Integer maxPrice,
-            final String additionalInfo,
-            final Double minSimilarity,
-            final Boolean usePriceFilter
-    ) {
-        final BeautyProfile beautyProfile = new BeautyProfile(
-                skinType,
-                skinTone,
-                concerns,
-                hasAllergy,
-                allergies,
-                interestCategories
-        );
-        
-        return new GroupBuyRecommendationRequest(
-                beautyProfile,
-                topK != null ? topK : 40,
-                minPrice,
-                maxPrice,
-                additionalInfo,
-                interestCategories,
-                minSimilarity != null ? minSimilarity : 0.3,
-                usePriceFilter != null ? usePriceFilter : true
-        );
     }
 }
