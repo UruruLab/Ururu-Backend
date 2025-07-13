@@ -30,6 +30,7 @@ public class SellerTestFixture {
                 "encodedPassword123",
                 "01012345678",
                 "https://example.com/image.jpg",
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -51,6 +52,7 @@ public class SellerTestFixture {
                 "encodedPassword123",
                 "01012345678",
                 "https://example.com/image.jpg",
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -70,6 +72,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 "https://example.com/image.jpg",
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -89,6 +92,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -110,6 +114,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01098765432",
                 null,
+                "12345",
                 "부산시 해운대구 센텀로 456",
                 "789호",
                 "2024-부산해운대-5678"
@@ -129,6 +134,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01098765432",
                 null,
+                "12345",
                 "부산시 해운대구 센텀로 456",
                 "789호",
                 "2024-부산해운대-5678"
@@ -148,6 +154,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01098765432",
                 null,
+                "12345",
                 "부산시 해운대구 센텀로 456",
                 "789호",
                 "2024-부산해운대-5678"
@@ -189,6 +196,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01011111111",
                 null,
+                "12345",
                 "서울시 강남구 테스트로 111",
                 "111호",
                 "2024-서울강남-1111"
@@ -208,6 +216,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "  01012345678  ",
                 null,
+                "12345",
                 "  서울시 강남구 테헤란로 123  ",
                 "  456호  ",
                 "  2024-서울강남-1234  "
@@ -227,6 +236,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "D".repeat(100), // 최대 길이
                 "E".repeat(100), // 최대 길이
                 "F".repeat(50) // 최대 길이
@@ -246,6 +256,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "D", // 최소 길이
                 "E", // 최소 길이
                 "F" // 최소 길이
@@ -267,6 +278,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123, 456동",
                 "456호 (우르르빌딩)",
                 "2024-서울강남-1234 (통신판매업)"
@@ -286,6 +298,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "서울특별시 강남구 테헤란로 123",
                 "456호 (우르르빌딩)",
                 "2024-서울강남-1234"
@@ -305,6 +318,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -324,6 +338,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -343,6 +358,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "D".repeat(100), // 최대 길이 주소
                 "E".repeat(100), // 최대 길이 상세주소
                 "F".repeat(50) // 최대 길이 통신판매업번호
@@ -362,6 +378,7 @@ public class SellerTestFixture {
                 "Password123!",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -381,6 +398,7 @@ public class SellerTestFixture {
                 "A".repeat(25) + "a".repeat(20) + "1!@#$",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"
@@ -400,6 +418,7 @@ public class SellerTestFixture {
                 "A".repeat(25) + "a".repeat(20) + "1!@#$",
                 "01012345678",
                 null,
+                "12345",
                 "서울시 강남구 테헤란로 123",
                 "456호",
                 "2024-서울강남-1234"

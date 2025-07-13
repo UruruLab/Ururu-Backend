@@ -201,6 +201,7 @@ public final class AuthTestFixture {
                 "encodedPassword123",
                 "01012345678",
                 "https://example.com/brand.jpg",
+                "12345",
                 "서울시 강남구",
                 "테스트동 123-45",
                 "2024-서울강남-1234"

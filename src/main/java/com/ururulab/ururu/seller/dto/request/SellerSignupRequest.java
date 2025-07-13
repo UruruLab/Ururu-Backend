@@ -49,6 +49,14 @@ public record SellerSignupRequest(
 
         String image,
 
+        @NotBlank(message = SellerConstants.ZONECODE_REQUIRED)
+        @Size(min = SellerConstants.ZONECODE_LENGTH,
+                max = SellerConstants.ZONECODE_LENGTH,
+                message = SellerConstants.ZONECODE_SIZE)
+        @Pattern(regexp = SellerConstants.ZONECODE_PATTERN,
+                message = SellerConstants.ZONECODE_PATTERN_ERROR)
+        String zonecode,
+
         @NotBlank(message = SellerConstants.ADDRESS1_REQUIRED)
         @Size(max = SellerConstants.ADDRESS_MAX_LENGTH,
                 message = SellerConstants.ADDRESS1_SIZE)

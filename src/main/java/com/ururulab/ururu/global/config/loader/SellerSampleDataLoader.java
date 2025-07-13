@@ -43,6 +43,7 @@ public class SellerSampleDataLoader implements CommandLineRunner {
                     encodedPassword,            // password (암호화됨)
                     "01012345678",            // phone
                     null,                      // image
+                    "12345",                  // zonecode (우편번호)
                     "서울특별시 강남구 테헤란로 123", // address1
                     "1층 101호",                // address2
                     "2023-서울강남-1234"        // mailOrderNumber

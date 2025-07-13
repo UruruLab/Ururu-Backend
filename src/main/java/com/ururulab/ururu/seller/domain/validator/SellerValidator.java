@@ -107,6 +107,20 @@ public class SellerValidator {
         }
     }
 
+    // zonecode (우편번호) 유효성 검증
+    public static void validateZonecode(String zonecode) {
+        if (zonecode == null || zonecode.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.SELLER_ZONECODE_REQUIRED);
+        }
+        String trimmedZonecode = zonecode.trim();
+        if (trimmedZonecode.length() != SellerConstants.ZONECODE_LENGTH) {
+            throw new BusinessException(ErrorCode.SELLER_ZONECODE_SIZE_ERROR, SellerConstants.ZONECODE_LENGTH);
+        }
+        if (!trimmedZonecode.matches(SellerConstants.ZONECODE_PATTERN)) {
+            throw new BusinessException(ErrorCode.SELLER_ZONECODE_PATTERN_ERROR);
+        }
+    }
+
     // address1 유효성 검증
     public static void validateAddress1(String address1) {
         if (address1 == null || address1.trim().isEmpty()) {
