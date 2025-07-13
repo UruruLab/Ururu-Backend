@@ -62,6 +62,7 @@ public enum ErrorCode {
 	REFUND_ALREADY_PROCESSED(HttpStatus.CONFLICT, "REFUND002", "이미 처리된 환불입니다."),
 	REFUND_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, "REFUND003", "환불 처리 기간이 만료되었습니다. (%d일 이내)"),
 	DUPLICATE_REFUND_REQUEST(HttpStatus.CONFLICT, "REFUND004", "이미 진행 중인 환불 요청이 있습니다."),
+	INVALID_REFUND_ACTION(HttpStatus.BAD_REQUEST, "REFUND005", "유효하지 않은 환불 처리 액션입니다."),
 
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
