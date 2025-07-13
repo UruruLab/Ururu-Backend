@@ -30,6 +30,15 @@ public interface GroupBuyOptionRepository extends JpaRepository<GroupBuyOption, 
     Optional<GroupBuyOption> findByIdWithDetails(@Param("optionId") Long optionId);
 
     /**
+     * 공구 옵션 재고 증가
+     * 환불 승인 시 재고 복구용
+     */
+    @Modifying
+    @Query("UPDATE GroupBuyOption gbo SET gbo.stock = gbo.stock + :quantity " +
+            "WHERE gbo.id = :optionId")
+    int increaseStock(@Param("optionId") Long optionId, @Param("quantity") Integer quantity);
+
+    /**
      * 공구 옵션 재고 차감
      * Payment 도메인에서 결제 완료 시 사용:
      * - 결제 승인 완료 후 실제 재고 차감
