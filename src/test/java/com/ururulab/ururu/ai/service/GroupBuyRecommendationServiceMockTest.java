@@ -30,7 +30,13 @@ class GroupBuyRecommendationServiceMockTest {
     private GroupBuyRecommendationCacheService cacheService;
 
     @Mock
-    private UruruAiService aiService;
+    private AiRecommendationService aiRecommendationService;
+
+    @Mock
+    private BeautyProfileConversionService conversionService;
+
+    @Mock
+    private GroupBuyRecommendationRequestProcessor requestProcessor;
 
     @InjectMocks
     private GroupBuyRecommendationService recommendationService;
@@ -43,6 +49,7 @@ class GroupBuyRecommendationServiceMockTest {
         final GroupBuyRecommendationRequest request = createMockRequest();
         final GroupBuyRecommendationResponse cachedResponse = createMockResponse();
 
+        given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(cachedResponse);
 
         // When
@@ -51,7 +58,7 @@ class GroupBuyRecommendationServiceMockTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.cacheSource()).isEqualTo("CACHE");
-        then(aiService).should(never()).getRecommendations(any(Long.class), any(GroupBuyRecommendationRequest.class));
+        then(aiRecommendationService).should(never()).getRecommendations(any(Long.class), any(GroupBuyRecommendationRequest.class));
         then(cacheService).should(never()).tryAcquireProcessingLock(any());
     }
 
@@ -63,9 +70,10 @@ class GroupBuyRecommendationServiceMockTest {
         final GroupBuyRecommendationRequest request = createMockRequest();
         final List<RecommendedGroupBuy> mockRecommendations = createMockRecommendations();
 
+        given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
         given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(true);
-        given(aiService.getRecommendations(memberId, request)).willReturn(mockRecommendations);
+        given(aiRecommendationService.getRecommendations(memberId, request)).willReturn(mockRecommendations);
 
         // When
         final GroupBuyRecommendationResponse result = recommendationService.getRecommendations(memberId, request);
@@ -85,6 +93,7 @@ class GroupBuyRecommendationServiceMockTest {
         final Long memberId = 1L;
         final GroupBuyRecommendationRequest request = createMockRequest();
 
+        given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
         given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(false);
 
@@ -94,7 +103,7 @@ class GroupBuyRecommendationServiceMockTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.AI_RECOMMENDATION_PROCESSING_IN_PROGRESS);
 
-        then(aiService).should(never()).getRecommendations(any(Long.class), any(GroupBuyRecommendationRequest.class));
+        then(aiRecommendationService).should(never()).getRecommendations(any(Long.class), any(GroupBuyRecommendationRequest.class));
     }
 
     @Test
@@ -104,9 +113,10 @@ class GroupBuyRecommendationServiceMockTest {
         final Long memberId = 1L;
         final GroupBuyRecommendationRequest request = createMockRequest();
 
+        given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
         given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(true);
-        given(aiService.getRecommendations(memberId, request)).willReturn(List.of());
+        given(aiRecommendationService.getRecommendations(memberId, request)).willReturn(List.of());
 
         // When & Then
         assertThatThrownBy(() -> recommendationService.getRecommendations(memberId, request))
@@ -166,5 +176,28 @@ class GroupBuyRecommendationServiceMockTest {
                         8, 5, LocalDateTime.now().plusDays(5)
                 )
         );
+    }
+    
+    @Test
+    @DisplayName("뷰티프로필 기반 추천 시 변환 서비스를 호출한다")
+    void shouldCallConversionServiceForProfileBasedRecommendation() {
+        // Given
+        final Long memberId = 1L;
+        final Integer topK = 10;
+        final GroupBuyRecommendationRequest convertedRequest = createMockRequest();
+        final GroupBuyRecommendationResponse cachedResponse = createMockResponse();
+
+        given(conversionService.convertToRecommendationRequest(memberId, topK)).willReturn(convertedRequest);
+        given(requestProcessor.applyDefaults(convertedRequest)).willReturn(convertedRequest);
+        given(cacheService.getCachedRecommendation(memberId)).willReturn(cachedResponse);
+
+        // When
+        final GroupBuyRecommendationResponse result = recommendationService.getRecommendationsByProfile(memberId, topK);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.cacheSource()).isEqualTo("CACHE");
+        then(conversionService).should().convertToRecommendationRequest(memberId, topK);
+        then(requestProcessor).should().applyDefaults(convertedRequest);
     }
 }
