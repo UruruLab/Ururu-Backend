@@ -84,7 +84,7 @@ jobs:
           key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
           source: "docker/monitoring/**"
           target: /home/ec2-user/monitoring/
-          strip_components: 2
+          strip_components: 1
           overwrite: true
 
       # 5. 모니터링 서비스 배포
@@ -120,6 +120,25 @@ jobs:
           key: ${{ secrets.MONITORING_EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/monitoring
+            
+            # 컨테이너 상태 확인
+            echo "=== Docker 컨테이너 상태 확인 ==="
+            docker ps -a
+            echo ""
+            
+            # 컨테이너 로그 확인
+            echo "=== Prometheus 컨테이너 로그 ==="
+            docker logs ururu-prometheus || echo "Prometheus 컨테이너가 없습니다"
+            echo ""
+            
+            echo "=== Grafana 컨테이너 로그 ==="
+            docker logs ururu-grafana || echo "Grafana 컨테이너가 없습니다"
+            echo ""
+            
+            # 포트 확인
+            echo "=== 포트 바인딩 확인 ==="
+            netstat -tlnp | grep -E ':(9090|3000)' || echo "포트가 바인딩되지 않았습니다"
+            echo ""
             
             # Prometheus 헬스체크
             echo "Checking Prometheus health..."
