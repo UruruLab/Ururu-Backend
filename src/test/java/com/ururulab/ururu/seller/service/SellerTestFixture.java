@@ -282,7 +282,7 @@ public class SellerTestFixture {
                 "우르르 뷰티 주식회사",
                 "김태현",
                 "1234567890",
-                "seller@우르르.shop",
+                "seller@ururu-korean.shop",
                 "Password123!",
                 "01012345678",
                 null,
