@@ -358,7 +358,7 @@ public class SellerTestFixture {
                 "우르르 뷰티(주)",
                 "김태현",
                 "1234567890",
-                "a".repeat(48) + "@" + "b".repeat(47) + ".com", // 48 + 1 + 47 + 4 = 100자
+                "a".repeat(48) + "@" + "b".repeat(47) + ".com",
                 "Password123!",
                 "01012345678",
                 null,
@@ -378,7 +378,7 @@ public class SellerTestFixture {
                 "김태현",
                 "1234567890",
                 "maxpassword@ururu.shop",
-                "A".repeat(25) + "a".repeat(20) + "1!@#", // 50자
+                "A".repeat(25) + "a".repeat(20) + "1!@#$",
                 "01012345678",
                 null,
                 "서울시 강남구 테헤란로 123",
@@ -396,8 +396,8 @@ public class SellerTestFixture {
                 "우르르 뷰티(주)",
                 "김태현",
                 "1234567890",
-                "a".repeat(48) + "@" + "b".repeat(47) + ".com", // 48 + 1 + 47 + 4 = 100자
-                "A".repeat(25) + "a".repeat(20) + "1!@#", // 50자
+                "a".repeat(48) + "@" + "b".repeat(47) + ".com",
+                "A".repeat(25) + "a".repeat(20) + "1!@#$",
                 "01012345678",
                 null,
                 "서울시 강남구 테헤란로 123",
