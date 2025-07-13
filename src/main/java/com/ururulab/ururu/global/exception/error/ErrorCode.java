@@ -26,6 +26,7 @@ public enum ErrorCode {
 	OPTION_IMAGE_COUNT_MISMATCH(HttpStatus.BAD_REQUEST, "IMAGE009", "옵션 개수(%d)와 이미지 개수(%d)가 일치하지 않습니다."),
 	IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE010", "이미지 업로드에 실패했습니다."),
 	IMAGE_SIZE_EXCEEDED(HttpStatus.PAYLOAD_TOO_LARGE, "IMAGE011", "파일 크기가 제한을 초과했습니다."),
+	REQUEST_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "IMAGE012", "전체 요청 크기가 제한을 초과했습니다."),
 	// --- 태그 ---
 	TAG_NOT_FOUND(HttpStatus.BAD_REQUEST, "TAG001", "존재하지 않는 태그입니다."),
 

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/products/create")
+@RequestMapping("/api/products/create")
 public class ProductMetadataController {
 
     private final ProductMetadataService productMetadataService;

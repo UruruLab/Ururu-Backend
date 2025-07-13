@@ -3,14 +3,14 @@ package com.ururulab.ururu.product.service;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.image.service.ImageHashService;
-import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
-import com.ururulab.ururu.product.dto.request.ProductOptionRequest;
-import com.ururulab.ururu.product.dto.response.ProductOptionResponse;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import com.ururulab.ururu.product.domain.repository.ProductOptionRepository;
 import com.ururulab.ururu.product.domain.repository.ProductRepository;
+import com.ururulab.ururu.product.dto.request.ProductImageUploadRequest;
+import com.ururulab.ururu.product.dto.request.ProductOptionRequest;
+import com.ururulab.ururu.product.dto.response.ProductOptionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,7 +62,6 @@ public class ProductOptionService {
         List<ProductOption> changedOptions = new ArrayList<>();
         List<ProductImageUploadRequest> imageUploadRequests = new ArrayList<>();
         List<String> imagesToDelete = new ArrayList<>();
-        Set<Long> processedOptionIds = new HashSet<>();
 
         // 요청된 옵션들 처리
         for (int i = 0; i < optionRequests.size(); i++) {
@@ -76,7 +77,6 @@ public class ProductOptionService {
                 if (optionChanged) {
                     changedOptions.add(existingOption);
                 }
-                processedOptionIds.add(optionRequest.id());
 
             } else {
                 // 새 옵션 생성
@@ -90,11 +90,9 @@ public class ProductOptionService {
         if (!changedOptions.isEmpty()) {
             productOptionRepository.saveAll(changedOptions);
             log.info("Updated {} options for product: {}", changedOptions.size(), product.getId());
-        } else {
-            log.info("No options changed for product: {}", product.getId());
         }
 
-        // 이미지 업로드/삭제 이벤트 발행
+        // 비동기 이미지 업로드/삭제 이벤트 발행 (ProductOptionImageService에 위임)
         productOptionImageService.publishImageEvents(product.getId(), imageUploadRequests, imagesToDelete);
 
         // 최종 옵션 목록 반환
@@ -114,7 +112,6 @@ public class ProductOptionService {
 
     @Transactional(readOnly = true)
     public List<ProductOptionResponse> getProductOptions(Long productId, Long sellerId) {
-        // sellerId가 productId의 실제 소유자인지 확인
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(PRODUCT_NOT_FOUND));
 
@@ -128,6 +125,9 @@ public class ProductOptionService {
                 .toList();
     }
 
+    /**
+     * 기존 옵션 업데이트 (이미지 처리 포함)
+     */
     private boolean updateExistingOptionIfChanged(ProductOption existingOption, ProductOptionRequest request,
                                                   MultipartFile newImage, List<ProductImageUploadRequest> imageUploadRequests,
                                                   List<String> imagesToDelete) {
@@ -135,17 +135,15 @@ public class ProductOptionService {
 
         // 기본 정보 변경 확인
         if (!request.name().equals(existingOption.getName())) {
-            String oldName = existingOption.getName();
             existingOption.updateName(request.name());
             changed = true;
-            log.info("Option name updated: '{}' -> '{}' for ID: {}", oldName, request.name(), existingOption.getId());
+            log.info("Option name updated: '{}' -> '{}' for ID: {}", existingOption.getName(), request.name(), existingOption.getId());
         }
 
         if (!request.price().equals(existingOption.getPrice())) {
-            Integer oldPrice = existingOption.getPrice();
             existingOption.updatePrice(request.price());
             changed = true;
-            log.info("Option price updated: {} -> {} for ID: {}", oldPrice, request.price(), existingOption.getId());
+            log.info("Option price updated: {} -> {} for ID: {}", existingOption.getPrice(), request.price(), existingOption.getId());
         }
 
         if (!request.fullIngredients().equals(existingOption.getFullIngredients())) {
@@ -154,50 +152,46 @@ public class ProductOptionService {
             log.info("Option ingredients updated for ID: {}", existingOption.getId());
         }
 
+        // 이미지 처리
         if (newImage != null && !newImage.isEmpty()) {
             try {
-                long start = System.currentTimeMillis();
                 String newImageHash = imageHashService.calculateImageHash(newImage);
-                long end = System.currentTimeMillis();
-                log.info("Hash calculation took: {}ms for file: {}", end - start, newImage.getOriginalFilename());
 
                 if (!newImageHash.equals(existingOption.getImageHash())) {
                     String existingImageUrl = existingOption.getImageUrl();
                     if (existingImageUrl != null) {
                         imagesToDelete.add(existingImageUrl);
-                        log.info("Different image detected, scheduled existing image for deletion: {}", existingImageUrl);
+                        log.info("Scheduled existing image for deletion: {}", existingImageUrl);
                     }
+
+                    File tempFile = createTempFile(newImage);
 
                     imageUploadRequests.add(new ProductImageUploadRequest(
                             existingOption.getId(),
                             newImage.getOriginalFilename(),
-                            newImage.getBytes(),
+                            tempFile.getAbsolutePath(),
                             newImageHash
                     ));
 
                     existingOption.updateImageHash(newImageHash);
-                    existingOption.updateImageUrl(null);
+                    existingOption.updateImageUrl(null); // 비동기 업로드 완료 후 업데이트
                     changed = true;
-                    log.info("Different image detected, scheduled for upload for option: {}", existingOption.getId());
+                    log.info("Scheduled image upload for option: {}", existingOption.getId());
                 } else {
-                    log.info("Same image detected (hash match: {}), skipping upload for option: {}",
-                            newImageHash, existingOption.getId());
+                    log.info("Same image hash, skipping upload for option: {}", existingOption.getId());
                 }
-            } catch (IOException e) {
-                log.error("Failed to read image file for option: {}", existingOption.getId(), e);
-                throw new BusinessException(ErrorCode.IMAGE_READ_FAILED);
             } catch (Exception e) {
-                log.error("Failed to calculate image hash for option: {}", existingOption.getId(), e);
-                throw new BusinessException(ErrorCode.IMAGE_CONVERSION_FAILED);
+                log.error("Failed to process image for option: {}", existingOption.getId(), e);
+                throw new BusinessException(ErrorCode.IMAGE_PROCESSING_FAILED);
             }
-        } else {
-            log.info("No image provided, keeping existing image for option: {} - {}",
-                    existingOption.getName(), existingOption.getImageUrl());
         }
 
         return changed;
     }
 
+    /**
+     * 새 옵션 생성 (이미지 처리 포함)
+     */
     private ProductOption createNewOption(Product product, ProductOptionRequest request,
                                           MultipartFile newImage, List<ProductImageUploadRequest> imageUploadRequests) {
 
@@ -207,22 +201,41 @@ public class ProductOptionService {
         if (newImage != null && !newImage.isEmpty()) {
             try {
                 String imageHash = imageHashService.calculateImageHash(newImage);
+                File tempFile = createTempFile(newImage);
 
                 imageUploadRequests.add(new ProductImageUploadRequest(
                         savedOption.getId(),
                         newImage.getOriginalFilename(),
-                        newImage.getBytes(),
+                        tempFile.getAbsolutePath(),
                         imageHash
                 ));
 
-                log.info("Image upload scheduled for new option: {} (hash: {})",
-                        savedOption.getId(), imageHash);
-            } catch (IOException e) {
-                throw new BusinessException(IMAGE_READ_FAILED);
+                log.info("Scheduled image upload for new option: {}", savedOption.getId());
+            } catch (Exception e) {
+                log.error("Failed to process image for new option: {}", savedOption.getId(), e);
+                throw new BusinessException(IMAGE_PROCESSING_FAILED);
             }
         }
 
         return savedOption;
+    }
+
+    /**
+     * 임시 파일 생성
+     */
+    private File createTempFile(MultipartFile multipartFile) throws IOException {
+        File tempFile = Files.createTempFile(
+                "option_" + System.currentTimeMillis() + "_",
+                "_" + multipartFile.getOriginalFilename()
+        ).toFile();
+
+        multipartFile.transferTo(tempFile);
+        tempFile.deleteOnExit();
+
+        log.debug("Created temp file for option: {} (size: {} bytes)",
+                tempFile.getName(), tempFile.length());
+
+        return tempFile;
     }
 
     @Transactional
@@ -244,9 +257,7 @@ public class ProductOptionService {
             throw new BusinessException(ErrorCode.CANNOT_DELETE_LAST_OPTION);
         }
 
-        // 삭제 처리
         option.markAsDeleted();
         productOptionRepository.save(option);
     }
-
 }

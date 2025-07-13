@@ -1,8 +1,6 @@
 package com.ururulab.ururu.groupBuy.listener;
 
-import com.ururulab.ururu.groupBuy.event.GroupBuyDetailImageUploadEvent;
 import com.ururulab.ururu.groupBuy.event.GroupBuyThumbnailUploadEvent;
-import com.ururulab.ururu.groupBuy.service.GroupBuyDetailImageService;
 import com.ururulab.ururu.groupBuy.service.GroupBuyThumbnailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +23,7 @@ public class GroupBuyThumbnailUploadListener {
         groupBuyThumbnailService.uploadThumbnailAsync(
                 event.groupBuyId(),
                 event.originalFilename(),
-                event.data(),
+                event.tempFilePath(),
                 event.thumbnailHash()
         );
 

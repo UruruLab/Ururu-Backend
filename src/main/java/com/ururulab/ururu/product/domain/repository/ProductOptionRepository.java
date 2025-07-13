@@ -26,4 +26,8 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
     void markAllAsDeletedByProductId(@Param("productId") Long productId);
 
     List<ProductOption> findByProductId(Long productId);
+
+    @Query("SELECT po FROM ProductOption po WHERE po.id IN :optionIds AND po.product.id = :productId")
+    List<ProductOption> findAllByIdInAndProductId(@Param("optionIds") List<Long> optionIds,
+                                                  @Param("productId") Long productId);
 }

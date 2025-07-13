@@ -23,7 +23,7 @@ public class ProductImageListener {
 
         productOptionImageService.uploadImagesAsync(
                 event.getProductId(),
-                event.getImages()
+                event.getUploadRequests()
         );
 
         log.info("Completed async image upload for product: {}", event.getProductId());
