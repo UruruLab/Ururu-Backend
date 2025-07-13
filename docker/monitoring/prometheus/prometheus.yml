@@ -13,7 +13,7 @@ scrape_configs:
 
   - job_name: 'ururu-backend'
     static_configs:
-      - targets: ['${PROD_HOST}:80']
+      - targets: ['3.39.69.34:80']
     metrics_path: '/actuator/prometheus'
     scrape_interval: 10s
     scrape_timeout: 5s
