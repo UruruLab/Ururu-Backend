@@ -2,7 +2,6 @@ package com.ururulab.ururu.order.domain.entity;
 
 import com.ururulab.ururu.global.domain.entity.BaseEntity;
 import com.ururulab.ururu.member.domain.entity.Member;
-import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
 import com.ururulab.ururu.order.domain.policy.OrderPolicy;
 import jakarta.persistence.*;
@@ -10,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +46,9 @@ public class Order extends BaseEntity {
 
     @Column(length = OrderPolicy.TRACKING_NUMBER_MAX_LENGTH)
     private String trackingNumber;
+
+    @Column
+    private Instant trackingRegisteredAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
@@ -129,9 +132,14 @@ public class Order extends BaseEntity {
     }
 
     public void updateTrackingNumber(String trackingNumber) {
-        if (trackingNumber != null && trackingNumber.length() > OrderPolicy.TRACKING_NUMBER_MAX_LENGTH) {
+
+        if (trackingNumber == null || trackingNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException(OrderPolicy.TRACKING_NUMBER_REQUIRED);
+        }
+        if (trackingNumber.trim().length() > OrderPolicy.TRACKING_NUMBER_MAX_LENGTH) {
             throw new IllegalArgumentException(OrderPolicy.TRACKING_NUMBER_TOO_LONG);
         }
         this.trackingNumber = trackingNumber;
+        this.trackingRegisteredAt = Instant.now();
     }
 }

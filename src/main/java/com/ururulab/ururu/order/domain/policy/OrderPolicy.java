@@ -23,6 +23,7 @@ public class OrderPolicy {
     public static final String ADDRESS1_REQUIRED = "주소는 필수입니다.";
     public static final String ADDRESS1_TOO_LONG = "주소는 " + ADDRESS_MAX_LENGTH + "자를 초과할 수 없습니다.";
     public static final String ADDRESS2_TOO_LONG = "상세주소는 " + ADDRESS_MAX_LENGTH + "자를 초과할 수 없습니다.";
+    public static final String TRACKING_NUMBER_REQUIRED = "운송장 번호는 필수입니다.";
     public static final String TRACKING_NUMBER_TOO_LONG = "운송장번호는 " + TRACKING_NUMBER_MAX_LENGTH + "자를 초과할 수 없습니다.";
 
     // 시스템 메시지

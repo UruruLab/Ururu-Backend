@@ -42,6 +42,8 @@ public enum ErrorCode {
 	PERSONAL_LIMIT_EXCEEDED(HttpStatus.CONFLICT, "ORDER006", "개인 구매 제한을 초과했습니다. 최대 %d개까지 구매 가능합니다."),
 	ORDER_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "ORDER007", "이미 진행 중인 주문이 있습니다. 잠시 후 다시 시도해주세요."),
 	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
+	ORDER_NOT_REFUNDABLE(HttpStatus.BAD_REQUEST, "ORDER009", "환불 가능한 주문 상태가 아닙니다."),
+
 
 	// --- 결제 ---
 	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT001", "존재하지 않는 결제입니다."),
@@ -57,6 +59,13 @@ public enum ErrorCode {
 	INVALID_SIGNATURE(HttpStatus.FORBIDDEN, "WEBHOOK001", "웹훅 서명이 유효하지 않습니다"),
 	INVALID_JSON(HttpStatus.BAD_REQUEST, "WEBHOOK002", "웹훅 데이터 형식이 올바르지 않습니다"),
 	WEBHOOK_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WEBHOOK003", "웹훅 처리 중 오류가 발생했습니다"),
+
+	// --- 환불 ---
+	REFUND_NOT_FOUND(HttpStatus.NOT_FOUND, "REFUND001", "존재하지 않는 환불입니다."),
+	REFUND_ALREADY_PROCESSED(HttpStatus.CONFLICT, "REFUND002", "이미 처리된 환불입니다."),
+	REFUND_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, "REFUND003", "환불 처리 기간이 만료되었습니다. (%d일 이내)"),
+	DUPLICATE_REFUND_REQUEST(HttpStatus.CONFLICT, "REFUND004", "이미 진행 중인 환불 요청이 있습니다."),
+	INVALID_REFUND_ACTION(HttpStatus.BAD_REQUEST, "REFUND005", "유효하지 않은 환불 처리 액션입니다."),
 
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),

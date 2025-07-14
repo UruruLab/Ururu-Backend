@@ -49,6 +49,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      */
     @Modifying
     @Query("UPDATE Member m SET m.point = m.point + :amount WHERE m.id = :memberId")
-    void increasePoints(@Param("memberId") Long memberId, @Param("amount") Integer amount);
+    int increasePoints(@Param("memberId") Long memberId, @Param("amount") Integer amount);
 
 }

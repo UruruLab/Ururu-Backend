@@ -39,4 +39,18 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "WHERE oi.groupBuyOption.groupBuy.id = :groupBuyId " +
             "AND o.status = 'ORDERED'")
     Integer getTotalQuantityByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
+
+    /**
+     * 주문 ID로 환불 가능한 아이템 조회
+     * 아직 환불되지 않은 주문 아이템들을 반환
+     */
+    @Query("SELECT oi FROM OrderItem oi " +
+            "WHERE oi.order.id = :orderId " +
+            "AND NOT EXISTS (" +
+            "  SELECT 1 FROM RefundItem ri " +
+            "  JOIN ri.refund r " +
+            "  WHERE ri.orderItem.id = oi.id " +
+            "  AND r.status IN ('APPROVED', 'COMPLETED', 'FAILED')" +
+            ")")
+    List<OrderItem> findRefundableItemsByOrderId(@Param("orderId") String orderId);
 }
