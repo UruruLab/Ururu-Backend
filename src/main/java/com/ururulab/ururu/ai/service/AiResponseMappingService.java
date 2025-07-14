@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +38,6 @@ public class AiResponseMappingService {
     @SuppressWarnings("unchecked")
     public List<RecommendedGroupBuy> mapToRecommendedGroupBuys(final Map<String, Object> aiResponse) {
         try {
-            log.info("[DEBUG] AI 응답 변환 시작 - 전체 응답: {}", aiResponse);
-
             final List<Map<String, Object>> recommendations = 
                 (List<Map<String, Object>>) aiResponse.get("recommendations");
             
@@ -49,15 +46,11 @@ public class AiResponseMappingService {
                 return List.of();
             }
 
-            log.info("[DEBUG] AI recommendations 개수: {}", recommendations.size());
-
             // 1. AI 응답에서 상품 ID들 추출
             final List<Long> productIds = extractProductIds(recommendations);
-            log.info("[DEBUG] AI 추천 상품 ID 목록: {}", productIds);
 
             // 2. 상품 ID로 활성 공동구매 조회
             final Map<Long, GroupBuy> productToGroupBuyMap = getProductToGroupBuyMapping(productIds);
-            log.info("[DEBUG] 매핑된 공동구매 개수: {}/{}", productToGroupBuyMap.size(), productIds.size());
 
             // 3. 공동구매가 있는 상품만 변환
             final List<RecommendedGroupBuy> result = recommendations.stream()
@@ -65,11 +58,11 @@ public class AiResponseMappingService {
                     .filter(java.util.Objects::nonNull)
                     .toList();
 
-            log.info("[DEBUG] AI 응답 변환 완료 - 변환된 추천 수: {}", result.size());
+            log.info("AI 추천 변환 완료 - 추천 수: {}", result.size());
             return result;
                     
         } catch (final Exception e) {
-            log.error("[ERROR] AI 응답 변환 실패", e);
+            log.error("AI 응답 변환 실패", e);
             throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE_FORMAT);
         }
     }
@@ -94,15 +87,11 @@ public class AiResponseMappingService {
      */
     private Map<Long, GroupBuy> getProductToGroupBuyMapping(final List<Long> productIds) {
         try {
-            log.info("[DEBUG] 공동구매 매핑 시작 - 상품 ID들: {}", productIds);
-            
             if (productIds.isEmpty()) {
-                log.info("[DEBUG] 상품 ID가 비어있음");
                 return Map.of();
             }
 
             final List<GroupBuy> activeGroupBuys = groupBuyRepository.findActiveGroupBuysByProductIds(productIds);
-            log.info("[DEBUG] 조회된 활성 공동구매 개수: {}", activeGroupBuys.size());
             
             // 한 상품에 여러 공동구매가 있을 수 있으므로 최신 것 선택
             final Map<Long, GroupBuy> result = activeGroupBuys.stream()
@@ -113,11 +102,10 @@ public class AiResponseMappingService {
                                 replacement.getCreatedAt().isAfter(existing.getCreatedAt()) ? replacement : existing
                     ));
             
-            log.info(" [DEBUG] 매핑 완료 - 결과: {}", result.keySet());
             return result;
             
         } catch (final Exception e) {
-            log.error("🚨 [ERROR] 공동구매 매핑 실패", e);
+            log.error("공동구매 매핑 실패", e);
             throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE_FORMAT);
         }
     }
@@ -127,35 +115,24 @@ public class AiResponseMappingService {
             final Map<String, Object> aiRecommendation, 
             final Map<Long, GroupBuy> productToGroupBuyMap) {
         try {
-            log.info(" [DEBUG] 개별 추천 매핑 시작 - AI 데이터: {}", aiRecommendation);
-            
             final Map<String, Object> productInfo = 
                 (Map<String, Object>) aiRecommendation.get("product");
             
             if (productInfo == null) {
-                log.warn("AI 추천 결과에 product 정보가 없음");
                 return null;
             }
-
-            log.info(" [DEBUG] Product 정보: {}", productInfo);
 
             // 상품 ID 추출
             final Long productId = extractProductId(productInfo);
             if (productId == null) {
-                log.warn("AI 추천 결과에 상품 ID가 없음");
                 return null;
             }
-
-            log.info(" [DEBUG] 추출된 상품 ID: {}", productId);
 
             // 해당 상품의 공동구매 찾기
             final GroupBuy groupBuy = productToGroupBuyMap.get(productId);
             if (groupBuy == null) {
-                log.debug("상품 ID {}에 해당하는 활성 공동구매가 없음", productId);
                 return null;
             }
-
-            log.info(" [DEBUG] 매핑된 공동구매: ID={}, 제목={}", groupBuy.getId(), groupBuy.getTitle());
 
             // AI 추천 데이터 추출
             final String productName = extractProductName(productInfo);
@@ -163,18 +140,19 @@ public class AiResponseMappingService {
             final Double similarity = extractSimilarity(aiRecommendation);
             final String recommendReason = extractRecommendReason(aiRecommendation);
 
-            log.info(" [DEBUG] 추출된 데이터 - 상품명: {}, 가격: {}, 유사도: {}", 
-                     productName, originalPrice, similarity);
+            // 할인가 계산 수정 (정수로 변환하여 올바른 가격 적용)
+            final BigDecimal discountedPrice = groupBuy.getDisplayFinalPrice() != null && groupBuy.getDisplayFinalPrice() > 0 
+                ? BigDecimal.valueOf(groupBuy.getDisplayFinalPrice().longValue())  // Long으로 변환하여 정수값 보장
+                : originalPrice;
 
             // 공동구매 정보로 응답 생성
-            final RecommendedGroupBuy result = RecommendedGroupBuy.of(
+            return RecommendedGroupBuy.of(
                     groupBuy.getId(), // 실제 공동구매 ID
                     groupBuy.getTitle(), // 공동구매 제목
                     productId, // 상품 ID
                     productName, // 상품명
                     originalPrice, // 원가
-                    groupBuy.getDisplayFinalPrice() != null ? 
-                        BigDecimal.valueOf(groupBuy.getDisplayFinalPrice()) : originalPrice, // 할인가
+                    discountedPrice, // 할인가 (수정됨)
                     groupBuy.getThumbnailUrl() != null ? groupBuy.getThumbnailUrl() : "", // 썸네일
                     similarity, // 유사도 점수
                     "AI추천", // 카테고리
@@ -184,12 +162,9 @@ public class AiResponseMappingService {
                     10, // 최소 참여자 수 (기본값)
                     groupBuy.getEndsAt().atZone(ZoneId.systemDefault()).toLocalDateTime() // 종료일
             );
-            
-            log.info(" [DEBUG] 추천 결과 생성 성공: {}", result);
-            return result;
                     
         } catch (final Exception e) {
-            log.error(" [ERROR] 개별 추천 결과 변환 실패 - AI 데이터: {}", aiRecommendation, e);
+            log.error("개별 추천 결과 변환 실패", e);
             return null;
         }
     }
