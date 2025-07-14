@@ -21,8 +21,6 @@ import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
 import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.order.dto.response.MyOrderListResponseDto;
-import com.ururulab.ururu.order.dto.response.MyOrderResponseDto;
-import com.ururulab.ururu.order.dto.response.OrderItemResponseDto;
 import com.ururulab.ururu.payment.domain.entity.Payment;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
@@ -113,10 +111,10 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findInProgressOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(1L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("inprogress"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
@@ -131,7 +129,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findInProgressOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("inprogress"), any(Pageable.class));
         }
 
         @Test
@@ -141,10 +139,10 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findConfirmedOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(1L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("confirmed"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
@@ -159,7 +157,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findConfirmedOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("confirmed"), any(Pageable.class));
         }
 
         @Test
@@ -169,10 +167,10 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.findRefundPendingOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(1L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("refundpending"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
@@ -187,7 +185,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findRefundPendingOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("refundpending"), any(Pageable.class));
         }
 
         @Test
@@ -203,7 +201,7 @@ class MyOrderServiceTest {
                     .isEqualTo(ErrorCode.MEMBER_NOT_FOUND);
 
             verify(memberRepository).existsById(MEMBER_ID);
-            verify(orderRepository, never()).findAllOrdersWithDetails(anyLong(), any(Pageable.class));
+            verify(orderRepository, never()).findMyOrdersWithDetails(anyLong(), anyString(), any(Pageable.class));
         }
 
         @Test
@@ -213,10 +211,10 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(1L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("all"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
@@ -231,7 +229,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("all"), any(Pageable.class));
         }
 
         @Test
@@ -241,10 +239,10 @@ class MyOrderServiceTest {
             Page<Order> emptyPage = new PageImpl<>(List.of());
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("all"), any(Pageable.class)))
                     .willReturn(emptyPage);
 
             // when
