@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -69,6 +70,7 @@ public class GroupBuyRecommendationController {
             description = "개발 환경에서 AI 추천 기능을 테스트하기 위한 API입니다. 고정된 테스트 회원 ID(1L)를 사용합니다."
     )
     @PostMapping("/test")
+    @Profile("dev")
     public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> testGroupBuyRecommendations(
             @Parameter(description = "공동구매 추천 요청 정보", required = true)
             @Valid @RequestBody final GroupBuyRecommendationRequest request
