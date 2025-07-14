@@ -281,9 +281,11 @@ public class MemberService {
         try {
             cleanupCart(memberId);
             shippingAddressRepository.deleteByMemberId(memberId);
-            beautyProfileRepository.deleteByMemberId(memberId);
-            memberAgreementRepository.deleteByMemberId(memberId);
             memberPreferenceRepository.deleteByMemberId(memberId);
+
+            memberAgreementRepository.deleteByMemberId(memberId);
+
+            cleanupBeautyProfile(memberId);
 
             log.info("Member related data cleanup completed for ID: {}", memberId);
 
@@ -293,15 +295,35 @@ public class MemberService {
         }
     }
 
-    private void cleanupCart(final Long memberId) {
-        Optional<Cart> cartOpt = cartRepository.findByMemberId(memberId);
-        if (cartOpt.isPresent()) {
-            Cart cart = cartOpt.get();
-            cart.clearItems();
-            cartRepository.save(cart);
-            cartRepository.delete(cart);
+    private void cleanupBeautyProfile(final Long memberId) {
+        try{
+            Optional<BeautyProfile> beautyProfileOpt = beautyProfileRepository.findByMemberId(memberId);
+            if (beautyProfileOpt.isPresent()) {
+                beautyProfileRepository.delete(beautyProfileOpt.get());
+                beautyProfileRepository.flush();
+            }
+        } catch (Exception e) {
+            log.warn("BeautyProfile cleanup failed for member ID: {}, continuing with other cleanup", memberId, e);
         }
-        log.debug("Cart cleanup completed for member ID: {}", memberId);
+    }
+
+    private void cleanupCart(final Long memberId) {
+        try{
+            Optional<Cart> cartOpt = cartRepository.findByMemberId(memberId);
+            if (cartOpt.isPresent()) {
+                Cart cart = cartOpt.get();
+
+                cart.clearItems();
+                cartRepository.save(cart);
+                cartRepository.flush();
+
+                cartRepository.delete(cart);
+                cartRepository.flush();
+                log.debug("Cart cleanup completed for member ID: {}", memberId);
+            }
+        } catch (Exception e) {
+            log.warn("Cart cleanup failed for member ID: {}, continuing with other cleanup", memberId, e);
+        }
     }
 
     private WithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
