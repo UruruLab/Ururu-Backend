@@ -81,14 +81,8 @@ public class AiRecommendationService {
             // 1. Spring Boot 요청을 AI 서비스 형식으로 변환
             final Map<String, Object> aiRequest = requestMappingService.mapToAiRequest(request);
             
-            // 디버깅: 실제 전송되는 요청 로그
-            log.debug("AI 서비스로 전송하는 요청 데이터: {}", aiRequest);
-            
             // 2. AI 서비스 호출
             final Map<String, Object> aiResponse = aiServiceClient.requestRecommendations(aiRequest);
-            
-            // 디버깅: AI 서비스 응답 로그
-            log.debug("AI 서비스 응답 데이터: {}", aiResponse);
             
             // 3. AI 응답을 Spring Boot 형식으로 변환
             final List<RecommendedGroupBuy> recommendations = responseMappingService.mapToRecommendedGroupBuys(aiResponse);
