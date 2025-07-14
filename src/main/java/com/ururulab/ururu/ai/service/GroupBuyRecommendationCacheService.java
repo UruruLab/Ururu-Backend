@@ -29,15 +29,24 @@ public class GroupBuyRecommendationCacheService {
         final String key = buildRecommendationKey(memberId);
 
         try {
-            final GroupBuyRecommendationResponse cached = (GroupBuyRecommendationResponse) redisTemplate.opsForValue().get(key);
+            final Object cachedObject = redisTemplate.opsForValue().get(key);
 
-            if (cached != null) {
-                log.debug("캐시에서 추천 결과 조회 성공 - 회원ID: {}", memberId);
-                return cached;
+            if (cachedObject == null) {
+                log.debug("캐시에 추천 결과 없음 - 회원ID: {}", memberId);
+                return null;
             }
 
-            log.debug("캐시에 추천 결과 없음 - 회원ID: {}", memberId);
-            return null;
+            // 타입 안전 검사
+            if (cachedObject instanceof GroupBuyRecommendationResponse) {
+                log.debug("캐시에서 추천 결과 조회 성공 - 회원ID: {}", memberId);
+                return (GroupBuyRecommendationResponse) cachedObject;
+            } else {
+                log.warn("캐시된 객체가 예상 타입이 아님 - 회원ID: {}, 실제 타입: {}", 
+                         memberId, cachedObject.getClass().getSimpleName());
+                // 잘못된 타입의 캐시 삭제
+                redisTemplate.delete(key);
+                return null;
+            }
 
         } catch (final Exception e) {
             log.warn("캐시 조회 중 오류 발생 - 회원ID: {}", memberId, e);

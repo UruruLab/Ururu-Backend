@@ -36,7 +36,9 @@ public class GroupBuyRecommendationService {
     }
 
     public String checkAiServiceHealth() {
-        return aiRecommendationService.checkHealth();
+        final var healthResponse = aiRecommendationService.checkHealth();
+        return String.format("%s (응답시간: %dms)", 
+                healthResponse.message(), healthResponse.responseTimeMs());
     }
 
     public GroupBuyRecommendationResponse getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {

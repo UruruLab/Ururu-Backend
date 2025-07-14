@@ -15,10 +15,15 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GroupBuyRecommendationRequestProcessor {
 
+    private static final int DEFAULT_TOP_K = 40;
+    private static final double DEFAULT_MIN_SIMILARITY = 0.65;
+    private static final boolean DEFAULT_USE_PRICE_FILTER = true;
+
     private final AiRecommendationProperties aiProperties;
 
     /**
      * 요청에 기본값을 적용합니다.
+     * yml 설정값 우선, 없으면 안전한 기본값 사용
      * 
      * @param request 원본 요청
      * @return 기본값이 적용된 요청
@@ -27,15 +32,9 @@ public class GroupBuyRecommendationRequestProcessor {
         log.debug("AI 추천 요청에 기본값 적용: topK={}, minSimilarity={}, usePriceFilter={}",
                 request.topK(), request.minSimilarity(), request.usePriceFilter());
 
-        // yml 설정값 우선, 없으면 안전한 기본값 사용
-        final Integer finalTopK = request.topK() != null ? request.topK() : 
-                (aiProperties.getDefaultTopK() != null ? aiProperties.getDefaultTopK() : 40);
-        
-        final Double finalMinSimilarity = request.minSimilarity() != null ? request.minSimilarity() : 
-                (aiProperties.getDefaultMinSimilarity() != null ? aiProperties.getDefaultMinSimilarity() : 0.65);
-        
-        final Boolean finalUsePriceFilter = request.usePriceFilter() != null ? request.usePriceFilter() : 
-                (aiProperties.getDefaultUsePriceFilter() != null ? aiProperties.getDefaultUsePriceFilter() : true);
+        final Integer finalTopK = getTopK(request);
+        final Double finalMinSimilarity = getMinSimilarity(request);
+        final Boolean finalUsePriceFilter = getUsePriceFilter(request);
 
         log.debug("적용된 기본값 - topK: {}, minSimilarity: {}, usePriceFilter: {}", 
                 finalTopK, finalMinSimilarity, finalUsePriceFilter);
@@ -50,5 +49,20 @@ public class GroupBuyRecommendationRequestProcessor {
                 finalMinSimilarity,
                 finalUsePriceFilter
         );
+    }
+
+    private Integer getTopK(final GroupBuyRecommendationRequest request) {
+        return request.topK() != null ? request.topK() :
+                (aiProperties.getDefaultTopK() != null ? aiProperties.getDefaultTopK() : DEFAULT_TOP_K);
+    }
+
+    private Double getMinSimilarity(final GroupBuyRecommendationRequest request) {
+        return request.minSimilarity() != null ? request.minSimilarity() :
+                (aiProperties.getDefaultMinSimilarity() != null ? aiProperties.getDefaultMinSimilarity() : DEFAULT_MIN_SIMILARITY);
+    }
+
+    private Boolean getUsePriceFilter(final GroupBuyRecommendationRequest request) {
+        return request.usePriceFilter() != null ? request.usePriceFilter() :
+                (aiProperties.getDefaultUsePriceFilter() != null ? aiProperties.getDefaultUsePriceFilter() : DEFAULT_USE_PRICE_FILTER);
     }
 }
