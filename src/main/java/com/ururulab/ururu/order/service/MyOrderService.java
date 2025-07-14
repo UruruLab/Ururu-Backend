@@ -30,6 +30,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -156,13 +158,47 @@ public class MyOrderService {
 
         Integer totalAmount = calculateCurrentAmount(order);
 
+        Boolean[] refundStatus = calculateRefundStatus(order);
+        Boolean canRefundChangeOfMind = refundStatus[0];
+        Boolean canRefundOthers = refundStatus[1];
+
         return new MyOrderResponseDto(
                 order.getId(),
                 order.getCreatedAt(),
                 order.getTrackingNumber(),
                 totalAmount,
+                canRefundChangeOfMind,
+                canRefundOthers,
                 orderItems
         );
+    }
+
+    /**
+     * 환불 가능 여부를 계산합니다. (기본 조건 + 기간 체크 통합)
+     * 1. 주문 상태가 ORDERED 또는 PARTIAL_REFUNDED인 경우에만 환불 가능
+     * 2. 운송장 등록 전에는 무조건 환불 가능
+     * 3. 운송장 등록 후: 운송장 등록일로부터 사유별로 다른 기한
+     *
+     * @return [canRefundChangeOfMind, canRefundOthers]
+     */
+    private Boolean[] calculateRefundStatus(Order order) {
+        if (order.getStatus() != OrderStatus.ORDERED &&
+                order.getStatus() != OrderStatus.PARTIAL_REFUNDED) {
+            return new Boolean[]{false, false};
+        }
+
+        if (order.getTrackingRegisteredAt() == null) {
+            return new Boolean[]{true, true};
+        }
+
+        Instant now = Instant.now();
+        Instant changeOfMindDeadline = order.getTrackingRegisteredAt().plus(7, ChronoUnit.DAYS);
+        Instant othersDeadline = order.getTrackingRegisteredAt().plus(30, ChronoUnit.DAYS);
+
+        Boolean canRefundChangeOfMind = now.isBefore(changeOfMindDeadline);
+        Boolean canRefundOthers = now.isBefore(othersDeadline);
+
+        return new Boolean[]{canRefundChangeOfMind, canRefundOthers};
     }
 
     /**
