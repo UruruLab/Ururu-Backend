@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * AI 추천 설정 프로퍼티.
@@ -15,23 +17,27 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.ai.recommendation")
 @Getter
 @Setter
+@Validated
 public class AiRecommendationProperties {
 
     /**
      * 기본 추천 개수
      * yml에서 app.ai.recommendation.default-top-k로 설정
      */
+    @NotNull
     private Integer defaultTopK;
 
     /**
      * 기본 최소 유사도 임계값
      * yml에서 app.ai.recommendation.default-min-similarity로 설정
      */
+    @NotNull
     private Double defaultMinSimilarity;
 
     /**
      * 기본 가격 필터 사용 여부
      * yml에서 app.ai.recommendation.default-use-price-filter로 설정
      */
+    @NotNull
     private Boolean defaultUsePriceFilter;
 }

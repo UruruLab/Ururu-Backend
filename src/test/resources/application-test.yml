@@ -19,8 +19,9 @@ spring:
     redis:
       host: localhost
       port: 6379
+      timeout: 1000ms
   cache:
-    type: simple
+    type: simple  # Redis 대신 간단한 메모리 캐시 사용
   sql:
     init:
       mode: always
