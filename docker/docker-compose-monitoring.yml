@@ -18,6 +18,11 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Loki (로그 수집)
   loki:
@@ -30,6 +35,11 @@ services:
       - ./monitoring/loki/local-config.yml:/etc/loki/local-config.yml:ro
       - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yml
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Promtail (로그 수집기)
   promtail:
@@ -41,6 +51,14 @@ services:
       - /var/log:/var/log:ro
       - /app/logs:/app/logs:ro
     command: -config.file=/etc/promtail/config.yml
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9080/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      loki:
+        condition: service_healthy
 
   # Grafana (대시보드)
   grafana:
@@ -62,8 +80,17 @@ services:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: ururu-monitoring
 
 volumes:
   prometheus_data:
   grafana_data:
-  loki_data: 
+  loki_data:

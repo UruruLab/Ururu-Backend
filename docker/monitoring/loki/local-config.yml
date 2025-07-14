@@ -2,6 +2,7 @@ auth_enabled: false
 
 server:
   http_listen_port: 3100
+  grpc_listen_port: 9096
 
 ingester:
   lifecycler:
@@ -13,6 +14,7 @@ ingester:
     finalize_ring: false
   chunk_idle_period: 5m
   chunk_retain_period: 30s
+  max_chunk_age: 1h
 
 schema_config:
   configs:
@@ -40,10 +42,30 @@ compactor:
 limits_config:
   reject_old_samples: true
   reject_old_samples_max_age: 168h
+  max_cache_freshness_per_query: 1m
+  max_query_length: 721h
+  max_query_parallelism: 32
+  cardinality_limit: 100000
+  max_streams_per_user: 0
+  max_global_streams_per_user: 0
+  ingestion_rate_mb: 4
+  ingestion_burst_size_mb: 6
 
 chunk_store_config:
   max_look_back_period: 0s
 
 table_manager:
   retention_deletes_enabled: false
-  retention_period: 0s 
+  retention_period: 0s
+
+query_range:
+  align_queries_with_step: true
+  max_retries: 5
+  split_queries_by_interval: 15m
+  cache_results: true
+  results_cache:
+    cache:
+      enable_fifocache: true
+      fifocache:
+        max_size_bytes: 500MB
+        validity: 24h
