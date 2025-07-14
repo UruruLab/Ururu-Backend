@@ -1,22 +1,8 @@
-auth_enabled: true
+auth_enabled: false
 
 server:
   http_listen_port: 3100
   grpc_listen_port: 9096
-
-authn:
-  - name: basic_auth
-    config:
-      basic_auth:
-        username: ${LOKI_USERNAME}
-        password: ${LOKI_PASSWORD}
-
-authz:
-  - name: basic_auth
-    config:
-      basic_auth:
-        username: ${LOKI_USERNAME}
-        password: ${LOKI_PASSWORD}
 
 ingester:
   lifecycler:

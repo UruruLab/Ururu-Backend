@@ -18,7 +18,4 @@ datasources:
     editable: true
     jsonData:
       maxLines: 1000
-    secureJsonData:
-      basicAuthPassword: ${LOKI_PASSWORD}
-    basicAuth: true
-    basicAuthUser: ${LOKI_USERNAME} 
+    secureJsonData: {} 
