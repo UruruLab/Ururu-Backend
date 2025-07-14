@@ -39,13 +39,13 @@ public class BeautyProfileConversionService {
 
         return new GroupBuyRecommendationRequest(
                 aiBeautyProfile,
-                topK != null ? topK : (aiProperties.getDefaultTopK() != null ? aiProperties.getDefaultTopK() : 40),
+                topK != null ? topK : aiProperties.getDefaultTopK(),
                 beautyProfile.getMinPrice(),
                 beautyProfile.getMaxPrice(),
                 beautyProfile.getAdditionalInfo(),
                 beautyProfile.getInterestCategories(),
-                aiProperties.getDefaultMinSimilarity() != null ? aiProperties.getDefaultMinSimilarity() : 0.65,
-                aiProperties.getDefaultUsePriceFilter() != null ? aiProperties.getDefaultUsePriceFilter() : true
+                aiProperties.getDefaultMinSimilarity(),
+                aiProperties.getDefaultUsePriceFilter()
         );
     }
 }

@@ -127,8 +127,7 @@ public class AiRequestMappingService {
     }
 
     private Integer getTopK(final GroupBuyRecommendationRequest request) {
-        return request.topK() != null ? request.topK() : 
-                (aiProperties.getDefaultTopK() != null ? aiProperties.getDefaultTopK() : 40);
+        return request.topK(); // 이미 RequestProcessor에서 처리됨
     }
 
     private List<String> getIncludeCategories(final GroupBuyRecommendationRequest request) {
@@ -136,13 +135,11 @@ public class AiRequestMappingService {
     }
 
     private Double getMinSimilarity(final GroupBuyRecommendationRequest request) {
-        return request.minSimilarity() != null ? request.minSimilarity() : 
-                (aiProperties.getDefaultMinSimilarity() != null ? aiProperties.getDefaultMinSimilarity() : 0.65);
+        return request.minSimilarity(); // 이미 RequestProcessor에서 처리됨
     }
 
     private Boolean getUsePriceFilter(final GroupBuyRecommendationRequest request) {
-        return request.usePriceFilter() != null ? request.usePriceFilter() : 
-                (aiProperties.getDefaultUsePriceFilter() != null ? aiProperties.getDefaultUsePriceFilter() : true);
+        return request.usePriceFilter(); // 이미 RequestProcessor에서 처리됨
     }
 
     private Integer getMinPrice(final GroupBuyRecommendationRequest request) {
