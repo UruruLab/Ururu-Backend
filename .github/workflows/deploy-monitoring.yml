@@ -54,14 +54,31 @@ jobs:
           
           # 환경변수 확인
           echo "PROD_HOST: $PROD_HOST"
+          echo "LOKI_USERNAME: $LOKI_USERNAME"
+          echo "LOKI_PASSWORD: $LOKI_PASSWORD"
           
           # Prometheus 설정 파일에서 환경변수 처리
           envsubst < docker/monitoring/prometheus/prometheus.yml > docker/monitoring/prometheus/prometheus.yml.tmp
           mv docker/monitoring/prometheus/prometheus.yml.tmp docker/monitoring/prometheus/prometheus.yml
           
+          # Loki 설정 파일에서 환경변수 처리
+          envsubst < docker/monitoring/loki/local-config.yml > docker/monitoring/loki/local-config.yml.tmp
+          mv docker/monitoring/loki/local-config.yml.tmp docker/monitoring/loki/local-config.yml
+          
+          # Promtail 설정 파일에서 환경변수 처리
+          envsubst < docker/monitoring/promtail/config.yml > docker/monitoring/promtail/config.yml.tmp
+          mv docker/monitoring/promtail/config.yml.tmp docker/monitoring/promtail/config.yml
+          
+          # Grafana 데이터소스 설정에서 환경변수 처리
+          envsubst < docker/monitoring/grafana/provisioning/datasources/datasources.yml > docker/monitoring/grafana/provisioning/datasources/datasources.yml.tmp
+          mv docker/monitoring/grafana/provisioning/datasources/datasources.yml.tmp docker/monitoring/grafana/provisioning/datasources/datasources.yml
+          
           # 처리된 파일 확인
           echo "=== 처리된 Prometheus 설정 ==="
           cat docker/monitoring/prometheus/prometheus.yml
+          echo ""
+          echo "=== 처리된 Loki 설정 ==="
+          cat docker/monitoring/loki/local-config.yml
 
       # 4. 모니터링 설정 파일 업로드
       - name: Upload monitoring docker-compose to monitoring server
@@ -145,9 +162,17 @@ jobs:
             docker logs ururu-grafana || echo "Grafana 컨테이너가 없습니다"
             echo ""
             
+            echo "=== Loki 컨테이너 로그 ==="
+            docker logs ururu-loki || echo "Loki 컨테이너가 없습니다"
+            echo ""
+            
+            echo "=== Promtail 컨테이너 로그 ==="
+            docker logs ururu-promtail || echo "Promtail 컨테이너가 없습니다"
+            echo ""
+            
             # 포트 확인
             echo "=== 포트 바인딩 확인 ==="
-            netstat -tlnp | grep -E ':(9090|3000)' || echo "포트가 바인딩되지 않았습니다"
+            netstat -tlnp | grep -E ':(9090|3000|3100|9080)' || echo "포트가 바인딩되지 않았습니다"
             echo ""
             
             # Prometheus 헬스체크
@@ -161,5 +186,17 @@ jobs:
             sleep 5
             curl -f http://localhost:3000/api/health || exit 1
             echo "Grafana is healthy"
+            
+            # Loki 헬스체크
+            echo "Checking Loki health..."
+            sleep 5
+            curl -f http://localhost:3100/ready || exit 1
+            echo "Loki is healthy"
+            
+            # Promtail 헬스체크
+            echo "Checking Promtail health..."
+            sleep 5
+            curl -f http://localhost:9080/ready || exit 1
+            echo "Promtail is healthy"
             
             echo "모니터링 서비스 배포 완료" 
