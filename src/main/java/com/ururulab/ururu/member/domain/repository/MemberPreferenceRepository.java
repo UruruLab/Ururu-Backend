@@ -10,4 +10,5 @@ import java.util.List;
 public interface MemberPreferenceRepository extends JpaRepository<MemberPreference, Long> {
     List<MemberPreference> findByMemberId(Long memberId);
     boolean existsByMemberIdAndSellerId(Long memberId, Long sellerId);
+    void deleteByMemberId(Long memberId);
 }
