@@ -99,4 +99,15 @@ public interface RefundRepository extends JpaRepository<Refund, String> {
             "JOIN r.payment p " +
             "WHERE p.order.id = :orderId")
     List<Refund> findByOrderId(@Param("orderId") String orderId);
+
+    /**
+     * 특정 주문에 대한 현재 진행중인 환불 정보를 조회합니다.
+     *
+     * @param orderId 주문 ID
+     * @return 진행중인 환불 정보 (INITIATED 상태), 없으면 Optional.empty()
+     */
+    @Query("SELECT r FROM Refund r " +
+            "WHERE r.payment.order.id = :orderId " +
+            "AND r.status = 'INITIATED'")
+    Optional<Refund> findActiveRefundByOrderId(@Param("orderId") String orderId);
 }
