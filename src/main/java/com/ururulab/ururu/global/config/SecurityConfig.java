@@ -46,6 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/sellers/signup").permitAll()
                         .requestMatchers("/api/sellers/check/**").permitAll()
+                        .requestMatchers("/api/ai/**").permitAll()  // AI API 전체 인증 제외
                         .requestMatchers("/health").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()

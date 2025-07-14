@@ -103,4 +103,18 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
 
     @Query("SELECT gb FROM GroupBuy gb JOIN FETCH gb.options WHERE gb.id IN :groupBuyIds")
     List<GroupBuy> findByIdsWithOptions(@Param("groupBuyIds") List<Long> groupBuyIds);
+
+    /**
+     * 상품 ID 목록으로 활성 공동구매 조회
+     * AI 추천에서 상품 ID -> 공동구매 ID 매핑용
+     */
+    @Query("""
+        SELECT gb FROM GroupBuy gb
+        LEFT JOIN FETCH gb.product p
+        WHERE p.id IN :productIds 
+          AND gb.status = 'OPEN' 
+          AND gb.endsAt > CURRENT_TIMESTAMP
+        ORDER BY gb.createdAt DESC
+        """)
+    List<GroupBuy> findActiveGroupBuysByProductIds(@Param("productIds") List<Long> productIds);
 }

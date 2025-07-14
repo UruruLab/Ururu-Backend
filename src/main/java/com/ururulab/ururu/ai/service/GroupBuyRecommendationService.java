@@ -23,8 +23,9 @@ import java.util.concurrent.CompletionException;
 public class GroupBuyRecommendationService {
 
     private final GroupBuyRecommendationCacheService cacheService;
-    private final UruruAiService aiService;
+    private final AiRecommendationService aiRecommendationService;
     private final BeautyProfileConversionService conversionService;
+    private final GroupBuyRecommendationRequestProcessor requestProcessor;
 
     public GroupBuyRecommendationResponse getRecommendationsByProfile(final Long memberId, final Integer topK) {
         log.info("뷰티프로필 기반 추천 요청 시작 - 회원ID: {}", memberId);
@@ -35,26 +36,20 @@ public class GroupBuyRecommendationService {
     }
 
     public String checkAiServiceHealth() {
-        try {
-            log.info("AI 서비스 Health Check 시작");
-            
-            final long startTime = System.currentTimeMillis();
-            final String healthStatus = aiService.checkHealth();
-            final long responseTime = System.currentTimeMillis() - startTime;
-            
-            log.info("AI 서비스 Health Check 완료 - 응답시간: {}ms", responseTime);
-            
-            return String.format("AI 서비스 정상 (응답시간: %dms) - %s", responseTime, healthStatus);
-            
-        } catch (Exception e) {
-            log.error("AI 서비스 Health Check 실패", e);
-            return "AI 서비스 연결 실패: " + e.getMessage();
-        }
+        final var healthResponse = aiRecommendationService.checkHealth();
+        return String.format("%s (응답시간: %dms)", 
+                healthResponse.message(), healthResponse.responseTimeMs());
     }
 
     public GroupBuyRecommendationResponse getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {
         log.info("공동구매 추천 요청 시작 - 회원ID: {}, 피부타입: {}",
                 memberId, request.beautyProfile().skinType());
+
+        // 기본값 적용
+        final GroupBuyRecommendationRequest processedRequest = requestProcessor.applyDefaults(request);
+        
+        log.debug("기본값 적용 완료 - topK: {}, minSimilarity: {}, usePriceFilter: {}",
+                processedRequest.topK(), processedRequest.minSimilarity(), processedRequest.usePriceFilter());
 
         final GroupBuyRecommendationResponse cachedResponse = cacheService.getCachedRecommendation(memberId);
         if (cachedResponse != null) {
@@ -67,7 +62,7 @@ public class GroupBuyRecommendationService {
         }
 
         try {
-            final List<RecommendedGroupBuy> recommendations = aiService.getRecommendations(memberId, request);
+            final List<RecommendedGroupBuy> recommendations = aiRecommendationService.getRecommendations(memberId, processedRequest);
 
             if (recommendations.isEmpty()) {
                 throw new BusinessException(ErrorCode.AI_NO_RECOMMENDATIONS_FOUND);
@@ -98,7 +93,10 @@ public class GroupBuyRecommendationService {
             try {
                 log.info("백그라운드 추천 캐시 갱신 시작 - 회원ID: {}", memberId);
 
-                final List<RecommendedGroupBuy> recommendations = aiService.getRecommendations(memberId, request);
+                // 기본값 적용
+                final GroupBuyRecommendationRequest processedRequest = requestProcessor.applyDefaults(request);
+
+                final List<RecommendedGroupBuy> recommendations = aiRecommendationService.getRecommendations(memberId, processedRequest);
 
                 final GroupBuyRecommendationResponse response = GroupBuyRecommendationResponse.of(
                         recommendations,

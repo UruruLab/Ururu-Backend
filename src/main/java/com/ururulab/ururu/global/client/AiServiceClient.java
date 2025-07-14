@@ -113,51 +113,41 @@ public class AiServiceClient {
     }
 
     /**
-     * 상품 추천 요청 처리 (메인 추천 API).
+     * AI 추천 서비스에 추천 요청.
      *
-     * @param request 추천 요청 정보
-     * @return 추천 결과
-     * @throws BusinessException 추천 처리 실패 시
+     * @param requestBody AI 서비스 요청 본문
+     * @return AI 서비스 원본 응답
+     * @throws BusinessException AI 서비스 통신 실패 시
      */
-    @Retryable(
-            retryFor = {RestClientException.class},
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
-    public ProductRecommendationResponse getProductRecommendations(final ProductRecommendationRequest request) {
+    public Map<String, Object> requestRecommendations(final Map<String, Object> requestBody) {
         try {
-            log.info("AI 상품 추천 요청 시작 - memberId: {}", request.memberId());
-
-            validateRecommendationRequest(request);
+            log.debug("AI 추천 서비스 호출 시작");
 
             final var response = aiServiceRestClient
                     .post()
-                    .uri("/api/recommendations")  // 변경: recommendations로 통합
-                    .body(request)
+                    .uri("/api/recommendations/")
+                    .body(requestBody)
                     .retrieve()
-                    .toEntity(ProductRecommendationResponse.class);
+                    .toEntity(Map.class);
 
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                final var result = response.getBody();
-                log.info("AI 상품 추천 응답 수신 완료 - memberId: {}, 추천 개수: {}",
-                        request.memberId(), result.recommendations().size());
-
-                if (result.recommendations().isEmpty()) {
-                    throw new BusinessException(ErrorCode.AI_NO_RECOMMENDATIONS_FOUND);
-                }
-
-                return result;
+                log.debug("AI 추천 서비스 호출 성공");
+                return response.getBody();
             }
 
+            log.error("AI 서비스 응답 오류 - Status: {}", response.getStatusCode());
             throw new BusinessException(ErrorCode.AI_RECOMMENDATION_FAILED);
 
         } catch (final RestClientException e) {
-            log.error("AI 상품 추천 호출 실패 - memberId: {}", request.memberId(), e);
-
+            if (isTimeoutException(e)) {
+                log.error("AI 서비스 타임아웃 발생", e);
+                throw new BusinessException(ErrorCode.AI_SERVICE_TIMEOUT);
+            }
             if (isConnectionRefused(e)) {
+                log.error("AI 서비스 연결 실패", e);
                 throw new BusinessException(ErrorCode.AI_SERVICE_CONNECTION_FAILED);
             }
-
+            log.error("AI 추천 서비스 호출 중 예외 발생", e);
             throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
         }
     }
@@ -212,6 +202,11 @@ public class AiServiceClient {
 
     private boolean isConnectionRefused(final RestClientException exception) {
         return exception.getMessage() != null && exception.getMessage().contains("Connection refused");
+    }
+
+    private boolean isTimeoutException(final RestClientException exception) {
+        return exception.getCause() instanceof java.net.SocketTimeoutException ||
+               (exception.getMessage() != null && exception.getMessage().contains("timeout"));
     }
 
     /**

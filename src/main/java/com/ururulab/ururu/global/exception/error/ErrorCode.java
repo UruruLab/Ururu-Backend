@@ -151,14 +151,15 @@ public enum ErrorCode {
 	// AI 추천 처리 에러
 	AI_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI004", "상품 추천 생성에 실패했습니다."),
 	AI_INVALID_REQUEST_FORMAT(HttpStatus.BAD_REQUEST, "AI005", "AI 서비스 요청 형식이 올바르지 않습니다."),
-	AI_NO_RECOMMENDATIONS_FOUND(HttpStatus.NOT_FOUND, "AI006", "추천 가능한 상품이 없습니다."),
+	AI_INVALID_RESPONSE_FORMAT(HttpStatus.BAD_GATEWAY, "AI006", "AI 서비스 응답 형식이 올바르지 않습니다."),
+	AI_NO_RECOMMENDATIONS_FOUND(HttpStatus.NOT_FOUND, "AI007", "추천 가능한 상품이 없습니다."),
 
 	// 회원 프로필 관련 에러 (기존 코드와 중복 방지를 위해 수정)
-	BEAUTY_PROFILE_INCOMPLETE(HttpStatus.BAD_REQUEST, "AI007", "뷰티 프로필이 완성되지 않았습니다."),
+	BEAUTY_PROFILE_INCOMPLETE(HttpStatus.BAD_REQUEST, "AI008", "뷰티 프로필이 완성되지 않았습니다."),
 
 	// AI 서비스 상태 관련 에러
-	AI_SERVICE_HEALTH_CHECK_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI008", "AI 서비스 상태 확인에 실패했습니다."),
-	AI_RECOMMENDATION_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "AI009", "이미 추천 처리가 진행 중입니다. 잠시 후 다시 시도해주세요."),
+	AI_SERVICE_HEALTH_CHECK_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI009", "AI 서비스 상태 확인에 실패했습니다."),
+	AI_RECOMMENDATION_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "AI010", "이미 추천 처리가 진행 중입니다. 잠시 후 다시 시도해주세요."),
 
 	// --- 판매자 ---
 	SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER001", "존재하지 않는 판매자입니다."),

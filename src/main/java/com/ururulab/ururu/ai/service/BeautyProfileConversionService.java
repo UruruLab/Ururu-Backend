@@ -29,8 +29,8 @@ public class BeautyProfileConversionService {
 
         final GroupBuyRecommendationRequest.BeautyProfile aiBeautyProfile =
                 new GroupBuyRecommendationRequest.BeautyProfile(
-                        beautyProfile.getSkinType() != null ? beautyProfile.getSkinType().name() : "",
-                        beautyProfile.getSkinTone() != null ? beautyProfile.getSkinTone().name() : "",
+                        beautyProfile.getSkinType() != null ? beautyProfile.getSkinType().toString() : "OILY",
+                        beautyProfile.getSkinTone() != null ? beautyProfile.getSkinTone().toString() : "WARM",
                         beautyProfile.getConcerns(),
                         beautyProfile.getHasAllergy(),
                         beautyProfile.getAllergies(),
@@ -45,7 +45,7 @@ public class BeautyProfileConversionService {
                 beautyProfile.getAdditionalInfo(),
                 beautyProfile.getInterestCategories(),
                 aiProperties.getDefaultMinSimilarity(),
-                aiProperties.isDefaultUsePriceFilter()
+                aiProperties.getDefaultUsePriceFilter()
         );
     }
 }

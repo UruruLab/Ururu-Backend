@@ -11,13 +11,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/ai/groupbuy-recommendations")
+@RequestMapping("/api/ai/groupbuy-recommendations")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "AI 공동구매 추천", description = "AI 기반 개인 맞춤형 공동구매 상품 추천 API")
@@ -53,15 +54,38 @@ public class GroupBuyRecommendationController {
 
     @Operation(
             summary = "AI 서비스 연결 상태 확인",
-            description = "AI 추천 서비스의 연결 상태와 응답 시간을 확인합니다."
+            description = "AI 추천 서비스의 연결 상태와 응답 시간을 확인합니다. (인증 불필요)"
     )
     @GetMapping("/health")
     public ResponseEntity<ApiResponseFormat<String>> checkAiServiceHealth() {
-        log.info("AI 서비스 Health Check 요청");
+        log.info("AI 서비스 Health Check 요청 (인증 없음)");
 
         final String healthStatus = recommendationService.checkAiServiceHealth();
 
         return ResponseEntity.ok(ApiResponseFormat.success("AI 서비스 상태 확인 완료", healthStatus));
+    }
+
+    @Operation(
+            summary = "개발용 AI 추천 테스트 (인증 불필요)",
+            description = "개발 환경에서 AI 추천 기능을 테스트하기 위한 API입니다. 고정된 테스트 회원 ID(1L)를 사용합니다."
+    )
+    @PostMapping("/test")
+    @Profile("dev")
+    public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> testGroupBuyRecommendations(
+            @Parameter(description = "공동구매 추천 요청 정보", required = true)
+            @Valid @RequestBody final GroupBuyRecommendationRequest request
+    ) {
+        final Long testMemberId = 1L; // 개발용 고정 회원 ID
+        
+        log.info("개발용 공동구매 추천 API 호출 - 테스트 회원ID: {}, 피부타입: {}",
+                testMemberId, request.beautyProfile().skinType());
+
+        final GroupBuyRecommendationResponse response = recommendationService.getRecommendations(testMemberId, request);
+
+        log.info("개발용 공동구매 추천 API 응답 완료 - 테스트 회원ID: {}, 추천 수: {}",
+                testMemberId, response.recommendedGroupBuys().size());
+
+        return ResponseEntity.ok(ApiResponseFormat.success("개발용 공동구매 추천이 완료되었습니다.", response));
     }
 
     @Operation(
