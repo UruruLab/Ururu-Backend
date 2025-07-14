@@ -3,56 +3,32 @@ server:
   grpc_listen_port: 0
 
 positions:
-  filename: /var/lib/promtail/positions.yml
+  filename: /var/lib/promtail/positions.yaml
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
-    batchwait: 1s
-    batchsize: 1024
     timeout: 30s
-    retry_on_failure:
-      enabled: true
-      initial_delay: 1s
-      max_delay: 10s
-      max_retries: 20
-    external_labels:
-      host: monitoring-server
-      environment: production
 
 scrape_configs:
-  - job_name: syslog
+  - job_name: ururu-backend
     static_configs:
       - targets:
           - localhost
         labels:
-          job: syslog
-          service: ururu-backend
-          environment: production
-          __path__: /var/log/syslog
+          job: ururu-backend
+          __path__: /app/logs/ururu-backend.log
     pipeline_stages:
       - json:
           expressions:
             timestamp: timestamp
             level: level
-            logger: logger
             message: message
+            logger: logger
             thread: thread
-      - labels:
-          level:
-          logger:
       - timestamp:
           source: timestamp
           format: RFC3339Nano
-    scrape_interval: 15s
-    scrape_timeout: 10s
-
-  - job_name: system-logs
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: system-logs
-          environment: production
-          __path__: /var/log/*.log
-    scrape_interval: 30s
-    scrape_timeout: 10s
+      - labels:
+          level:
+          logger:
+          thread:
