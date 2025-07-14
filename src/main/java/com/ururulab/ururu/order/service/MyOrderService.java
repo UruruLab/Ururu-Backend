@@ -18,9 +18,11 @@ import com.ururulab.ururu.order.dto.response.MyOrderListResponseDto;
 import com.ururulab.ururu.order.dto.response.MyOrderResponseDto;
 import com.ururulab.ururu.order.dto.response.OrderItemResponseDto;
 import com.ururulab.ururu.payment.domain.entity.Payment;
+import com.ururulab.ururu.payment.domain.entity.Refund;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.RefundItemRepository;
+import com.ururulab.ururu.payment.domain.repository.RefundRepository;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +48,7 @@ public class MyOrderService {
     private final PaymentRepository paymentRepository;
     private final MemberRepository memberRepository;
     private final GroupBuyStatisticsRepository groupBuyStatisticsRepository;
+    private final RefundRepository refundRepository;
     private final RefundItemRepository refundItemRepository;
     private final ObjectMapper objectMapper;
 
@@ -162,6 +165,8 @@ public class MyOrderService {
         Boolean canRefundChangeOfMind = refundStatus[0];
         Boolean canRefundOthers = refundStatus[1];
 
+        Optional<Refund> activeRefund = refundRepository.findActiveRefundByOrderId(order.getId());
+
         return new MyOrderResponseDto(
                 order.getId(),
                 order.getCreatedAt(),
@@ -169,6 +174,8 @@ public class MyOrderService {
                 totalAmount,
                 canRefundChangeOfMind,
                 canRefundOthers,
+                activeRefund.map(Refund::getType).orElse(null),
+                activeRefund.map(Refund::getReason).orElse(null),
                 orderItems
         );
     }
