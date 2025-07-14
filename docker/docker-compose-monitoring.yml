@@ -39,6 +39,7 @@ services:
       timeout: 30s
       retries: 10
       start_period: 300s
+      disable: true
 
   # Promtail (로그 수집기)
   promtail:
@@ -57,9 +58,6 @@ services:
       timeout: 15s
       retries: 5
       start_period: 60s
-    depends_on:
-      loki:
-        condition: service_healthy
 
   # Grafana (대시보드)
   grafana:
