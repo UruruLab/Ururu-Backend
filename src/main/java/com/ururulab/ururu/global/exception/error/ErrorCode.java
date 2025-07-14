@@ -43,7 +43,8 @@ public enum ErrorCode {
 	ORDER_PROCESSING_IN_PROGRESS(HttpStatus.LOCKED, "ORDER007", "이미 진행 중인 주문이 있습니다. 잠시 후 다시 시도해주세요."),
 	CART_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER008", "유효한 장바구니 아이템이 없습니다."),
 	ORDER_NOT_REFUNDABLE(HttpStatus.BAD_REQUEST, "ORDER009", "환불 가능한 주문 상태가 아닙니다."),
-
+	ORDER_NOT_SHIPPABLE(HttpStatus.BAD_REQUEST, "ORDER010", "주문 상태가 배송 정보 등록이 불가능합니다."),
+	TRACKING_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "ORDER011", "이미 운송장이 등록된 주문입니다."),
 
 	// --- 결제 ---
 	PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT001", "존재하지 않는 결제입니다."),
