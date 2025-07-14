@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @Tag(name = "주문 생성", description = "주문 생성 관련 API")
 public class OrderCreationController {
@@ -26,7 +27,7 @@ public class OrderCreationController {
     private final OrderCreationService orderCreationService;
 
     @Operation(summary = "공구 주문서 생성", description = "특정 공구의 옵션들로 주문서를 생성합니다. 주문서 생성 후 30분 내 결제가 필요합니다.")
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(responseCode = "201", description = "주문서 생성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
@@ -34,7 +35,7 @@ public class OrderCreationController {
             @ApiResponse(responseCode = "409", description = "재고 부족 또는 개인 구매 제한 초과"),
             @ApiResponse(responseCode = "423", description = "종료된 공구 또는 이미 진행 중인 주문")
     })
-    @PostMapping("/api/groupbuys/{groupbuyId}/orders")
+    @PostMapping("/groupbuys/{groupbuyId}/orders")
     public ResponseEntity<ApiResponseFormat<OrderCreateResponse>> createGroupBuyOrder(
             @AuthenticationPrincipal Long memberId,
             @PathVariable Long groupbuyId,
@@ -50,7 +51,7 @@ public class OrderCreationController {
     }
 
     @Operation(summary = "장바구니 주문서 생성", description = "장바구니의 선택된 아이템들로 주문서를 생성합니다. 주문서 생성 후 30분 내 결제가 필요합니다.")
-    @ApiResponses(value = {
+    @ApiResponses({
             @ApiResponse(responseCode = "201", description = "주문서 생성 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청 데이터"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
@@ -58,7 +59,7 @@ public class OrderCreationController {
             @ApiResponse(responseCode = "409", description = "재고 부족 또는 개인 구매 제한 초과"),
             @ApiResponse(responseCode = "423", description = "종료된 공구 또는 이미 진행 중인 주문")
     })
-    @PostMapping("/api/cart/orders")
+    @PostMapping("/cart/orders")
     public ResponseEntity<ApiResponseFormat<OrderCreateResponse>> createCartOrder(
             @AuthenticationPrincipal Long memberId,
             @Valid @RequestBody CartOrderCreateRequest request
