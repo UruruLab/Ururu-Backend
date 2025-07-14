@@ -137,6 +137,31 @@ jobs:
               echo "Error: Docker Compose is not installed"
               exit 1
             fi
+            
+            # 컨테이너 상태 확인
+            echo "=== 컨테이너 상태 확인 ==="
+            docker ps -a
+            echo ""
+            
+            # Loki 컨테이너 로그 확인
+            echo "=== Loki 컨테이너 로그 ==="
+            docker logs ururu-loki || echo "Loki 컨테이너가 없습니다"
+            echo ""
+            
+            # Promtail 컨테이너 로그 확인
+            echo "=== Promtail 컨테이너 로그 ==="
+            docker logs ururu-promtail || echo "Promtail 컨테이너가 없습니다"
+            echo ""
+            
+            # Grafana 컨테이너 로그 확인
+            echo "=== Grafana 컨테이너 로그 ==="
+            docker logs ururu-grafana || echo "Grafana 컨테이너가 없습니다"
+            echo ""
+            
+            # Prometheus 컨테이너 로그 확인
+            echo "=== Prometheus 컨테이너 로그 ==="
+            docker logs ururu-prometheus || echo "Prometheus 컨테이너가 없습니다"
+            echo ""
 
       # 6. 모니터링 서비스 헬스체크
       - name: Health check monitoring services
