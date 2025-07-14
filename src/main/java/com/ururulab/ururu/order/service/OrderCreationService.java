@@ -404,13 +404,13 @@ public class OrderCreationService {
 
     /**
      * 배송비 계산
-     * 현재는 일괄 3000원 고정 적용
+     * 현재는 일괄 무료 배송 고정 적용
      *
      * @param totalAmount 총 주문 금액 (현재 미사용)
-     * @return 배송비 (3000원 고정)
+     * @return 배송비 (0원)
      */
     private Integer calculateShippingFee(Integer totalAmount) {
-        return 3000;
+        return 0;
     }
 
     /**
