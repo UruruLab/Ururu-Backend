@@ -73,11 +73,12 @@ public class MyOrderService {
         String statusFilter = parseStatusFilter(statusParam);
 
         // 주문 통계 조회
-        Long inProgress = orderRepository.countInProgressOrders(memberId);
-        Long confirmed = orderRepository.countConfirmedOrders(memberId);
-        Long refundPending = orderRepository.countRefundPendingOrders(memberId);
+        Long inProgress = orderRepository.countMyOrders(memberId, "inprogress");
+        Long confirmed = orderRepository.countMyOrders(memberId, "confirmed");
+        Long refundPending = orderRepository.countMyOrders(memberId, "refundpending");
 
-        Page<Order> orders = getOrdersWithPaging(memberId, statusFilter, page, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Order> orders = orderRepository.findMyOrdersWithDetails(memberId, statusFilter, pageable);
 
         List<MyOrderResponseDto> orderDtos = orders.getContent().stream()
                 .map(this::toMyOrderResponseDto)
@@ -93,25 +94,6 @@ public class MyOrderService {
                 orders.getTotalElements()
         );
     }
-
-    /**
-     * 페이징된 주문 목록을 조회합니다.
-     *
-     * @param memberId 회원 ID
-     * @param statusFilter 공구 상태
-     * @param page 페이지 번호
-     * @param size 페이지 크기
-     * @return 페이징된 주문 목록
-     */
-    @Transactional(readOnly = true)
-    protected Page<Order> getOrdersWithPaging(Long memberId, String statusFilter, int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        return switch (statusFilter) {
-            case "inprogress" -> orderRepository.findInProgressOrdersWithDetails(memberId, pageable);
-            case "confirmed" -> orderRepository.findConfirmedOrdersWithDetails(memberId, pageable);
-            case "refundpending" -> orderRepository.findRefundPendingOrdersWithDetails(memberId, pageable);
-            default -> orderRepository.findAllOrdersWithDetails(memberId, pageable);
-        };    }
 
     /**
      * 회원 존재 여부를 검증합니다.
