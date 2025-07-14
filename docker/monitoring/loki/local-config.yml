@@ -27,7 +27,7 @@ ingester:
       replication_factor: 1
     finalize_ring: false
   chunk_idle_period: 5m
-  chunk_retain_period: 30s
+  chunk_retain_period: 1h
   max_chunk_age: 1h
 
 schema_config:
