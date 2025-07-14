@@ -37,19 +37,18 @@ services:
     command: -config.file=/etc/loki/local-config.yml
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3100/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 60s
+      timeout: 30s
+      retries: 10
+      start_period: 180s
 
   # Promtail (로그 수집기)
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:2.9.4
     container_name: ururu-promtail
     restart: unless-stopped
     volumes:
       - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
-      - /var/log:/var/log:ro
-      - /app/logs:/app/logs:ro
       - promtail_positions:/var/lib/promtail
     command: -config.file=/etc/promtail/config.yml
     env_file:
@@ -57,8 +56,9 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9080/ready"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 15s
+      retries: 5
+      start_period: 60s
     depends_on:
       loki:
         condition: service_healthy
