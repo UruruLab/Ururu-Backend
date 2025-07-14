@@ -50,6 +50,7 @@ services:
       - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
       - /app/logs:/app/logs:ro
+      - promtail_positions:/var/lib/promtail
     command: -config.file=/etc/promtail/config.yml
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9080/ready"]
@@ -94,3 +95,4 @@ volumes:
   prometheus_data:
   grafana_data:
   loki_data:
+  promtail_positions:
