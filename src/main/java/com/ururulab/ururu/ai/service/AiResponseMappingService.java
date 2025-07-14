@@ -140,10 +140,8 @@ public class AiResponseMappingService {
             final Double similarity = extractSimilarity(aiRecommendation);
             final String recommendReason = extractRecommendReason(aiRecommendation);
 
-            // 할인가 계산 수정 (정수로 변환하여 올바른 가격 적용)
-            final BigDecimal discountedPrice = groupBuy.getDisplayFinalPrice() != null && groupBuy.getDisplayFinalPrice() > 0 
-                ? BigDecimal.valueOf(groupBuy.getDisplayFinalPrice().longValue())  // Long으로 변환하여 정수값 보장
-                : originalPrice;
+            // 할인가 계산 - displayFinalPrice 직접 사용
+            final BigDecimal discountedPrice = calculateDiscountedPrice(groupBuy, originalPrice);
 
             // 공동구매 정보로 응답 생성
             return RecommendedGroupBuy.of(
@@ -250,5 +248,16 @@ public class AiResponseMappingService {
 
     private String extractRecommendReason(final Map<String, Object> aiRecommendation) {
         return (String) aiRecommendation.getOrDefault("recommendation_reason", "AI 분석 기반 추천");
+    }
+
+    /**
+     * 공동구매 할인가 계산
+     * displayFinalPrice가 유효하면 사용, 아니면 원가 반환
+     */
+    private BigDecimal calculateDiscountedPrice(final GroupBuy groupBuy, final BigDecimal originalPrice) {
+        if (groupBuy.getDisplayFinalPrice() != null && groupBuy.getDisplayFinalPrice() > 0) {
+            return BigDecimal.valueOf(groupBuy.getDisplayFinalPrice());
+        }
+        return originalPrice;
     }
 }

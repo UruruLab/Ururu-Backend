@@ -74,7 +74,7 @@ public class AiRecommendationService {
      * @throws BusinessException AI 서비스 통신 실패 시
      */
     public List<RecommendedGroupBuy> getRecommendations(final Long memberId, final GroupBuyRecommendationRequest request) {
-        log.info("AI 추천 요청 시작 - 회원ID: {}, 피부타입: {}", 
+        log.debug("AI 추천 요청 시작 - 회원ID: {}, 피부타입: {}", 
                 memberId, request.beautyProfile().skinType());
 
         try {
@@ -91,7 +91,7 @@ public class AiRecommendationService {
                 throw new BusinessException(ErrorCode.AI_NO_RECOMMENDATIONS_FOUND);
             }
 
-            log.info("AI 추천 완료 - 회원ID: {}, 추천 수: {}", memberId, recommendations.size());
+            log.debug("AI 추천 완료 - 회원ID: {}, 추천 수: {}", memberId, recommendations.size());
             return recommendations;
 
         } catch (final BusinessException e) {
