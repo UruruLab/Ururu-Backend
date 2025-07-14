@@ -12,7 +12,6 @@ import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.*;
 import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
-import com.ururulab.ururu.order.domain.entity.Cart;
 import com.ururulab.ururu.order.domain.repository.CartItemRepository;
 import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
@@ -132,12 +131,26 @@ public class MemberService {
     @Transactional
     public void deleteMember(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        validateMemberDeletion(memberId);
-        cleanupMemberRelatedData(memberId);
 
+        // 최소한의 검증만
+        try {
+            int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+            if (activeOrders > 0) {
+                throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST);
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("검증 실패했지만 탈퇴 진행: {}", e.getMessage());
+        }
+
+        // 회원만 소프트 삭제 (관련 데이터는 나중에 배치로 정리)
         member.delete();
         memberRepository.save(member);
+
+        log.info("회원 탈퇴 완료 - 회원ID: {} (관련 데이터는 배치에서 정리 예정)", memberId);
     }
+
 
     @Transactional(readOnly = true)
     public WithdrawalPreviewResponse getWithdrawalPreview(final Long memberId) {
@@ -251,78 +264,6 @@ public class MemberService {
             return Gender.from(genderString);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_GENDER_VALUE);
-        }
-    }
-
-    private void validateMemberDeletion(final Long memberId) {
-
-        try {
-            int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-            if (activeOrders > 0) {
-                throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST, activeOrders);
-            }
-
-            boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
-            if (hasPendingPayments) {
-                throw new BusinessException(ErrorCode.MEMBER_PENDING_PAYMENTS_EXIST);
-            }
-
-            log.debug("Member deletion validation passed for ID: {}", memberId);
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            log.warn("Member deletion validation failed for ID: {}, but proceeding with deletion: {}",
-                    memberId, e.getMessage());
-        }
-    }
-
-    private void cleanupMemberRelatedData(final Long memberId) {
-
-        try {
-            cleanupCart(memberId);
-            shippingAddressRepository.deleteByMemberId(memberId);
-            memberPreferenceRepository.deleteByMemberId(memberId);
-
-            memberAgreementRepository.deleteByMemberId(memberId);
-
-            cleanupBeautyProfile(memberId);
-
-            log.info("Member related data cleanup completed for ID: {}", memberId);
-
-        } catch (Exception e) {
-            log.error("Error during member data cleanup for ID: {}", memberId, e);
-            throw new BusinessException(ErrorCode.MEMBER_DELETION_FAILED);
-        }
-    }
-
-    private void cleanupBeautyProfile(final Long memberId) {
-        try{
-            Optional<BeautyProfile> beautyProfileOpt = beautyProfileRepository.findByMemberId(memberId);
-            if (beautyProfileOpt.isPresent()) {
-                beautyProfileRepository.delete(beautyProfileOpt.get());
-                beautyProfileRepository.flush();
-            }
-        } catch (Exception e) {
-            log.warn("BeautyProfile cleanup failed for member ID: {}, continuing with other cleanup", memberId, e);
-        }
-    }
-
-    private void cleanupCart(final Long memberId) {
-        try{
-            Optional<Cart> cartOpt = cartRepository.findByMemberId(memberId);
-            if (cartOpt.isPresent()) {
-                Cart cart = cartOpt.get();
-
-                cart.clearItems();
-                cartRepository.save(cart);
-                cartRepository.flush();
-
-                cartRepository.delete(cart);
-                cartRepository.flush();
-                log.debug("Cart cleanup completed for member ID: {}", memberId);
-            }
-        } catch (Exception e) {
-            log.warn("Cart cleanup failed for member ID: {}, continuing with other cleanup", memberId, e);
         }
     }
 
