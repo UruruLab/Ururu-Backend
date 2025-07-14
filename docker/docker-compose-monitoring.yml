@@ -19,6 +19,29 @@ services:
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
 
+  # Loki (로그 수집)
+  loki:
+    image: grafana/loki:latest
+    container_name: ururu-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/local-config.yml:/etc/loki/local-config.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yml
+
+  # Promtail (로그 수집기)
+  promtail:
+    image: grafana/promtail:latest
+    container_name: ururu-promtail
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /app/logs:/app/logs:ro
+    command: -config.file=/etc/promtail/config.yml
+
   # Grafana (대시보드)
   grafana:
     image: grafana/grafana:latest
@@ -42,4 +65,5 @@ services:
 
 volumes:
   prometheus_data:
-  grafana_data: 
+  grafana_data:
+  loki_data: 
