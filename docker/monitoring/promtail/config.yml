@@ -10,6 +10,9 @@ clients:
     batchwait: 1s
     batchsize: 1024
     timeout: 10s
+    basic_auth:
+      username: ${LOKI_USERNAME}
+      password: ${LOKI_PASSWORD}
     retry_on_failure:
       enabled: true
       initial_delay: 1s
