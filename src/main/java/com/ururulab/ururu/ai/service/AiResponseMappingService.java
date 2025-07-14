@@ -5,11 +5,15 @@ import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuy;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
+import com.ururulab.ururu.groupBuy.dto.common.DiscountStageDto;
+import com.ururulab.ururu.groupBuy.util.DiscountStageParser;
+import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +30,7 @@ import java.util.stream.Collectors;
 public class AiResponseMappingService {
 
     private final GroupBuyRepository groupBuyRepository;
+    private final OrderItemRepository orderItemRepository;
 
     /**
      * AI 서비스 응답을 RecommendedGroupBuy 리스트로 변환.
@@ -136,12 +141,14 @@ public class AiResponseMappingService {
 
             // AI 추천 데이터 추출
             final String productName = extractProductName(productInfo);
-            final BigDecimal originalPrice = extractPrice(productInfo);
+            final BigDecimal originalPrice = extractOriginalPrice(productInfo);
             final Double similarity = extractSimilarity(aiRecommendation);
             final String recommendReason = extractRecommendReason(aiRecommendation);
 
-            // 할인가 계산 - displayFinalPrice 직접 사용
-            final BigDecimal discountedPrice = calculateDiscountedPrice(groupBuy, originalPrice);
+            // 현재 참여자 수 및 동적 할인율 계산
+            final Integer currentParticipants = orderItemRepository.getTotalQuantityByGroupBuyId(groupBuy.getId());
+            final Integer currentDiscountRate = calculateCurrentDiscountRate(groupBuy, currentParticipants);
+            final BigDecimal discountedPrice = calculateDynamicDiscountedPrice(originalPrice, currentDiscountRate);
 
             // 공동구매 정보로 응답 생성
             return RecommendedGroupBuy.of(
@@ -156,7 +163,7 @@ public class AiResponseMappingService {
                     "AI추천", // 카테고리
                     List.of(), // 주요 성분 (추후 확장)
                     recommendReason, // 추천 이유
-                    0, // 현재 참여자 수 (추후 계산)
+                    currentParticipants, // 현재 참여자 수 (실제 계산됨)
                     10, // 최소 참여자 수 (기본값)
                     groupBuy.getEndsAt().atZone(ZoneId.systemDefault()).toLocalDateTime() // 종료일
             );
@@ -196,7 +203,7 @@ public class AiResponseMappingService {
         return (String) productInfo.getOrDefault("name", "상품명 없음");
     }
 
-    private BigDecimal extractPrice(final Map<String, Object> productInfo) {
+    private BigDecimal extractOriginalPrice(final Map<String, Object> productInfo) {
         final Object priceObj = productInfo.get("base_price");
         if (priceObj == null) {
             return BigDecimal.ZERO;
@@ -251,13 +258,36 @@ public class AiResponseMappingService {
     }
 
     /**
-     * 공동구매 할인가 계산
-     * displayFinalPrice가 유효하면 사용, 아니면 원가 반환
+     * 현재 참여자 수에 따른 할인율 계산
      */
-    private BigDecimal calculateDiscountedPrice(final GroupBuy groupBuy, final BigDecimal originalPrice) {
-        if (groupBuy.getDisplayFinalPrice() != null && groupBuy.getDisplayFinalPrice() > 0) {
-            return BigDecimal.valueOf(groupBuy.getDisplayFinalPrice());
+    private Integer calculateCurrentDiscountRate(final GroupBuy groupBuy, final Integer currentParticipants) {
+        try {
+            final List<DiscountStageDto> stages = DiscountStageParser.parseDiscountStages(groupBuy.getDiscountStages());
+            
+            // 참여자 수에 따라 적용 가능한 최고 할인율 계산
+            return stages.stream()
+                    .filter(stage -> currentParticipants >= stage.minQuantity())
+                    .mapToInt(DiscountStageDto::discountRate)
+                    .max()
+                    .orElse(0); // 최소 참여자 수 미달 시 할인 없음
+                    
+        } catch (final Exception e) {
+            log.warn("할인율 계산 실패 - GroupBuy ID: {}, 기본 할인율 0% 적용", groupBuy.getId(), e);
+            return 0;
         }
-        return originalPrice;
     }
+
+    /**
+     * 동적 할인율 기반 할인가 계산
+     */
+    private BigDecimal calculateDynamicDiscountedPrice(final BigDecimal originalPrice, final Integer discountRate) {
+        if (discountRate == null || discountRate <= 0) {
+            return originalPrice;
+        }
+        
+        final BigDecimal discountMultiplier = BigDecimal.valueOf(100 - discountRate)
+                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+        return originalPrice.multiply(discountMultiplier).setScale(0, RoundingMode.HALF_UP);
+    }
+
 }
