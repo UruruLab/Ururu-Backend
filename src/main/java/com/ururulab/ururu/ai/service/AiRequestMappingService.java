@@ -34,10 +34,6 @@ public class AiRequestMappingService {
 
         final Map<String, Object> beautyProfileMap = buildBeautyProfileMap(request);
         final List<String> includeCategories = getIncludeCategories(request);
-        
-        log.info("🔧 변환된 피부타입: {}", beautyProfileMap.get("skin_type"));
-        log.info("🔧 변환된 피부톤: {}", beautyProfileMap.get("skin_tone"));
-        log.info("🔧 변환된 카테고리: {}", includeCategories);
 
         return Map.of(
                 "beauty_profile", beautyProfileMap,
