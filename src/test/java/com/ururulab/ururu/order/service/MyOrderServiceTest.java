@@ -27,6 +27,7 @@ import com.ururulab.ururu.payment.domain.entity.Payment;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.RefundItemRepository;
+import com.ururulab.ururu.payment.domain.repository.RefundRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +74,9 @@ class MyOrderServiceTest {
 
     @Mock
     private GroupBuyStatisticsRepository groupBuyStatisticsRepository;
+
+    @Mock
+    private RefundRepository refundRepository;
 
     @Mock
     private RefundItemRepository refundItemRepository;
