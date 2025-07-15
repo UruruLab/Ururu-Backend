@@ -21,7 +21,7 @@ public class ProductCategoryService {
 
     private final ProductCategoryRepository productCategoryRepository;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void saveProductCategories(Product product, List<Category> categories) {
         if (categories.isEmpty()) return;
 
@@ -33,7 +33,7 @@ public class ProductCategoryService {
         log.info("Saved {} categories for product: {}", categories.size(), product.getId());
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public List<CategoryResponse> updateCategories(Product product, List<Category> newCategories) {
         // 기존 카테고리들 조회
         List<ProductCategory> existingProductCategories =

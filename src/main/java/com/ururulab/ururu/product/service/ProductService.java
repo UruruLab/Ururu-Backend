@@ -136,6 +136,7 @@ public class ProductService {
      * @param sellerId
      * @return
      */
+    @Transactional
     public ProductResponse updateProduct(Long productId, ProductRequest productRequest,
                                          List<MultipartFile> optionImages, Long sellerId) {
         log.info("Updating product ID: {} for seller: {}", productId, sellerId);
