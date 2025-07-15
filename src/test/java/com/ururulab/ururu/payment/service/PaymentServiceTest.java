@@ -90,8 +90,8 @@ class PaymentServiceTest {
     private static final Long MEMBER_ID = 1L;
     private static final String ORDER_ID = "ORDER123";
     private static final String PAYMENT_KEY = "PAYMENT_KEY_123";
-    private static final Integer TOTAL_AMOUNT = 18000;
-    private static final Integer PAYMENT_AMOUNT = 13000;
+    private static final Integer TOTAL_AMOUNT = 15000;
+    private static final Integer PAYMENT_AMOUNT = 10000;
     private static final Integer USE_POINTS = 5000;
     private static final Integer MEMBER_POINTS = 10000;
 
