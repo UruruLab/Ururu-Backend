@@ -1,16 +1,15 @@
 package com.ururulab.ururu.auth.controller;
 
+import com.ururulab.ururu.auth.annotation.RateLimit;
+import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
-import com.ururulab.ururu.auth.service.SocialLoginServiceFactory;
-import com.ururulab.ururu.auth.service.SocialLoginService;
-import com.ururulab.ururu.auth.service.JwtRefreshService;
-import com.ururulab.ururu.auth.service.UserInfoService;
-import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.auth.service.*;
+import com.ururulab.ururu.auth.util.AuthCookieHelper;
+import com.ururulab.ururu.auth.util.AuthResponseHelper;
 import com.ururulab.ururu.auth.util.TokenExtractor;
-import com.ururulab.ururu.auth.annotation.RateLimit;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -23,7 +22,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.servlet.view.RedirectView;
 
 import java.net.URLEncoder;
@@ -34,10 +32,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import com.ururulab.ururu.auth.service.SecurityLoggingService;
-import com.ururulab.ururu.auth.util.AuthResponseHelper;
-import com.ururulab.ururu.auth.util.AuthCookieHelper;
-import com.ururulab.ururu.auth.constants.AuthConstants;
 
 /**
  * 인증 관련 API 컨트롤러.
@@ -344,12 +338,12 @@ public class AuthController {
             // state를 Redis에 저장 (중복 방지)
             final String redisStateKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state;
             final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
-            
+
             if (isStateUsed == null || !isStateUsed) {
                 log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
                 return redirectToError("state_already_used", providerName);
             }
-            
+
             // 소셜로그인 처리
             final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
             final SocialLoginResponse loginResponse = loginService.processLogin(code);
@@ -367,17 +361,40 @@ public class AuthController {
             final String redirectUrl = buildFrontendUrl("/auth/success");
             redirectView.setUrl(redirectUrl);
 
-            log.info("{} login successful for user: {} (env: {})", 
+            log.info("{} login successful for user: {} (env: {})",
                     providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
             log.info("Redirecting to: {}", redirectUrl);
 
             return redirectView;
+        } catch (final BusinessException e) {
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
+            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
+
+            return handleBusinessExceptionRedirect(e, providerName);
+
         } catch (final Exception e) {
             // 실패시 코드와 state를 사용된 목록에서 제거 (재시도 가능하도록)
             redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
             redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
             throw e;
         }
+    }
+
+    private RedirectView handleBusinessExceptionRedirect(final BusinessException e, final String provider) {
+        final ErrorCode errorCode = e.getErrorCode();
+        String errorReason = "login_failed";
+
+        if (errorCode == ErrorCode.MEMBER_DELETED || errorCode == ErrorCode.MEMBER_LOGIN_DENIED) {
+            errorReason = "withdrawn_member";
+        } else if (errorCode == ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED) {
+            errorReason = "token_exchange_failed";
+        } else if (errorCode == ErrorCode.SOCIAL_MEMBER_INFO_FAILED) {
+            errorReason = "member_info_failed";
+        }
+
+        log.warn("{} authentication failed with business exception: {} ({})",
+                provider, errorCode.getCode(), e.getMessage());
+        return redirectToError(errorReason, provider);
     }
 
     /**
@@ -415,10 +432,12 @@ public class AuthController {
         redirectView.setContextRelative(false);
 
         
-        final String errorUrl = buildFrontendUrl("/auth/error") 
-                + "?message=" + URLEncoder.encode(errorMessage, StandardCharsets.UTF_8)
+        final String errorUrl = buildFrontendUrl("/auth/callback")
+                + "?result=error"
+                + "&reason=" + URLEncoder.encode(errorMessage, StandardCharsets.UTF_8)
                 + "&provider=" + URLEncoder.encode(provider, StandardCharsets.UTF_8);
-        
+
+
         redirectView.setUrl(errorUrl);
         
         log.warn("{} authentication failed: {} (env: {})", provider, errorMessage, getCurrentProfile());
