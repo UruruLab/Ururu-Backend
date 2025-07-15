@@ -21,7 +21,7 @@ public class ProductTagService {
 
     private final ProductTagRepository productTagRepository;
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public List<ProductTag> saveProductTags(Product product, List<TagCategory> tagCategories) {
         if (tagCategories.isEmpty()) return Collections.emptyList();
 
@@ -35,7 +35,7 @@ public class ProductTagService {
     /**
      * 태그 업데이트 - 변경된 것만 추가/삭제
      */
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public List<ProductTagResponse> updateTags(Product product, List<TagCategory> newTagCategories) {
         // 기존 태그들 조회
         List<ProductTag> existingProductTags = productTagRepository.findByProductIdWithTagCategory(product.getId());

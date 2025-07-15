@@ -30,4 +30,13 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption, Lo
     @Query("SELECT po FROM ProductOption po WHERE po.id IN :optionIds AND po.product.id = :productId")
     List<ProductOption> findAllByIdInAndProductId(@Param("optionIds") List<Long> optionIds,
                                                   @Param("productId") Long productId);
+
+    // 배치 소프트 삭제 (핵심 최적화)
+    @Modifying
+    @Query("UPDATE ProductOption po SET po.isDeleted = true WHERE po.id IN :optionIds AND po.product.id = :productId AND po.isDeleted = false")
+    int softDeleteByIds(@Param("optionIds") List<Long> optionIds, @Param("productId") Long productId);
+
+    // 활성 옵션 개수 조회 (검증용)
+    @Query("SELECT COUNT(po) FROM ProductOption po WHERE po.product.id = :productId AND po.isDeleted = false AND po.id NOT IN :excludeIds")
+    int countActiveOptionsExcluding(@Param("productId") Long productId, @Param("excludeIds") List<Long> excludeIds);
 }
