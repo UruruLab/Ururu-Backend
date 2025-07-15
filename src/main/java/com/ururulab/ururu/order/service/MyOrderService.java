@@ -18,9 +18,11 @@ import com.ururulab.ururu.order.dto.response.MyOrderListResponseDto;
 import com.ururulab.ururu.order.dto.response.MyOrderResponseDto;
 import com.ururulab.ururu.order.dto.response.OrderItemResponseDto;
 import com.ururulab.ururu.payment.domain.entity.Payment;
+import com.ururulab.ururu.payment.domain.entity.Refund;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.RefundItemRepository;
+import com.ururulab.ururu.payment.domain.repository.RefundRepository;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +48,7 @@ public class MyOrderService {
     private final PaymentRepository paymentRepository;
     private final MemberRepository memberRepository;
     private final GroupBuyStatisticsRepository groupBuyStatisticsRepository;
+    private final RefundRepository refundRepository;
     private final RefundItemRepository refundItemRepository;
     private final ObjectMapper objectMapper;
 
@@ -70,11 +73,12 @@ public class MyOrderService {
         String statusFilter = parseStatusFilter(statusParam);
 
         // 주문 통계 조회
-        Long inProgress = orderRepository.countInProgressOrders(memberId);
-        Long confirmed = orderRepository.countConfirmedOrders(memberId);
-        Long refundPending = orderRepository.countRefundPendingOrders(memberId);
+        Long inProgress = orderRepository.countMyOrders(memberId, "inprogress");
+        Long confirmed = orderRepository.countMyOrders(memberId, "confirmed");
+        Long refundPending = orderRepository.countMyOrders(memberId, "refundpending");
 
-        Page<Order> orders = getOrdersWithPaging(memberId, statusFilter, page, size);
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Order> orders = orderRepository.findMyOrdersWithDetails(memberId, statusFilter, pageable);
 
         List<MyOrderResponseDto> orderDtos = orders.getContent().stream()
                 .map(this::toMyOrderResponseDto)
@@ -90,25 +94,6 @@ public class MyOrderService {
                 orders.getTotalElements()
         );
     }
-
-    /**
-     * 페이징된 주문 목록을 조회합니다.
-     *
-     * @param memberId 회원 ID
-     * @param statusFilter 공구 상태
-     * @param page 페이지 번호
-     * @param size 페이지 크기
-     * @return 페이징된 주문 목록
-     */
-    @Transactional(readOnly = true)
-    protected Page<Order> getOrdersWithPaging(Long memberId, String statusFilter, int page, int size) {
-        Pageable pageable = PageRequest.of(page - 1, size);
-        return switch (statusFilter) {
-            case "inprogress" -> orderRepository.findInProgressOrdersWithDetails(memberId, pageable);
-            case "confirmed" -> orderRepository.findConfirmedOrdersWithDetails(memberId, pageable);
-            case "refundpending" -> orderRepository.findRefundPendingOrdersWithDetails(memberId, pageable);
-            default -> orderRepository.findAllOrdersWithDetails(memberId, pageable);
-        };    }
 
     /**
      * 회원 존재 여부를 검증합니다.
@@ -152,8 +137,7 @@ public class MyOrderService {
     private MyOrderResponseDto toMyOrderResponseDto(Order order) {
         // 환불되지 않은 OrderItem들만 필터링
         List<OrderItemResponseDto> orderItems = order.getOrderItems().stream()
-                .filter(this::isNotRefunded)
-                .map(this::toOrderItemResponseDto)
+                .filter(item -> !this.isRefundProcessed(item))                .map(this::toOrderItemResponseDto)
                 .toList();
 
         Integer totalAmount = calculateCurrentAmount(order);
@@ -162,6 +146,8 @@ public class MyOrderService {
         Boolean canRefundChangeOfMind = refundStatus[0];
         Boolean canRefundOthers = refundStatus[1];
 
+        Optional<Refund> activeRefund = refundRepository.findActiveRefundByOrderId(order.getId());
+
         return new MyOrderResponseDto(
                 order.getId(),
                 order.getCreatedAt(),
@@ -169,6 +155,8 @@ public class MyOrderService {
                 totalAmount,
                 canRefundChangeOfMind,
                 canRefundOthers,
+                activeRefund.map(Refund::getType).orElse(null),
+                activeRefund.map(Refund::getReason).orElse(null),
                 orderItems
         );
     }
@@ -202,27 +190,6 @@ public class MyOrderService {
     }
 
     /**
-     * OrderItem이 환불되지 않았는지 확인합니다.*
-     * INITIATED 상태만 "환불 진행중"으로 간주하고,
-     * 나머지는 모두 "환불되지 않음"으로 처리합니다.
-     *
-     * @param orderItem 주문 아이템
-     * @return 환불되지 않았으면 true
-     */
-    private boolean isNotRefunded(OrderItem orderItem) {
-        // INITIATED가 아니면 모두 "환불 안됨"으로 처리
-        return !refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
-                orderItem.getId(),
-                List.of(
-                        RefundStatus.APPROVED,
-                        RefundStatus.COMPLETED,
-                        RefundStatus.FAILED,
-                        RefundStatus.REJECTED
-                )
-        );
-    }
-
-    /**
      * 현재 주문의 유효 금액을 계산합니다.
      * 전체 결제 금액에서 환불된 금액을 뺀 값을 반환합니다.
      *
@@ -237,7 +204,7 @@ public class MyOrderService {
 
         // 환불된 금액 계산
         Integer refundedAmount = order.getOrderItems().stream()
-                .filter(this::isRefunded)
+                .filter(this::isRefundProcessed)
                 .mapToInt(item -> item.getGroupBuyOption().getSalePrice() * item.getQuantity())
                 .sum();
 
@@ -251,10 +218,15 @@ public class MyOrderService {
      * @param orderItem 주문 아이템
      * @return 환불되었으면 true
      */
-    private boolean isRefunded(OrderItem orderItem) {
-        return !refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
+    private boolean isRefundProcessed(OrderItem orderItem) {
+        return refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                 orderItem.getId(),
-                List.of(RefundStatus.INITIATED)
+                List.of(
+                        RefundStatus.APPROVED,
+                        RefundStatus.COMPLETED,
+                        RefundStatus.REJECTED,
+                        RefundStatus.FAILED
+                )
         );
     }
 

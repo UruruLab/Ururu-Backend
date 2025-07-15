@@ -52,7 +52,7 @@
     @Transactional(readOnly = true)
     public class PaymentService {
 
-        private static final Integer SHIPPING_FEE = 3000; // 배송비 고정
+        private static final Integer SHIPPING_FEE = 0; // 배송비 고정
         private static final String TOSS_PAYMENT_STATUS_CHANGED = "PAYMENT_STATUS_CHANGED"; // 토스 웹훅 이벤트 타입
         private static final String DONE = "DONE"; // Toss 결제 상태가 완료인 경우
 

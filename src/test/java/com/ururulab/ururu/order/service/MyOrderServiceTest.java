@@ -21,12 +21,11 @@ import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
 import com.ururulab.ururu.order.domain.repository.OrderItemRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.order.dto.response.MyOrderListResponseDto;
-import com.ururulab.ururu.order.dto.response.MyOrderResponseDto;
-import com.ururulab.ururu.order.dto.response.OrderItemResponseDto;
 import com.ururulab.ururu.payment.domain.entity.Payment;
 import com.ururulab.ururu.payment.domain.entity.enumerated.RefundStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.RefundItemRepository;
+import com.ururulab.ururu.payment.domain.repository.RefundRepository;
 import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.ProductOption;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +74,9 @@ class MyOrderServiceTest {
     private GroupBuyStatisticsRepository groupBuyStatisticsRepository;
 
     @Mock
+    private RefundRepository refundRepository;
+
+    @Mock
     private RefundItemRepository refundItemRepository;
 
     @Mock
@@ -109,13 +111,14 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findInProgressOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(1L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("inprogress"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -127,7 +130,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findInProgressOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("inprogress"), any(Pageable.class));
         }
 
         @Test
@@ -137,13 +140,14 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findConfirmedOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(1L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("confirmed"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -155,7 +159,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findConfirmedOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("confirmed"), any(Pageable.class));
         }
 
         @Test
@@ -165,13 +169,14 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.findRefundPendingOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(1L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("refundpending"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -183,7 +188,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findRefundPendingOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("refundpending"), any(Pageable.class));
         }
 
         @Test
@@ -199,7 +204,7 @@ class MyOrderServiceTest {
                     .isEqualTo(ErrorCode.MEMBER_NOT_FOUND);
 
             verify(memberRepository).existsById(MEMBER_ID);
-            verify(orderRepository, never()).findAllOrdersWithDetails(anyLong(), any(Pageable.class));
+            verify(orderRepository, never()).findMyOrdersWithDetails(anyLong(), anyString(), any(Pageable.class));
         }
 
         @Test
@@ -209,13 +214,14 @@ class MyOrderServiceTest {
             Page<Order> orderPage = new PageImpl<>(List.of(testOrder));
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(1L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(1L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("all"), any(Pageable.class)))
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -227,7 +233,7 @@ class MyOrderServiceTest {
 
             // then
             assertThat(result.orders()).hasSize(1);
-            verify(orderRepository).findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class));
+            verify(orderRepository).findMyOrdersWithDetails(eq(MEMBER_ID), eq("all"), any(Pageable.class));
         }
 
         @Test
@@ -237,10 +243,10 @@ class MyOrderServiceTest {
             Page<Order> emptyPage = new PageImpl<>(List.of());
 
             given(memberRepository.existsById(MEMBER_ID)).willReturn(true);
-            given(orderRepository.countInProgressOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countConfirmedOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.countRefundPendingOrders(MEMBER_ID)).willReturn(0L);
-            given(orderRepository.findAllOrdersWithDetails(eq(MEMBER_ID), any(Pageable.class)))
+            given(orderRepository.countMyOrders(MEMBER_ID, "inprogress")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "confirmed")).willReturn(0L);
+            given(orderRepository.countMyOrders(MEMBER_ID, "refundpending")).willReturn(0L);
+            given(orderRepository.findMyOrdersWithDetails(eq(MEMBER_ID), eq("all"), any(Pageable.class)))
                     .willReturn(emptyPage);
 
             // when
@@ -330,44 +336,44 @@ class MyOrderServiceTest {
     class RefundStatusTest {
 
         @Test
-        @DisplayName("환불되지 않은 아이템 확인")
-        void isNotRefunded_success() {
+        @DisplayName("환불 처리되지 않은 아이템 확인")
+        void isRefundProcessed_notProcessed_returnsFalse() {
             // given
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.FAILED, RefundStatus.REJECTED))
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
             )).willReturn(false);
 
             // when
             try {
-                Method method = MyOrderService.class.getDeclaredMethod("isNotRefunded", OrderItem.class);
+                Method method = MyOrderService.class.getDeclaredMethod("isRefundProcessed", OrderItem.class);
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(myOrderService, testOrderItem);
 
                 // then
-                assertThat(result).isTrue();
+                assertThat(result).isFalse();
             } catch (Exception e) {
                 fail("메서드 호출 실패", e);
             }
         }
 
         @Test
-        @DisplayName("환불된 아이템 확인")
-        void isNotRefunded_refunded_returnsFalse() {
+        @DisplayName("환불 처리된 아이템 확인")
+        void isRefundProcessed_processed_returnsTrue() {
             // given
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.FAILED, RefundStatus.REJECTED))
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
             )).willReturn(true);
 
             // when
             try {
-                Method method = MyOrderService.class.getDeclaredMethod("isNotRefunded", OrderItem.class);
+                Method method = MyOrderService.class.getDeclaredMethod("isRefundProcessed", OrderItem.class);
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(myOrderService, testOrderItem);
 
                 // then
-                assertThat(result).isFalse();
+                assertThat(result).isTrue();
             } catch (Exception e) {
                 fail("메서드 호출 실패", e);
             }
@@ -383,11 +389,11 @@ class MyOrderServiceTest {
         void calculateCurrentAmount_noRefund_success() {
             // given
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
-            // isRefunded = false 이므로 환불되지 않음
+            // 환불 처리되지 않음
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.INITIATED))
-            )).willReturn(true); // INITIATED가 있으면 isRefunded = false
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
+            )).willReturn(false);
 
             // when
             try {
@@ -407,11 +413,11 @@ class MyOrderServiceTest {
         void calculateCurrentAmount_withRefund_success() {
             // given
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
-            // isRefunded = true 이므로 환불됨
+            // 환불 처리됨
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.INITIATED))
-            )).willReturn(false); // INITIATED가 없으면 isRefunded = true
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
+            )).willReturn(true);
 
             // when
             try {
