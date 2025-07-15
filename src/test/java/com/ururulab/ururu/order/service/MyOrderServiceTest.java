@@ -118,6 +118,7 @@ class MyOrderServiceTest {
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -146,6 +147,7 @@ class MyOrderServiceTest {
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -174,6 +176,7 @@ class MyOrderServiceTest {
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -218,6 +221,7 @@ class MyOrderServiceTest {
                     .willReturn(orderPage);
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(anyLong(), any())).willReturn(false);
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
+            given(refundRepository.findActiveRefundByOrderId(ORDER_ID)).willReturn(Optional.empty());
 
             // ObjectMapper 모킹
             List<Map<String, Object>> stages = List.of(Map.of("count", 10, "rate", 5));
@@ -332,44 +336,44 @@ class MyOrderServiceTest {
     class RefundStatusTest {
 
         @Test
-        @DisplayName("환불되지 않은 아이템 확인")
-        void isNotRefunded_success() {
+        @DisplayName("환불 처리되지 않은 아이템 확인")
+        void isRefundProcessed_notProcessed_returnsFalse() {
             // given
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.FAILED, RefundStatus.REJECTED))
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
             )).willReturn(false);
 
             // when
             try {
-                Method method = MyOrderService.class.getDeclaredMethod("isNotRefunded", OrderItem.class);
+                Method method = MyOrderService.class.getDeclaredMethod("isRefundProcessed", OrderItem.class);
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(myOrderService, testOrderItem);
 
                 // then
-                assertThat(result).isTrue();
+                assertThat(result).isFalse();
             } catch (Exception e) {
                 fail("메서드 호출 실패", e);
             }
         }
 
         @Test
-        @DisplayName("환불된 아이템 확인")
-        void isNotRefunded_refunded_returnsFalse() {
+        @DisplayName("환불 처리된 아이템 확인")
+        void isRefundProcessed_processed_returnsTrue() {
             // given
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.FAILED, RefundStatus.REJECTED))
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
             )).willReturn(true);
 
             // when
             try {
-                Method method = MyOrderService.class.getDeclaredMethod("isNotRefunded", OrderItem.class);
+                Method method = MyOrderService.class.getDeclaredMethod("isRefundProcessed", OrderItem.class);
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(myOrderService, testOrderItem);
 
                 // then
-                assertThat(result).isFalse();
+                assertThat(result).isTrue();
             } catch (Exception e) {
                 fail("메서드 호출 실패", e);
             }
@@ -385,11 +389,11 @@ class MyOrderServiceTest {
         void calculateCurrentAmount_noRefund_success() {
             // given
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
-            // isRefunded = false 이므로 환불되지 않음
+            // 환불 처리되지 않음
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.INITIATED))
-            )).willReturn(true); // INITIATED가 있으면 isRefunded = false
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
+            )).willReturn(false);
 
             // when
             try {
@@ -409,11 +413,11 @@ class MyOrderServiceTest {
         void calculateCurrentAmount_withRefund_success() {
             // given
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(testPayment));
-            // isRefunded = true 이므로 환불됨
+            // 환불 처리됨
             given(refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                     eq(testOrderItem.getId()),
-                    eq(List.of(RefundStatus.INITIATED))
-            )).willReturn(false); // INITIATED가 없으면 isRefunded = true
+                    eq(List.of(RefundStatus.APPROVED, RefundStatus.COMPLETED, RefundStatus.REJECTED, RefundStatus.FAILED))
+            )).willReturn(true);
 
             // when
             try {
