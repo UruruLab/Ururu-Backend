@@ -160,49 +160,6 @@ public class ProductOptionService {
         log.info("=== 제거된 옵션 삭제 처리 완료 ===");
     }
 
-    /**
-     * 특정 옵션들을 삭제하는 메서드
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteOptionsByIds(Long productId, List<Long> optionIdsToDelete) {
-
-        log.info("특정 옵션들 삭제 시작 - Product ID: {}, Option IDs: {}", productId, optionIdsToDelete);
-
-        if (optionIdsToDelete == null || optionIdsToDelete.isEmpty()) {
-            log.info("삭제할 옵션 ID가 없습니다.");
-            return;
-        }
-
-        // 기존 메서드 재사용하여 유효성 검증
-        List<ProductOption> existingOptionsToDelete = productOptionRepository.findAllByIdInAndProductId(optionIdsToDelete, productId);
-
-        // 실제 존재하고 삭제되지 않은 옵션들만 필터링
-        List<Long> validIdsToDelete = existingOptionsToDelete.stream()
-                .filter(option -> !option.getIsDeleted())
-                .map(ProductOption::getId)
-                .toList();
-
-        if (validIdsToDelete.isEmpty()) {
-            log.warn("삭제 가능한 옵션이 없습니다. Product ID: {}, Option IDs: {}", productId, optionIdsToDelete);
-            return;
-        }
-
-        log.info("유효한 삭제 대상 옵션 IDs: {}", validIdsToDelete);
-
-        // DB 기반 정확한 검증
-        int remainingActiveCount = productOptionRepository.countActiveOptionsExcluding(productId, validIdsToDelete);
-
-        if (remainingActiveCount < 1) {
-            log.error("최소 1개의 옵션은 유지되어야 합니다. Product ID: {}", productId);
-            throw new BusinessException(ErrorCode.CANNOT_DELETE_LAST_OPTION);
-        }
-
-        // 배치 삭제 처리
-        int deletedCount = productOptionRepository.softDeleteByIds(validIdsToDelete, productId);
-
-        log.info("특정 옵션들 삭제 완료: {}개", deletedCount);
-    }
-
     @Transactional(readOnly = true)
     public List<ProductOptionResponse> getProductOptions(Long productId) {
         return productOptionRepository.findByProductIdAndIsDeletedFalse(productId)
