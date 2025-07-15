@@ -115,7 +115,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
         switch (statusFilter.toLowerCase()) {
             case "inprogress" ->
                 builder.and(groupBuy.status.eq(GroupBuyStatus.OPEN))
-                        .and(hasNoApprovedOrCompletedRefund(orderItem));
+                        .and(hasNoRefundAtAll(orderItem));
 
             case "confirmed" ->
                 builder.and(groupBuy.status.eq(GroupBuyStatus.CLOSED))
@@ -167,7 +167,12 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
                 .from(refundItem)
                 .join(refundItem.refund, refund)
                 .where(refundItem.orderItem.eq(orderItem)
-                        .and(refund.status.in(RefundStatus.APPROVED, RefundStatus.COMPLETED)))
+                        .and(refund.status.in(
+                                RefundStatus.APPROVED,
+                                RefundStatus.COMPLETED,
+                                RefundStatus.REJECTED,
+                                RefundStatus.FAILED
+                        )))
                 .notExists();
     }
 
@@ -185,5 +190,18 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
                 .where(refundItem.orderItem.eq(orderItem)
                         .and(refund.status.eq(RefundStatus.INITIATED)))
                 .exists();
+    }
+
+    /**
+     * 환불 기록이 전혀 없는 OrderItem인지 확인합니다.
+     */
+    private BooleanExpression hasNoRefundAtAll(QOrderItem orderItem) {
+        QRefundItem refundItem = QRefundItem.refundItem;
+
+        return JPAExpressions
+                .selectOne()
+                .from(refundItem)
+                .where(refundItem.orderItem.eq(orderItem))
+                .notExists();
     }
 }
