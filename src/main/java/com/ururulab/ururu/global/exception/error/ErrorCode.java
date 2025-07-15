@@ -216,6 +216,8 @@ public enum ErrorCode {
 	PROFILE_IMAGE_REQUIRED(HttpStatus.BAD_REQUEST, "MEMBER009", "이미지 파일은 필수입니다."),
 	INVALID_GENDER_VALUE(HttpStatus.BAD_REQUEST, "MEMBER010", "올바른 성별 값이 아닙니다."),
 	MEMBER_DELETION_FAILED(HttpStatus.BAD_REQUEST, "MEMBER011", "회원 데이터 정리 중 오류가 발생했습니다"),
+	MEMBER_DELETED(HttpStatus.BAD_REQUEST, "MEMBER012", "탈퇴한 회원입니다."),
+	MEMBER_LOGIN_DENIED(HttpStatus.BAD_REQUEST,"MEMBER013", "탈퇴한 회원은 로그인할 수 없습니다."),
 
 	// --- 뷰티 프로필 ---
 	BEAUTY_PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "BEAUTY001", "뷰티 프로필을 찾을 수 없습니다."),

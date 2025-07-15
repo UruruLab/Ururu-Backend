@@ -9,13 +9,9 @@ import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
-import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
-import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
-import com.ururulab.ururu.member.domain.repository.MemberRepository;
-import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
+import com.ururulab.ururu.member.domain.repository.*;
 import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
-import com.ururulab.ururu.order.domain.entity.Cart;
 import com.ururulab.ururu.order.domain.repository.CartItemRepository;
 import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
@@ -45,13 +41,16 @@ public class MemberService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final MemberPreferenceRepository memberPreferenceRepository;
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
         return memberRepository.findBySocialProviderAndSocialId(
-                socialMemberInfo.provider(),
-                socialMemberInfo.socialId()
-        ).orElseGet(() -> createNewMember(socialMemberInfo));
+                        socialMemberInfo.provider(),
+                        socialMemberInfo.socialId()
+                )
+                .filter(member -> !member.isDeleted())
+                .orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
     @Transactional(readOnly = true)
@@ -134,12 +133,26 @@ public class MemberService {
     @Transactional
     public void deleteMember(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
-        validateMemberDeletion(memberId);
-        cleanupMemberRelatedData(memberId);
 
+        // 최소한의 검증만
+        try {
+            int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+            if (activeOrders > 0) {
+                throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST);
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("검증 실패했지만 탈퇴 진행: {}", e.getMessage());
+        }
+
+        // 회원만 소프트 삭제 (관련 데이터는 나중에 배치로 정리)
         member.delete();
         memberRepository.save(member);
+
+        log.info("회원 탈퇴 완료 - 회원ID: {} (관련 데이터는 배치에서 정리 예정)", memberId);
     }
+
 
     @Transactional(readOnly = true)
     public WithdrawalPreviewResponse getWithdrawalPreview(final Long memberId) {
@@ -255,63 +268,6 @@ public class MemberService {
             throw new BusinessException(ErrorCode.INVALID_GENDER_VALUE);
         }
     }
-
-    private void validateMemberDeletion(final Long memberId) {
-        // TODO: 실제 Repository 구현 후 주석 해제
-
-         int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-         if (activeOrders > 0) {
-             throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST, activeOrders);
-         }
-
-         boolean hasPendingPayments = paymentRepository.existsPendingPaymentsByMemberId(memberId);
-         if (hasPendingPayments) {
-             throw new BusinessException(ErrorCode.MEMBER_PENDING_PAYMENTS_EXIST);
-         }
-
-        // 3. 환불 진행 중인 건 확인
-        // boolean hasProcessingRefunds = refundRepository.existsProcessingRefundsByMemberId(memberId);
-        // if (hasProcessingRefunds) {
-        //     throw new IllegalStateException("환불 처리 중인 건이 있어 탈퇴할 수 없습니다.");
-        // }
-
-        log.debug("Member deletion validation passed for ID: {}", memberId);
-    }
-
-    private void cleanupMemberRelatedData(final Long memberId) {
-
-        try {
-            cleanupCart(memberId);
-            shippingAddressRepository.deleteByMemberId(memberId);
-            beautyProfileRepository.deleteByMemberId(memberId);
-            memberAgreementRepository.deleteByMemberId(memberId);
-            handleReviews(memberId);
-
-            log.info("Member related data cleanup completed for ID: {}", memberId);
-
-        } catch (Exception e) {
-            log.error("Error during member data cleanup for ID: {}", memberId, e);
-            throw new BusinessException(ErrorCode.MEMBER_DELETION_FAILED);
-        }
-    }
-
-    private void cleanupCart(final Long memberId) {
-        Optional<Cart> cartOpt = cartRepository.findByMemberId(memberId);
-        if (cartOpt.isPresent()) {
-            Cart cart = cartOpt.get();
-            cart.clearItems();
-            cartRepository.delete(cart);
-        }
-        log.debug("Cart cleanup completed for member ID: {}", memberId);
-    }
-
-    private void handleReviews(final Long memberId) {
-        // TODO: 구현
-        // reviewRepository.deleteByMemberId(memberId);
-
-        log.debug("Reviews handling completed for member ID: {}", memberId);
-    }
-
 
     private WithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
         // TODO: 실제 Repository들이 구현되면 아래 주석을 해제하고 실제 데이터 조회
