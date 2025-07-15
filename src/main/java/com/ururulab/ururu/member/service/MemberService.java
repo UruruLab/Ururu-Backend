@@ -45,19 +45,12 @@ public class MemberService {
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
-        Optional<Member> existingMember = memberRepository.findBySocialProviderAndSocialId(
-                socialMemberInfo.provider(),
-                socialMemberInfo.socialId()
-        );
-        if (existingMember.isPresent()) {
-            Member member = existingMember.get();
-            if (member.isDeleted()) {
-                throw new BusinessException(ErrorCode.MEMBER_DELETED, "탈퇴한 회원은 로그인할 수 없습니다.");
-            }
-            return member;
-        } else {
-            return createNewMember(socialMemberInfo);
-        }
+        return memberRepository.findBySocialProviderAndSocialId(
+                        socialMemberInfo.provider(),
+                        socialMemberInfo.socialId()
+                )
+                .filter(member -> !member.isDeleted())
+                .orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
     @Transactional(readOnly = true)
