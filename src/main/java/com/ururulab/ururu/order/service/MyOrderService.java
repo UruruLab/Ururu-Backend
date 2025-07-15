@@ -137,8 +137,7 @@ public class MyOrderService {
     private MyOrderResponseDto toMyOrderResponseDto(Order order) {
         // 환불되지 않은 OrderItem들만 필터링
         List<OrderItemResponseDto> orderItems = order.getOrderItems().stream()
-                .filter(this::isNotRefunded)
-                .map(this::toOrderItemResponseDto)
+                .filter(item -> !this.isRefundProcessed(item))                .map(this::toOrderItemResponseDto)
                 .toList();
 
         Integer totalAmount = calculateCurrentAmount(order);
@@ -191,27 +190,6 @@ public class MyOrderService {
     }
 
     /**
-     * OrderItem이 환불되지 않았는지 확인합니다.*
-     * INITIATED 상태만 "환불 진행중"으로 간주하고,
-     * 나머지는 모두 "환불되지 않음"으로 처리합니다.
-     *
-     * @param orderItem 주문 아이템
-     * @return 환불되지 않았으면 true
-     */
-    private boolean isNotRefunded(OrderItem orderItem) {
-        // INITIATED가 아니면 모두 "환불 안됨"으로 처리
-        return !refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
-                orderItem.getId(),
-                List.of(
-                        RefundStatus.APPROVED,
-                        RefundStatus.COMPLETED,
-                        RefundStatus.FAILED,
-                        RefundStatus.REJECTED
-                )
-        );
-    }
-
-    /**
      * 현재 주문의 유효 금액을 계산합니다.
      * 전체 결제 금액에서 환불된 금액을 뺀 값을 반환합니다.
      *
@@ -226,7 +204,7 @@ public class MyOrderService {
 
         // 환불된 금액 계산
         Integer refundedAmount = order.getOrderItems().stream()
-                .filter(this::isRefunded)
+                .filter(this::isRefundProcessed)
                 .mapToInt(item -> item.getGroupBuyOption().getSalePrice() * item.getQuantity())
                 .sum();
 
@@ -240,10 +218,15 @@ public class MyOrderService {
      * @param orderItem 주문 아이템
      * @return 환불되었으면 true
      */
-    private boolean isRefunded(OrderItem orderItem) {
-        return !refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
+    private boolean isRefundProcessed(OrderItem orderItem) {
+        return refundItemRepository.existsByOrderItemIdAndRefundStatusIn(
                 orderItem.getId(),
-                List.of(RefundStatus.INITIATED)
+                List.of(
+                        RefundStatus.APPROVED,
+                        RefundStatus.COMPLETED,
+                        RefundStatus.REJECTED,
+                        RefundStatus.FAILED
+                )
         );
     }
 
