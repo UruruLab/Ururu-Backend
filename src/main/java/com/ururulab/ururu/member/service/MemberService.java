@@ -49,7 +49,15 @@ public class MemberService {
                         socialMemberInfo.provider(),
                         socialMemberInfo.socialId()
                 )
-                .filter(member -> !member.isDeleted())
+                .map(member -> {
+                    // 탈퇴한 회원인 경우 예외 처리
+                    if (member.isDeleted()) {
+                        log.warn("Deleted member attempted to login: {} (provider: {})",
+                                socialMemberInfo.email(), socialMemberInfo.provider());
+                        throw new BusinessException(ErrorCode.MEMBER_LOGIN_DENIED);
+                    }
+                    return member;
+                })
                 .orElseGet(() -> createNewMember(socialMemberInfo));
     }
 
