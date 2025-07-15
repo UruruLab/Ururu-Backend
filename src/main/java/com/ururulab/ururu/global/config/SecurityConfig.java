@@ -87,6 +87,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/sellers/signup").permitAll()
                         .requestMatchers("/api/sellers/check/**").permitAll()
                         .requestMatchers("/health").permitAll()
+                        .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/top3").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/*/top6").permitAll()
