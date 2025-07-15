@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -48,9 +49,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/sellers/check/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll()  // AI API 전체 인증 제외
                         .requestMatchers("/health").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/groupbuys").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
@@ -84,8 +85,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/sellers/signup").permitAll()
                         .requestMatchers("/api/sellers/check/**").permitAll()
                         .requestMatchers("/health").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/actuator/prometheus").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/groupbuys").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
