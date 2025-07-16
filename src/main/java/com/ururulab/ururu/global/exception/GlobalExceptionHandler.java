@@ -118,6 +118,19 @@ public final class GlobalExceptionHandler {
 	}
 
 	/**
+	 * IllegalStateException 처리.
+	 */
+	@ExceptionHandler(IllegalStateException.class)
+	public ResponseEntity<ApiResponseFormat<Void>> handleIllegalState(
+			final IllegalStateException exception
+	) {
+		log.warn("Invalid state: {}", exception.getMessage());
+		return ResponseEntity
+				.status(HttpStatus.CONFLICT)  // 409가 적절할 것 같음
+				.body(ApiResponseFormat.fail("INVALID_STATE", exception.getMessage()));
+	}
+
+	/**
 	 * 예상하지 못한 모든 예외 처리.
 	 */
 	@ExceptionHandler(Exception.class)
