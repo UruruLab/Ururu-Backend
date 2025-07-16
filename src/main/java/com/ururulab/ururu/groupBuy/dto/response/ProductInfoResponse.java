@@ -1,6 +1,7 @@
 package com.ururulab.ururu.groupBuy.dto.response;
 
 import com.ururulab.ururu.product.domain.entity.Product;
+import com.ururulab.ururu.product.dto.response.ProductNoticeResponse;
 
 import java.util.List;
 
@@ -9,7 +10,8 @@ public record ProductInfoResponse(
         String name,
         String description,
         List<String> categoryIds,
-        List<String> tags
+        List<String> tags,
+        ProductNoticeResponse productNotice
 ) {
     public static ProductInfoResponse from(Product product) {
         List<String> categoryIds = product.getProductCategories().stream()
@@ -29,7 +31,8 @@ public record ProductInfoResponse(
                 product.getName(),
                 product.getDescription(),
                 categoryIds,
-                tags
+                tags,
+                ProductNoticeResponse.from(product.getProductNotice())
         );
     }
 }
