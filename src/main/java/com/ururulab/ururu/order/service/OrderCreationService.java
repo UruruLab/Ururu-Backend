@@ -386,6 +386,7 @@ public class OrderCreationService {
                 orderItem.getQuantity(),
                 option.getGroupBuy().getProduct().getName(),
                 option.getProductOption().getName(),
+                option.getProductOption().getImageUrl(),
                 option.getSalePrice()
         );
     }
