@@ -91,7 +91,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/prometheus").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/groupbuys/[0-9]+").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/groupbuys/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/top3").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/*/top6").permitAll()
                         .anyRequest().authenticated()
