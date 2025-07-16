@@ -168,6 +168,7 @@ public class Payment extends BaseEntity {
         }
 
         this.status = PaymentStatus.FAILED;
+        this.cancelledAt = Instant.now();
     }
 
     public void markAsPartialRefunded() {

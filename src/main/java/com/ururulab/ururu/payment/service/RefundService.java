@@ -46,7 +46,6 @@ public class RefundService {
     private final MemberRepository memberRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final PointTransactionRepository pointTransactionRepository;
-    private final PaymentService paymentService;
 
     /**
      * 수동 환불 요청을 생성합니다.
@@ -139,7 +138,7 @@ public class RefundService {
 
     /**
      * 환불 승인 처리 로직을 수행합니다.
-     * 포인트 복구, 재고 복구, 주문/결제 상태 업데이트, PG 환불 요청을 순차적으로 처리합니다.
+     * 포인트 복구, 재고 복구, PG 환불 요청, 주문/결제 상태 업데이트를 순차적으로 처리합니다.
      *
      * @param refund 승인 처리할 환불 엔티티
      * @return 승인 처리 결과
@@ -149,8 +148,8 @@ public class RefundService {
 
         restorePointsToCustomer(refund);
         restoreStockToInventory(refund);
-        updateOrderAndPaymentStatus(refund);
         requestPgRefund(refund);
+        updateOrderAndPaymentStatus(refund);
 
         log.debug("환불 승인 처리 완료 - 환불ID: {}", refund.getId());
 
@@ -239,7 +238,7 @@ public class RefundService {
         Order order = payment.getOrder();
 
         order.changeStatus(OrderStatus.REFUNDED, "수동 환불 완료");
-        payment.markAsRefunded(Instant.now());
+        refund.markAsCompleted(Instant.now());
 
         log.debug("주문/결제 상태 업데이트 완료 - 주문ID: {}", order.getId());
     }
