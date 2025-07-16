@@ -1,5 +1,7 @@
 package com.ururulab.ururu.order.service;
 
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.groupBuy.domain.entity.GroupBuyOption;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.member.domain.entity.Member;
@@ -211,10 +213,7 @@ public class CartService {
                 orderedQuantity, cartQuantity, requestQuantity, totalQuantity);
 
         if (totalQuantity > limitQuantityPerMember) {
-            throw new IllegalStateException(
-                    "개인 구매 제한을 초과했습니다. 최대 %d개까지 구매 가능합니다. (기존 주문: %d개, 장바구니: %d개, 추가 요청: %d개)"
-                            .formatted(limitQuantityPerMember, orderedQuantity, cartQuantity, requestQuantity)
-            );
+            throw new BusinessException(ErrorCode.PERSONAL_LIMIT_EXCEEDED, limitQuantityPerMember);
         }
     }
 }
