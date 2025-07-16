@@ -8,6 +8,7 @@ public record OrderItemResponse(
         Integer quantity,
         String productName,
         String optionName,
+        String optionImage,
         Integer price
 ) {
 }
