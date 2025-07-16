@@ -49,7 +49,7 @@ public class GroupBuyDiscountStageValidator {
             throw new BusinessException(MIN_QUANTITY_REQUIRED);
         }
 
-        if (minQuantity < 1 || minQuantity > LIMIT_QUANTITY_MAX) {
+        if (minQuantity < 1 || minQuantity > LIMIT_REWARD_QUANTITY_MAX) {
             throw new BusinessException(MIN_QUANTITY_OUT_OF_RANGE);
         }
     }

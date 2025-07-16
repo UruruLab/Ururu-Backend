@@ -112,7 +112,7 @@ public enum ErrorCode {
 	DISCOUNT_RATE_REQUIRED(HttpStatus.BAD_REQUEST, "GROUPBUY015", "할인율은 필수입니다."),
 	MIN_QUANTITY_REQUIRED(HttpStatus.BAD_REQUEST, "GROUPBUY016", "최소 달성 수량은 필수입니다."),
 	DISCOUNT_RATE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "GROUPBUY017", "할인율은 0~100% 사이여야 합니다."),
-	MIN_QUANTITY_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "GROUPBUY018", "최소 달성 수량은 1 이상 10,000 이하여야 합니다."),
+	MIN_QUANTITY_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "GROUPBUY018", "최소 달성 수량은 1 이상 9,999,999 이하여야 합니다."),
 	DUPLICATE_DISCOUNT_STAGE(HttpStatus.BAD_REQUEST, "GROUPBUY019", "동일한 최소 수량의 할인 단계가 중복됩니다."),
 	EXCEEDED_DISCOUNT_STAGE_LIMIT(HttpStatus.BAD_REQUEST, "GROUPBUY020", "할인 단계는 최대 10개까지 설정할 수 있습니다."),
 	DISCOUNT_STAGE_EXCEEDS_STOCK(HttpStatus.BAD_REQUEST, "GROUPBUY021", "재고량보다 많은 최소 수량이 설정되어 있습니다."),
