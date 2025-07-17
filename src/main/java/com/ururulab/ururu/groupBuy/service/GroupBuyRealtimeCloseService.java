@@ -7,6 +7,8 @@ import com.ururulab.ururu.groupBuy.domain.entity.enumerated.GroupBuyStatus;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyStatisticsRepository;
+import com.ururulab.ururu.product.domain.entity.Product;
+import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -81,6 +83,13 @@ public class GroupBuyRealtimeCloseService {
 
         // 상태를 CLOSED로 변경
         groupBuy.updateStatus(GroupBuyStatus.CLOSED);
+
+        // 연관된 상품을 INACTIVE로 변경
+        Product product = groupBuy.getProduct();
+        if (product.getStatus() == Status.ACTIVE) {
+            product.updateStatus(Status.INACTIVE);
+            log.info("Product {} deactivated after GroupBuy deletion", product.getId());
+        }
 
         // 최종 할인율이 있으면 최종 판매가 업데이트
         if (statistics.getFinalDiscountRate() > 0) {

@@ -7,8 +7,10 @@ import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyOptionRepository;
 import com.ururulab.ururu.groupBuy.domain.repository.GroupBuyRepository;
 import com.ururulab.ururu.groupBuy.event.GroupBuyDetailImageDeleteEvent;
 import com.ururulab.ururu.groupBuy.event.GroupBuyThumbnailDeleteEvent;
+import com.ururulab.ururu.product.domain.entity.Product;
 import com.ururulab.ururu.product.domain.entity.enumerated.Status;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GroupBuyDeleteService {
 
     private final GroupBuyRepository groupBuyRepository;
@@ -37,6 +40,13 @@ public class GroupBuyDeleteService {
 
         if (groupBuy.getStatus() != GroupBuyStatus.DRAFT) {
             throw new BusinessException(GROUPBUY_DELETE_NOT_ALLOWED);
+        }
+
+        // 연관된 상품을 INACTIVE로 변경
+        Product product = groupBuy.getProduct();
+        if (product.getStatus() == Status.ACTIVE) {
+            product.updateStatus(Status.INACTIVE);
+            log.info("Product {} deactivated after GroupBuy deletion", product.getId());
         }
 
         // 1. 썸네일 이미지 삭제 이벤트 발행
