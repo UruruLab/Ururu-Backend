@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/cart")
@@ -37,17 +39,19 @@ public class CartController {
             @ApiResponse(responseCode = "409", description = "종료된 공구")
     })
     @PostMapping("/items")
-    public ResponseEntity<ApiResponseFormat<CartItemAddResponse>> addCartItem(
+    public ResponseEntity<ApiResponseFormat<List<CartItemAddResponse>>> addCartItems(
             @AuthenticationPrincipal Long memberId,
-            @Valid @RequestBody CartItemAddRequest request
+            @Valid @RequestBody List<CartItemAddRequest> requests
     ) {
-        log.debug("장바구니 아이템 추가 요청 - 회원ID: {}, 요청: {}", memberId, request);
+        log.debug("장바구니 아이템 추가 요청 - 회원ID: {}, 요청: {}", memberId, requests);
 
-        CartItemAddResponse response = cartService.addCartItem(memberId, request);
+        List<CartItemAddResponse> responses = requests.stream()
+                .map(request -> cartService.addCartItem(memberId, request))
+                .toList();
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponseFormat.success("장바구니에 추가되었습니다", response));
+                .body(ApiResponseFormat.success("장바구니에 추가되었습니다", responses));
     }
 
     @Operation(summary = "장바구니 조회", description = "회원의 장바구니를 조회합니다. 만료된 공구는 자동으로 제외됩니다.")
