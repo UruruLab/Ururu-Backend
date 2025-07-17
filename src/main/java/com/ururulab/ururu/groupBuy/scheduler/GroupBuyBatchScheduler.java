@@ -16,7 +16,7 @@ public class GroupBuyBatchScheduler {
     /**
      * 매일 자정(00:00)에 만료된 공동구매 배치 종료
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *",  zone = "Asia/Seoul")
     public void closeExpiredGroupBuysBatch() {
         log.info("Starting daily batch process for expired group buys...");
 
@@ -34,7 +34,7 @@ public class GroupBuyBatchScheduler {
      * 시간별 헬스체크용
      * 매 시간마다 급하게 처리해야 할 만료된 공동구매가 있는지 확인
      */
-    @Scheduled(cron = "0 0 * * * *") // 매시간 정각
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시간 정각
     public void hourlyHealthCheck() {
         log.debug("Running hourly health check for group buy expiration...");
 
