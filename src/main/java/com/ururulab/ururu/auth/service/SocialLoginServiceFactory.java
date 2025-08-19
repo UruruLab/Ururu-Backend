@@ -24,21 +24,21 @@ public final class SocialLoginServiceFactory {
     private final Map<SocialProvider, SocialLoginService> socialLoginServices;
 
     /**
-     * 생성자에서 SocialLoginService 구현체들을 Map 으로 변환하여 저장.
+     * 생성자에서 SocialLoginService 구현체들을 Map으로 변환하여 저장.
      *
      * @param socialLoginServiceList 스프링이 주입하는 SocialLoginService 구현체 리스트
      */
     public SocialLoginServiceFactory(final List<SocialLoginService> socialLoginServiceList) {
         this.socialLoginServices = socialLoginServiceList.stream()
                 .collect(Collectors.toMap(
-                        this::extractProviderFromService,
+                        SocialLoginService::getProvider,
                         Function.identity(),
                         (existing, replacement) -> {
                             log.warn("중복된 소셜 제공자 서비스가 감지되었습니다. Provider: {}, 기존: {}, 교체: {}",
-                                    extractProviderFromService(existing), existing.getClass().getSimpleName(),
+                                    existing.getProvider(), existing.getClass().getSimpleName(),
                                     replacement.getClass().getSimpleName());
-                            return replacement; // 또는 existing을 유지
-                            }
+                            return replacement;
+                        }
                 ));
 
         log.info("Registered social login services: {}", socialLoginServices.keySet());
@@ -50,7 +50,7 @@ public final class SocialLoginServiceFactory {
      * @param provider 소셜 제공자
      * @return 해당 제공자의 로그인 서비스
      * @throws IllegalArgumentException provider가 null인 경우
-     * @throws UnsupportedSocialProviderException 지원하지 않는 제공자인 경우
+     * @throws BusinessException 지원하지 않는 제공자인 경우
      */
     public SocialLoginService getService(final SocialProvider provider) {
         if (provider == null) {
@@ -63,15 +63,5 @@ public final class SocialLoginServiceFactory {
         }
 
         return service;
-    }
-
-    /**
-     * 서비스 구현체로부터 SocialProvider 추출.
-     *
-     * <p>현재는 임시로 클래스명 기반으로 추출하며,
-     * 실제 구현체에서는 getProvider() 메서드를 통해 반환하도록 수정 예정</p>
-     */
-    private SocialProvider extractProviderFromService(final SocialLoginService service) {
-        return service.getProvider(); // SocialLoginService 인터페이스에 getProvider() 메서드 추가 필요
     }
 }

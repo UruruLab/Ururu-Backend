@@ -9,8 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 토큰 검증 서비스.
- * JWT 토큰의 유효성 검사, 사용자 정보 추출, 블랙리스트 확인 등을 통합 관리합니다.
+ * JWT 토큰 검증 서비스.
+ * 
+ * <p>JWT 토큰의 유효성 검사, 사용자 정보 추출, 블랙리스트 확인 등을 통합 관리합니다.
+ * 액세스 토큰과 리프레시 토큰에 대한 검증 로직을 제공하며, 보안을 위한 다층 검증을 수행합니다.</p>
  */
 @Slf4j
 @Service
@@ -28,38 +30,27 @@ public final class TokenValidator {
      * @throws BusinessException 토큰이 유효하지 않은 경우
      */
     public TokenValidationResult validateAccessToken(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
-            throw new BusinessException(ErrorCode.MISSING_AUTHORIZATION_HEADER);
-        }
-
+        validateTokenNotNull(accessToken, "Access token");
+        
         // 1. JWT 토큰 구조 및 서명 검증
-        if (!jwtTokenProvider.validateToken(accessToken)) {
-            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
-        }
-
+        validateTokenStructure(accessToken);
+        
         // 2. 토큰 타입 확인 (액세스 토큰인지)
-        if (!jwtTokenProvider.isAccessToken(accessToken)) {
-            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
-        }
-
+        validateTokenType(accessToken, true);
+        
         // 3. 토큰 만료 확인
-        if (jwtTokenProvider.isTokenExpired(accessToken)) {
-            throw new BusinessException(ErrorCode.EXPIRED_JWT_TOKEN);
-        }
-
+        validateTokenExpiration(accessToken);
+        
         // 4. 블랙리스트 확인
-        final String tokenId = jwtTokenProvider.getTokenId(accessToken);
-        if (tokenBlacklistStorage.isTokenBlacklisted(tokenId)) {
-            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
-        }
-
+        validateTokenBlacklist(accessToken);
+        
         // 5. 사용자 정보 추출
-        final Long userId = jwtTokenProvider.getMemberId(accessToken);
-        final String userType = jwtTokenProvider.getUserType(accessToken);
-
-        log.debug("Access token validation successful for user: {} (type: {})", userId, userType);
-
-        return TokenValidationResult.of(userId, userType, tokenId);
+        final TokenValidationResult result = extractTokenInfo(accessToken);
+        
+        log.debug("Access token validation successful for user: {} (type: {})", 
+                result.userId(), result.userType());
+        
+        return result;
     }
 
     /**
@@ -70,44 +61,110 @@ public final class TokenValidator {
      * @throws BusinessException 토큰이 유효하지 않은 경우
      */
     public TokenValidationResult validateRefreshToken(final String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
-        }
-
+        validateTokenNotNull(refreshToken, "Refresh token");
+        
         // 1. JWT 토큰 구조 및 서명 검증
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        validateTokenStructure(refreshToken);
+        
+        // 2. 토큰 타입 확인 (리프레시 토큰인지)
+        validateTokenType(refreshToken, false);
+        
+        // 3. 토큰 만료 확인
+        validateTokenExpiration(refreshToken);
+        
+        // 4. 블랙리스트 확인
+        validateTokenBlacklist(refreshToken);
+        
+        // 5. 사용자 정보 추출
+        final TokenValidationResult result = extractTokenInfo(refreshToken);
+        
+        log.debug("Refresh token validation successful for user: {} (type: {})", 
+                result.userId(), result.userType());
+        
+        return result;
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * 토큰이 null이거나 비어있는지 검증합니다.
+     */
+    private void validateTokenNotNull(final String token, final String tokenType) {
+        if (token == null || token.isBlank()) {
+            final ErrorCode errorCode = "Refresh token".equals(tokenType) 
+                ? ErrorCode.MISSING_REFRESH_TOKEN 
+                : ErrorCode.MISSING_AUTHORIZATION_HEADER;
+            throw new BusinessException(errorCode);
+        }
+    }
+
+    /**
+     * JWT 토큰의 구조와 서명을 검증합니다.
+     */
+    private void validateTokenStructure(final String token) {
+        if (!jwtTokenProvider.validateToken(token)) {
             throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
         }
+    }
 
-        // 2. 토큰 타입 확인 (리프레시 토큰인지)
-        if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+    /**
+     * 토큰 타입을 검증합니다.
+     */
+    private void validateTokenType(final String token, final boolean isAccessToken) {
+        final boolean isValidType = isAccessToken 
+            ? jwtTokenProvider.isAccessToken(token)
+            : jwtTokenProvider.isRefreshToken(token);
+            
+        if (!isValidType) {
+            final ErrorCode errorCode = isAccessToken 
+                ? ErrorCode.INVALID_JWT_TOKEN 
+                : ErrorCode.INVALID_REFRESH_TOKEN;
+            throw new BusinessException(errorCode);
         }
+    }
 
-        // 3. 토큰 만료 확인
-        if (jwtTokenProvider.isTokenExpired(refreshToken)) {
+    /**
+     * 토큰 만료 여부를 검증합니다.
+     */
+    private void validateTokenExpiration(final String token) {
+        if (jwtTokenProvider.isTokenExpired(token)) {
             throw new BusinessException(ErrorCode.EXPIRED_JWT_TOKEN);
         }
+    }
 
-        // 4. 블랙리스트 확인
-        final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
+    /**
+     * 토큰이 블랙리스트에 있는지 검증합니다.
+     */
+    private void validateTokenBlacklist(final String token) {
+        final String tokenId = jwtTokenProvider.getTokenId(token);
         if (tokenBlacklistStorage.isTokenBlacklisted(tokenId)) {
-            throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
         }
+    }
 
-        // 5. 사용자 정보 추출
-        final Long userId = jwtTokenProvider.getMemberId(refreshToken);
-        final String userType = jwtTokenProvider.getUserType(refreshToken);
-
-        log.debug("Refresh token validation successful for user: {} (type: {})", userId, userType);
-
+    /**
+     * 토큰에서 사용자 정보를 추출합니다.
+     */
+    private TokenValidationResult extractTokenInfo(final String token) {
+        final Long userId = jwtTokenProvider.getMemberId(token);
+        final String userType = jwtTokenProvider.getUserType(token);
+        final String tokenId = jwtTokenProvider.getTokenId(token);
+        
         return TokenValidationResult.of(userId, userType, tokenId);
     }
 
     /**
      * 토큰 검증 결과를 담는 불변 객체.
+     * 
+     * @param userId 사용자 ID
+     * @param userType 사용자 타입 (MEMBER/SELLER)
+     * @param tokenId 토큰 고유 ID
      */
     public record TokenValidationResult(Long userId, String userType, String tokenId) {
+        
+        /**
+         * TokenValidationResult를 생성합니다.
+         */
         public static TokenValidationResult of(final Long userId, final String userType, final String tokenId) {
             return new TokenValidationResult(userId, userType, tokenId);
         }

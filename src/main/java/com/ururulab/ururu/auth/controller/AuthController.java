@@ -36,7 +36,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * 인증 관련 API 컨트롤러.
  * 
- * OAuth 콜백 처리, 토큰 갱신, 로그아웃 등의 인증 관련 기능을 제공합니다.
+ * <p>OAuth 콜백 처리, 토큰 갱신, 로그아웃 등의 인증 관련 기능을 제공합니다.
+ * 소셜 로그인과 JWT 토큰 관리를 담당하며, 보안을 위한 다양한 검증을 수행합니다.</p>
  */
 @Slf4j
 @RestController
@@ -57,6 +58,8 @@ public class AuthController {
     private final Environment environment;
     private final StringRedisTemplate redisTemplate;
     private final SecurityLoggingService securityLoggingService;
+
+    // ==================== OAuth 콜백 처리 ====================
 
     /**
      * 카카오 OAuth 콜백 처리.
@@ -84,6 +87,8 @@ public class AuthController {
         return handleOAuthCallback(code, state, error, SocialProvider.GOOGLE, response);
     }
 
+    // ==================== 소셜 로그인 API ====================
+
     /**
      * 소셜 로그인 처리 API (프론트엔드에서 직접 호출용).
      */
@@ -96,17 +101,12 @@ public class AuthController {
         
         log.info("Processing social login for provider: {} with code", provider);
         
-        // 소셜 제공자 확인
         final SocialProvider socialProvider = validateSocialProvider(provider);
-        
-        // 소셜 로그인 처리
         final SocialLoginService loginService = socialLoginServiceFactory.getService(socialProvider);
         final SocialLoginResponse loginResponse = loginService.processLogin(code);
         
-        // JWT 토큰을 쿠키로 설정
         setSecureCookies(response, loginResponse);
         
-        // 보안을 위해 토큰 정보는 마스킹해서 응답
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("{} login successful for user: {} (env: {})", 
@@ -124,10 +124,7 @@ public class AuthController {
     public ResponseEntity<ApiResponseFormat<Object>> getSocialAuthUrl(@PathVariable final String provider) {
         log.info("Generating auth URL for provider: {}", provider);
         
-        // 소셜 제공자 확인
         final SocialProvider socialProvider = validateSocialProvider(provider);
-        
-        // 인증 URL 생성
         final String authUrl = generateAuthUrl(socialProvider);
         final String state = generateSecureState();
         
@@ -145,6 +142,8 @@ public class AuthController {
         );
     }
 
+    // ==================== 토큰 관리 API ====================
+
     /**
      * 토큰 갱신 API.
      */
@@ -158,14 +157,8 @@ public class AuthController {
         }
         
         final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
+        setSecureCookies(response, refreshResponse);
         
-        // 새로운 토큰을 쿠키로 설정
-        jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
-        if (refreshResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
-        }
-        
-        // 보안을 위해 토큰 정보는 마스킹해서 응답
         final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
         
         log.info("Token refresh successful for user: {} (env: {})", 
@@ -186,7 +179,6 @@ public class AuthController {
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        // TokenExtractor를 사용하여 토큰 추출
         final String tokenToLogout = TokenExtractor.extractTokenForLogout(authorization, accessToken);
         
         if (tokenToLogout != null) {
@@ -194,19 +186,15 @@ public class AuthController {
                 jwtRefreshService.logoutWithToken(tokenToLogout);
             } catch (final Exception e) {
                 log.warn("Failed to logout from Redis: {}", e.getMessage());
-                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
             }
         } else if (TokenExtractor.isValidAccessToken(accessToken)) {
-            // Authorization 헤더가 없어도 쿠키에서 토큰 추출하여 로그아웃 처리
             try {
                 jwtRefreshService.logoutWithToken(accessToken);
             } catch (final Exception e) {
                 log.warn("Failed to logout from Redis using cookie token: {}", e.getMessage());
-                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
             }
         }
         
-        // 쿠키 삭제
         jwtCookieHelper.clearTokenCookies(response);
         
         log.info("User logged out successfully, cookies cleared (env: {})", getCurrentProfile());
@@ -215,6 +203,8 @@ public class AuthController {
                 ApiResponseFormat.success("로그아웃되었습니다.")
         );
     }
+
+    // ==================== 정보 조회 API ====================
 
     /**
      * 소셜 제공자 목록 조회 API.
@@ -246,53 +236,43 @@ public class AuthController {
 
     /**
      * 현재 인증 상태 조회 API.
-     * 액세스 토큰이 유효하면 사용자 정보를 반환하고,
-     * 액세스 토큰이 만료된 경우 401 상태를 반환합니다.
-     * 토큰 갱신은 /refresh API에서만 처리합니다.
      */
     @GetMapping("/me")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> getCurrentAuthStatus(
             @CookieValue(name = "access_token", required = false) final String accessToken,
             final HttpServletResponse response) {
         
-        // 액세스 토큰이 있으면 검증
         if (accessToken != null && !accessToken.isBlank()) {
             try {
-                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
-                
-                // 사용자 정보 조회
                 final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
                 
-                // 현재 토큰을 그대로 사용 (새로운 토큰 발급하지 않음)
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,
-                        null, // 리프레시 토큰은 /me API에서 반환하지 않음
+                        null,
                         accessTokenGenerator.getExpirySeconds(),
                         SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
                 );
                 
-                // 보안을 위해 토큰 정보는 마스킹해서 응답
                 final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
                 
-                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing access token", validationResult.userId(), validationResult.userType());
+                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing access token", 
+                        validationResult.userId(), validationResult.userType());
                 
                 return ResponseEntity.ok(
                         ApiResponseFormat.success("현재 인증 상태를 조회했습니다.", secureResponse)
                 );
             } catch (final Exception e) {
                 log.debug("Access token validation failed: {}", e.getMessage());
-                // 액세스 토큰이 유효하지 않으면 401 반환
             }
         }
         
-        // 인증되지 않은 상태
         return ResponseEntity.status(401).body(
                 ApiResponseFormat.success("인증되지 않은 사용자입니다.")
         );
     }
 
-    // Private Helper Methods
+    // ==================== Private Helper Methods ====================
 
     /**
      * OAuth 콜백 공통 처리 메서드
@@ -309,23 +289,12 @@ public class AuthController {
         log.info("{} OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
                 providerName, error, code != null, state != null, getCurrentProfile());
 
-        // 에러 처리
         if (error != null) {
             return redirectToError(error, providerName);
         }
 
-        // 인증 코드 필수 검증
-        if (code == null || code.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
-        }
+        validateOAuthParameters(code, state, providerName);
 
-        // state 검증 (CSRF 공격 방지)
-        if (state == null || state.trim().isEmpty()) {
-            log.warn("{} OAuth callback received without state parameter", providerName);
-            return redirectToError("missing_state", providerName);
-        }
-
-        // 중복 코드 사용 방지
         final String redisKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + code;
         final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
 
@@ -335,51 +304,84 @@ public class AuthController {
         }
 
         try {
-            // state를 Redis에 저장 (중복 방지)
-            final String redisStateKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state;
-            final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
-
-            if (isStateUsed == null || !isStateUsed) {
-                log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
-                return redirectToError("state_already_used", providerName);
-            }
-
-            // 소셜로그인 처리
-            final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
-            final SocialLoginResponse loginResponse = loginService.processLogin(code);
-
-            // JWT 토큰을 쿠키로 설정
+            validateOAuthState(state, providerName);
+            final SocialLoginResponse loginResponse = processOAuthLogin(provider, code);
             setSecureCookies(response, loginResponse);
-
-            // 성공 시 인증 코드와 state 즉시 삭제 (일회성 보장)
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
-
-            // 프론트엔드 성공 페이지로 리다이렉트
-            final RedirectView redirectView = new RedirectView();
-            redirectView.setContextRelative(false);
-            final String redirectUrl = buildFrontendUrl("/auth/success");
-            redirectView.setUrl(redirectUrl);
-
+            cleanupOAuthData(code, state);
+            
+            final RedirectView redirectView = createSuccessRedirectView();
+            
             log.info("{} login successful for user: {} (env: {})",
                     providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
-            log.info("Redirecting to: {}", redirectUrl);
-
+            
             return redirectView;
         } catch (final BusinessException e) {
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
-
+            cleanupOAuthData(code, state);
             return handleBusinessExceptionRedirect(e, providerName);
-
         } catch (final Exception e) {
-            // 실패시 코드와 state를 사용된 목록에서 제거 (재시도 가능하도록)
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
+            cleanupOAuthData(code, state);
             throw e;
         }
     }
 
+    /**
+     * OAuth 파라미터 검증
+     */
+    private void validateOAuthParameters(final String code, final String state, final String providerName) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
+        }
+
+        if (state == null || state.trim().isEmpty()) {
+            log.warn("{} OAuth callback received without state parameter", providerName);
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
+        }
+    }
+
+    /**
+     * OAuth state 검증
+     */
+    private void validateOAuthState(final String state, final String providerName) {
+        final String redisStateKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state;
+        final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
+
+        if (isStateUsed == null || !isStateUsed) {
+            log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
+            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
+        }
+    }
+
+    /**
+     * OAuth 로그인 처리
+     */
+    private SocialLoginResponse processOAuthLogin(final SocialProvider provider, final String code) {
+        final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
+        return loginService.processLogin(code);
+    }
+
+    /**
+     * OAuth 데이터 정리
+     */
+    private void cleanupOAuthData(final String code, final String state) {
+        redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
+        redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
+    }
+
+    /**
+     * 성공 리다이렉트 뷰 생성
+     */
+    private RedirectView createSuccessRedirectView() {
+        final RedirectView redirectView = new RedirectView();
+        redirectView.setContextRelative(false);
+        final String redirectUrl = buildFrontendUrl("/auth/success");
+        redirectView.setUrl(redirectUrl);
+        log.info("Redirecting to: {}", redirectUrl);
+        return redirectView;
+    }
+
+    /**
+     * 비즈니스 예외 리다이렉트 처리
+     */
     private RedirectView handleBusinessExceptionRedirect(final BusinessException e, final String provider) {
         final ErrorCode errorCode = e.getErrorCode();
         String errorReason = "login_failed";
@@ -431,12 +433,10 @@ public class AuthController {
         final RedirectView redirectView = new RedirectView();
         redirectView.setContextRelative(false);
 
-        
         final String errorUrl = buildFrontendUrl("/auth/callback")
                 + "?result=error"
                 + "&reason=" + URLEncoder.encode(errorMessage, StandardCharsets.UTF_8)
                 + "&provider=" + URLEncoder.encode(provider, StandardCharsets.UTF_8);
-
 
         redirectView.setUrl(errorUrl);
         
@@ -463,13 +463,11 @@ public class AuthController {
      */
     private String getFrontendBaseUrl() {
         try {
-            // 설정에서 프론트엔드 URL 가져오기
             final String frontendUrl = environment.getProperty("app.frontend.base-url");
             if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
                 return frontendUrl.trim();
             }
             
-            // 설정이 없을 경우 fallback
             return isProductionEnvironment() ? AuthConstants.FRONTEND_BASE_URL_PROD : AuthConstants.FRONTEND_BASE_URL_DEV;
             
         } catch (final Exception e) {
@@ -521,7 +519,7 @@ public class AuthController {
         }
     }
 
-    // DTOs
+    // ==================== DTOs ====================
 
     /**
      * 소셜 제공자 정보 DTO

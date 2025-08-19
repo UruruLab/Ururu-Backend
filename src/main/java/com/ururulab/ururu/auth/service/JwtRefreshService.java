@@ -20,7 +20,16 @@ import org.springframework.stereotype.Service;
 
 /**
  * JWT 토큰 갱신 서비스.
- * Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급하는 역할을 담당합니다.
+ * 
+ * <p>Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급하는 역할을 담당합니다.
+ * RTR(Refresh Token Rotation) 방식을 구현하여 보안을 강화합니다.</p>
+ * 
+ * <p>RTR 방식의 특징:
+ * <ul>
+ *   <li>토큰 재사용 공격 방지</li>
+ *   <li>기존 토큰 즉시 무효화</li>
+ *   <li>새로운 토큰 발급</li>
+ * </ul></p>
  */
 @Slf4j
 @Service
@@ -44,16 +53,10 @@ public final class JwtRefreshService {
      * @param refreshToken 저장할 Refresh Token
      */
     public void storeRefreshToken(final Long userId, final String userType, final String refreshToken) {
-        // 토큰 개수 제한 확인 및 강제 정리
-        if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
-            log.warn("Refresh token limit exceeded for user: {} (type: {}), forcing cleanup", userId, userType);
-            refreshTokenStorage.forceCleanupOldTokens(userType, userId);
-        }
-        
+        validateRefreshTokenLimit(userType, userId);
         refreshTokenStorage.storeRefreshToken(userId, userType, refreshToken);
+        log.debug("Refresh token stored for user: {} (type: {})", userId, userType);
     }
-
-
 
     /**
      * Access Token을 갱신합니다. (RTR 방식)
@@ -63,51 +66,25 @@ public final class JwtRefreshService {
      * @throws BusinessException 토큰이 유효하지 않은 경우
      */
     public SocialLoginResponse refreshAccessToken(final String refreshToken) {
-        // 1. TokenValidator를 사용하여 Refresh Token 검증 및 정보 추출
+        // 1. Refresh Token 검증 및 사용자 정보 추출
         final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateRefreshToken(refreshToken);
-
-        // 2. Refresh Token 개수 제한 확인
-        validateRefreshTokenLimit(validationResult.userType(), validationResult.userId());
-
-        // 3. 사용자 정보 조회
+        
+        // 2. 사용자 정보 조회
         final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
-
-        // 4. RTR 방식: 기존 토큰을 즉시 무효화 (보안 강화)
-        try {
-            // 기존 토큰을 블랙리스트에 추가
-            tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
-            // 기존 토큰을 Redis에서 삭제
-            refreshTokenStorage.deleteRefreshToken(validationResult.userType(), validationResult.userId(), validationResult.tokenId());
-            log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", validationResult.userId(), validationResult.userType());
-        } catch (final BusinessException e) {
-            log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {}): {}", 
-                    validationResult.userId(), validationResult.userType(), e.getMessage());
-            // RTR 방식에서는 무효화 실패 시 새 토큰 발급을 중단
-            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "기존 토큰 무효화에 실패했습니다. 보안상 토큰 갱신을 중단합니다.");
-        } catch (final Exception e) {
-            log.error("Unexpected error during token invalidation for user: {} (type: {}): {}", 
-                    validationResult.userId(), validationResult.userType(), e.getMessage());
-            // 예상치 못한 오류도 토큰 갱신 중단
-            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "토큰 무효화 중 오류가 발생했습니다.");
-        }
-
-        // 5. 새로운 토큰 생성
-        final String newAccessToken = accessTokenGenerator.generateAccessToken(
-                validationResult.userId(), userInfo.email(), UserRole.valueOf(userInfo.role()), UserType.fromString(validationResult.userType())
-        );
-        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(validationResult.userId(), UserType.fromString(validationResult.userType()));
-
-        // 6. 새로운 Refresh Token 저장
-        storeRefreshToken(validationResult.userId(), validationResult.userType(), newRefreshToken);
-
-        log.info("RTR: Token refresh completed successfully for user: {} (type: {})", validationResult.userId(), validationResult.userType());
-
-        return SocialLoginResponse.of(
-                newAccessToken,
-                newRefreshToken,
-                accessTokenGenerator.getExpirySeconds(),
-                SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
-        );
+        
+        // 3. RTR 방식: 기존 토큰 무효화
+        invalidatePreviousToken(refreshToken, validationResult);
+        
+        // 4. 새로운 토큰 생성
+        final SocialLoginResponse newTokens = generateNewTokens(validationResult, userInfo);
+        
+        // 5. 새로운 Refresh Token 저장
+        storeRefreshToken(validationResult.userId(), validationResult.userType(), newTokens.refreshToken());
+        
+        log.info("RTR: Token refresh completed successfully for user: {} (type: {})", 
+                validationResult.userId(), validationResult.userType());
+        
+        return newTokens;
     }
 
     /**
@@ -132,20 +109,8 @@ public final class JwtRefreshService {
         }
 
         try {
-            // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
             final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
-
-            // Refresh Token 삭제
-            refreshTokenStorage.deleteAllRefreshTokens(validationResult.userType(), validationResult.userId());
-
-            // Access Token 블랙리스트 처리
-            try {
-                tokenBlacklistStorage.blacklistAccessToken(accessToken);
-                log.info("Logout successful for user: {} (type: {})", validationResult.userId(), validationResult.userType());
-            } catch (final BusinessException e) {
-                log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
-                // 블랙리스트 실패는 로그아웃을 중단시키지 않음
-            }
+            performLogout(validationResult, accessToken);
         } catch (final Exception e) {
             log.warn("Logout failed due to invalid token: {}", e.getMessage());
             // 토큰이 유효하지 않아도 로그아웃은 성공으로 처리
@@ -162,21 +127,19 @@ public final class JwtRefreshService {
         return tokenBlacklistStorage.isTokenBlacklisted(tokenId);
     }
 
-    // Private Helper Methods
+    // ==================== Private Helper Methods ====================
 
-    // validateRefreshToken 메서드 제거 - TokenValidator로 대체됨
-
+    /**
+     * Refresh Token 개수 제한을 검증합니다.
+     */
     private void validateRefreshTokenLimit(final String userType, final Long userId) {
-        // 토큰 개수 제한 확인
         if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
-            log.warn("Refresh token 개수 제한 초과. userId: {}, userType: {}", userId, userType);
+            log.warn("Refresh token limit exceeded for user: {} (type: {})", userId, userType);
             
-            // 강제 정리 시도
             try {
                 refreshTokenStorage.forceCleanupOldTokens(userType, userId);
                 log.info("Forced cleanup completed for user: {} (type: {})", userId, userType);
                 
-                // 정리 후 다시 확인
                 if (refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)) {
                     log.error("Refresh token limit still exceeded after cleanup for user: {} (type: {})", userId, userType);
                     throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
@@ -188,6 +151,79 @@ public final class JwtRefreshService {
         }
     }
 
+    /**
+     * RTR 방식으로 기존 토큰을 무효화합니다.
+     */
+    private void invalidatePreviousToken(final String refreshToken, final TokenValidator.TokenValidationResult validationResult) {
+        try {
+            // 기존 토큰을 블랙리스트에 추가
+            tokenBlacklistStorage.blacklistRefreshToken(refreshToken);
+            // 기존 토큰을 Redis에서 삭제
+            refreshTokenStorage.deleteRefreshToken(validationResult.userType(), validationResult.userId(), validationResult.tokenId());
+            log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", 
+                    validationResult.userId(), validationResult.userType());
+        } catch (final BusinessException e) {
+            log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {}): {}", 
+                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "기존 토큰 무효화에 실패했습니다. 보안상 토큰 갱신을 중단합니다.");
+        } catch (final Exception e) {
+            log.error("Unexpected error during token invalidation for user: {} (type: {}): {}", 
+                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "토큰 무효화 중 오류가 발생했습니다.");
+        }
+    }
+
+    /**
+     * 새로운 토큰을 생성합니다.
+     */
+    private SocialLoginResponse generateNewTokens(final TokenValidator.TokenValidationResult validationResult, 
+                                                 final UserInfoService.UserInfo userInfo) {
+        final String newAccessToken = accessTokenGenerator.generateAccessToken(
+                validationResult.userId(), 
+                userInfo.email(), 
+                UserRole.valueOf(userInfo.role()), 
+                UserType.fromString(validationResult.userType())
+        );
+        
+        final String newRefreshToken = refreshTokenGenerator.generateRefreshToken(
+                validationResult.userId(), 
+                UserType.fromString(validationResult.userType())
+        );
+
+        return SocialLoginResponse.of(
+                newAccessToken,
+                newRefreshToken,
+                accessTokenGenerator.getExpirySeconds(),
+                SocialLoginResponse.MemberInfo.of(
+                        validationResult.userId(), 
+                        userInfo.email(), 
+                        null, 
+                        null, 
+                        validationResult.userType()
+                )
+        );
+    }
+
+    /**
+     * 로그아웃 처리를 수행합니다.
+     */
+    private void performLogout(final TokenValidator.TokenValidationResult validationResult, final String accessToken) {
+        // Refresh Token 삭제
+        refreshTokenStorage.deleteAllRefreshTokens(validationResult.userType(), validationResult.userId());
+
+        // Access Token 블랙리스트 처리
+        try {
+            tokenBlacklistStorage.blacklistAccessToken(accessToken);
+            log.info("Logout successful for user: {} (type: {})", validationResult.userId(), validationResult.userType());
+        } catch (final BusinessException e) {
+            log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
+            // 블랙리스트 실패는 로그아웃을 중단시키지 않음
+        }
+    }
+
+    /**
+     * Bearer 토큰에서 실제 토큰 값을 추출합니다.
+     */
     private String extractTokenFromBearer(final String bearerToken) {
         try {
             return TokenExtractor.extractTokenFromBearer(bearerToken);

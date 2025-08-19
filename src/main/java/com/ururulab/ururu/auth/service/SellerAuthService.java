@@ -19,7 +19,8 @@ import org.springframework.stereotype.Service;
 /**
  * 판매자 인증 서비스.
  * 
- * 이메일+비밀번호 로그인을 처리하며, 소셜 로그인과 동일한 JWT 토큰 구조를 사용합니다.
+ * <p>이메일+비밀번호 로그인을 처리하며, 소셜 로그인과 동일한 JWT 토큰 구조를 사용합니다.
+ * 판매자 계정의 상태 검증과 보안을 위한 다양한 검증을 수행합니다.</p>
  */
 @Slf4j
 @Service
@@ -40,22 +41,77 @@ public final class SellerAuthService {
      * @throws BusinessException 인증 실패 시
      */
     public SocialLoginResponse login(final SellerLoginRequest request) {
-        // 판매자 조회 (이메일로 조회하는 메서드가 없으므로 Repository에서 직접 조회)
-        final Seller seller = sellerService.findByEmail(request.email());
+        log.info("Seller login attempt: {}", request.email());
         
-        // 비밀번호 검증
-        if (!passwordEncoder.matches(request.password(), seller.getPassword())) {
-            log.warn("Invalid password attempt for seller email: {}", request.email());
+        final Seller seller = findAndValidateSeller(request.email());
+        validatePassword(request.password(), seller.getPassword());
+        validateAccountStatus(seller);
+        
+        final SocialLoginResponse loginResponse = createLoginResponse(seller);
+        
+        log.info("Seller login successful: {} (ID: {})", seller.getEmail(), seller.getId());
+        
+        return loginResponse;
+    }
+
+    /**
+     * 판매자 로그아웃 처리.
+     *
+     * @param authorization Authorization 헤더 값
+     */
+    public void logout(final String authorization) {
+        jwtRefreshService.logout(authorization);
+        log.info("Seller logout completed");
+    }
+
+    /**
+     * 토큰으로 판매자 로그아웃 처리.
+     *
+     * @param accessToken 액세스 토큰
+     */
+    public void logoutWithToken(final String accessToken) {
+        jwtRefreshService.logoutWithToken(accessToken);
+        log.info("Seller logout with token completed");
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * 판매자를 조회하고 기본 검증을 수행합니다.
+     */
+    private Seller findAndValidateSeller(final String email) {
+        try {
+            return sellerService.findByEmail(email);
+        } catch (final Exception e) {
+            log.warn("Seller not found for email: {}", email);
             throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
         }
-        
-        // 계정 상태 확인 (삭제된 계정인지 확인)
+    }
+
+    /**
+     * 비밀번호를 검증합니다.
+     */
+    private void validatePassword(final String rawPassword, final String encodedPassword) {
+        if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
+            log.warn("Invalid password attempt for seller email");
+            throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
+        }
+    }
+
+    /**
+     * 계정 상태를 검증합니다.
+     */
+    private void validateAccountStatus(final Seller seller) {
         if (seller.getIsDeleted()) {
-            log.warn("Deleted seller login attempt: {}", request.email());
+            log.warn("Deleted seller login attempt: {}", seller.getEmail());
             throw new BusinessException(ErrorCode.INACTIVE_ACCOUNT);
         }
-        
-        // JWT 토큰 생성 (판매자는 SELLER 역할)
+    }
+
+    /**
+     * 로그인 응답을 생성합니다.
+     */
+    private SocialLoginResponse createLoginResponse(final Seller seller) {
         final String accessToken = accessTokenGenerator.generateAccessToken(
                 seller.getId(),
                 seller.getEmail(),
@@ -80,33 +136,11 @@ public final class SellerAuthService {
                 UserType.SELLER.getValue()
         );
         
-        log.info("Seller login successful: {} (ID: {})", seller.getEmail(), seller.getId());
-        
         return SocialLoginResponse.of(
                 accessToken,
                 refreshToken,
                 accessTokenGenerator.getExpirySeconds(),
                 memberInfo
         );
-    }
-
-    /**
-     * 판매자 로그아웃 처리.
-     *
-     * @param authorization Authorization 헤더 값
-     */
-    public void logout(final String authorization) {
-        jwtRefreshService.logout(authorization);
-        log.info("Seller logout completed");
-    }
-
-    /**
-     * 토큰으로 판매자 로그아웃 처리.
-     *
-     * @param accessToken 액세스 토큰
-     */
-    public void logoutWithToken(final String accessToken) {
-        jwtRefreshService.logoutWithToken(accessToken);
-        log.info("Seller logout with token completed");
     }
 } 
