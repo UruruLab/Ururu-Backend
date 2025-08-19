@@ -2,9 +2,7 @@ package com.ururulab.ururu.auth.filter;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.constants.UserType;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.service.TokenValidator;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -23,6 +21,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 
+/**
+ * JWT 인증 필터.
+ * 
+ * <p>HTTP 요청에서 JWT 토큰을 추출하고 검증하여 Spring Security 인증 컨텍스트를 설정합니다.
+ * 쿠키와 Authorization 헤더에서 토큰을 추출하며, 토큰 검증 실패 시 인증 컨텍스트를 클리어합니다.</p>
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -31,7 +35,6 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
-    private final JwtTokenProvider jwtTokenProvider;
     private final TokenValidator tokenValidator;
 
     @Override
@@ -45,12 +48,10 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token != null) {
             try {
-                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(token);
                 setAuthentication(validationResult);
             } catch (final Exception e) {
                 log.debug("Token validation failed in filter: {}", e.getMessage());
-                // 검증 실패 시 인증 컨텍스트 클리어
                 SecurityContextHolder.clearContext();
             }
         }
@@ -58,17 +59,24 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * 요청에서 JWT 토큰을 추출합니다.
+     * 우선순위: 쿠키 > Authorization 헤더
+     */
     private String extractToken(final HttpServletRequest request) {
-        // 1순위: 쿠키에서 토큰 추출
         final String cookieToken = extractTokenFromCookie(request);
         if (cookieToken != null) {
             return cookieToken;
         }
 
-        // 2순위: Authorization 헤더에서 토큰 추출
         return extractTokenFromHeader(request);
     }
 
+    /**
+     * 쿠키에서 JWT 토큰을 추출합니다.
+     */
     private String extractTokenFromCookie(final HttpServletRequest request) {
         final Cookie[] cookies = request.getCookies();
         if (cookies == null) {
@@ -78,57 +86,79 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
         for (final Cookie cookie : cookies) {
             if (AuthConstants.ACCESS_TOKEN_COOKIE_NAME.equals(cookie.getName())) {
                 final String token = cookie.getValue();
-                log.debug("쿠키에서 JWT 토큰 추출 성공");
+                log.debug("JWT 토큰을 쿠키에서 추출했습니다");
                 return token;
             }
         }
         return null;
     }
 
+    /**
+     * Authorization 헤더에서 JWT 토큰을 추출합니다.
+     */
     private String extractTokenFromHeader(final HttpServletRequest request) {
         final String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
 
         if (authorizationHeader != null && authorizationHeader.startsWith(AuthConstants.BEARER_PREFIX)) {
             final String token = authorizationHeader.substring(AuthConstants.BEARER_PREFIX.length());
-            log.debug("Authorization 헤더에서 JWT 토큰 추출 성공");
+            log.debug("JWT 토큰을 Authorization 헤더에서 추출했습니다");
             return token;
         }
         return null;
     }
 
+    /**
+     * 토큰 검증 결과를 기반으로 Spring Security 인증을 설정합니다.
+     */
     private void setAuthentication(final TokenValidator.TokenValidationResult validationResult) {
         try {
             final String userType = validationResult.userType();
             final Long userId = validationResult.userId();
             
-            // userType이 null이거나 없는 경우 기본값으로 MEMBER 사용
-            final String actualUserType = (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE.getValue();
+            final String actualUserType = getValidUserType(userType);
+            final String authority = determineAuthority(actualUserType);
             
-            // userType에 따라 authority 결정
-            final String authority;
-            
-            if (UserType.SELLER.getValue().equals(actualUserType)) {
-                authority = AuthConstants.AUTHORITY_ROLE_SELLER; // 판매자 전용 권한
-                log.debug("판매자 인증 처리 - sellerId: {}", userId);
-            } else {
-                authority = AuthConstants.AUTHORITY_ROLE_MEMBER; // 회원 전용 권한
-                log.debug("회원 인증 처리 - memberId: {}", userId);
-            }
-
-            final Authentication authentication = new UsernamePasswordAuthenticationToken(
-                    userId,
-                    null,
-                    Collections.singletonList(new SimpleGrantedAuthority(authority))
-            );
-
+            final Authentication authentication = createAuthentication(userId, authority);
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("JWT 토큰으로 인증 완료 - userId: {}, userType: {}, authority: {}",
+            
+            log.debug("JWT 토큰 인증 완료 - userId: {}, userType: {}, authority: {}",
                     userId, actualUserType, authority);
 
         } catch (final Exception e) {
             log.error("인증 처리 중 오류 발생: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
+    }
+
+    /**
+     * 유효한 사용자 타입을 반환합니다.
+     */
+    private String getValidUserType(final String userType) {
+        return (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE.getValue();
+    }
+
+    /**
+     * 사용자 타입에 따른 권한을 결정합니다.
+     */
+    private String determineAuthority(final String userType) {
+        if (UserType.SELLER.getValue().equals(userType)) {
+            log.debug("판매자 인증 처리 - sellerId: {}", userType);
+            return AuthConstants.AUTHORITY_ROLE_SELLER;
+        } else {
+            log.debug("회원 인증 처리 - memberId: {}", userType);
+            return AuthConstants.AUTHORITY_ROLE_MEMBER;
+        }
+    }
+
+    /**
+     * Spring Security 인증 객체를 생성합니다.
+     */
+    private Authentication createAuthentication(final Long userId, final String authority) {
+        return new UsernamePasswordAuthenticationToken(
+                userId,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority(authority))
+        );
     }
 
     @Override

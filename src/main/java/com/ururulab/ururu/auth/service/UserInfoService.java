@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 
 /**
  * 사용자 정보 조회 서비스.
- * 토큰 갱신 시 필요한 사용자 정보를 조회하는 역할을 담당합니다.
+ * 
+ * <p>토큰 갱신 시 필요한 사용자 정보를 조회하는 역할을 담당합니다.
+ * 회원과 판매자 정보를 통합적으로 관리하며, 사용자 타입에 따라 적절한 정보를 반환합니다.</p>
  */
 @Slf4j
 @Service
@@ -31,14 +33,17 @@ public final class UserInfoService {
      * @param userId 사용자 ID
      * @param userType 사용자 타입 (MEMBER/SELLER)
      * @return 사용자 정보 (이메일, 역할)
+     * @throws BusinessException 사용자를 찾을 수 없는 경우
      */
     public UserInfo getUserInfo(final Long userId, final String userType) {
-                                    if (UserType.SELLER.getValue().equals(userType)) {
+        if (UserType.SELLER.getValue().equals(userType)) {
             return getSellerInfo(userId);
         } else {
             return getMemberInfo(userId);
         }
     }
+
+    // ==================== Private Helper Methods ====================
 
     /**
      * 판매자 정보를 조회합니다.
@@ -53,7 +58,7 @@ public final class UserInfoService {
         
         return UserInfo.of(
                 seller.getEmail(),
-                                                    UserRole.SELLER.getValue()
+                UserRole.SELLER.getValue()
         );
     }
 
@@ -77,8 +82,15 @@ public final class UserInfoService {
 
     /**
      * 사용자 정보를 담는 불변 객체.
+     * 
+     * @param email 사용자 이메일
+     * @param role 사용자 역할
      */
     public record UserInfo(String email, String role) {
+        
+        /**
+         * UserInfo를 생성합니다.
+         */
         public static UserInfo of(final String email, final String role) {
             return new UserInfo(email, role);
         }

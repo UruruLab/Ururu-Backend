@@ -12,13 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.CookieValue;
 
 import java.util.Map;
 
 /**
  * 인증 관련 디버그 API 컨트롤러.
- * 개발환경에서만 사용되는 디버그 기능을 제공합니다.
+ * 
+ * <p>개발환경에서만 사용되는 디버그 기능을 제공합니다.
+ * 운영환경에서는 모든 API가 차단되며, 보안을 위해 프로덕션 환경에서는 접근이 불가능합니다.</p>
  */
 @Slf4j
 @RestController
@@ -26,63 +27,18 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthDebugController {
 
-    // OAuth 코드 중복 사용 방지를 위한 캐시 (개발환경용 임시 저장소)
-    private static final java.util.Set<String> USED_CODES = java.util.concurrent.ConcurrentHashMap.newKeySet();
-
     private final JwtRefreshService jwtRefreshService;
     private final JwtCookieHelper jwtCookieHelper;
     private final Environment environment;
-
-    /**
-     * 사용된 OAuth 코드 캐시 정리 API
-     */
-    @GetMapping("/clear-used-codes")
-    public ResponseEntity<ApiResponseFormat<Object>> clearUsedCodes() {
-        if (isProductionEnvironment()) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
-        
-        final int clearedCount = USED_CODES.size();
-        USED_CODES.clear();
-        
-        final Object response = Map.of(
-            "clearedCount", clearedCount,
-            "message", "사용된 OAuth 코드 캐시가 정리되었습니다."
-        );
-        
-        log.info("Cleared {} used OAuth codes from cache", clearedCount);
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("OAuth 코드 캐시 정리 완료", response)
-        );
-    }
 
     /**
      * 소셜 로그인 설정 디버그 정보 API
      */
     @GetMapping("/social-config")
     public ResponseEntity<ApiResponseFormat<Object>> debugSocialConfig() {
-        if (isProductionEnvironment()) {
-            throw new BusinessException(ErrorCode.ACCESS_DENIED);
-        }
+        validateDevelopmentEnvironment();
         
-        final Object debugInfo = Map.of(
-            "environment", getCurrentProfile(),
-            "kakao", Map.of(
-                "clientId", environment.getProperty("oauth2.kakao.client-id", "NOT_SET"),
-                "redirectUri", environment.getProperty("oauth2.kakao.redirect-uri", "NOT_SET"),
-                "authUri", environment.getProperty("oauth2.kakao.authorization-uri", "NOT_SET")
-            ),
-            "google", Map.of(
-                "clientId", environment.getProperty("oauth2.google.client-id", "NOT_SET"),
-                "redirectUri", environment.getProperty("oauth2.google.redirect-uri", "NOT_SET"),
-                "authUri", environment.getProperty("oauth2.google.authorization-uri", "NOT_SET")
-            ),
-            "cors", Map.of(
-                "allowedOrigins", environment.getProperty("app.cors.allowed-origins[0]", "NOT_SET"),
-                "frontendUrl", getFrontendBaseUrl()
-            )
-        );
+        final Object debugInfo = createDebugInfo();
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인 설정 디버그 정보", debugInfo)
@@ -96,6 +52,8 @@ public class AuthDebugController {
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshTokenDebug(
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
+        
+        validateDevelopmentEnvironment();
         
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
@@ -118,20 +76,50 @@ public class AuthDebugController {
         );
     }
 
-    // Private Helper Methods
+    // ==================== Private Helper Methods ====================
+
+    /**
+     * 개발환경인지 검증합니다.
+     */
+    private void validateDevelopmentEnvironment() {
+        if (isProductionEnvironment()) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+    }
+
+    /**
+     * 디버그 정보를 생성합니다.
+     */
+    private Object createDebugInfo() {
+        return Map.of(
+            "environment", getCurrentProfile(),
+            "kakao", Map.of(
+                "clientId", environment.getProperty("oauth2.kakao.client-id", "NOT_SET"),
+                "redirectUri", environment.getProperty("oauth2.kakao.redirect-uri", "NOT_SET"),
+                "authUri", environment.getProperty("oauth2.kakao.authorization-uri", "NOT_SET")
+            ),
+            "google", Map.of(
+                "clientId", environment.getProperty("oauth2.google.client-id", "NOT_SET"),
+                "redirectUri", environment.getProperty("oauth2.google.redirect-uri", "NOT_SET"),
+                "authUri", environment.getProperty("oauth2.google.authorization-uri", "NOT_SET")
+            ),
+            "cors", Map.of(
+                "allowedOrigins", environment.getProperty("app.cors.allowed-origins[0]", "NOT_SET"),
+                "frontendUrl", getFrontendBaseUrl()
+            )
+        );
+    }
 
     /**
      * 환경별 프론트엔드 기본 URL 결정.
      */
     private String getFrontendBaseUrl() {
         try {
-            // 설정에서 프론트엔드 URL 가져오기
             final String frontendUrl = environment.getProperty("app.frontend.base-url");
             if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
                 return frontendUrl.trim();
             }
             
-            // 설정이 없을 경우 fallback
             return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
             
         } catch (final Exception e) {
