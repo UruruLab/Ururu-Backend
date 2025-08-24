@@ -34,4 +34,30 @@ public class AuthUtils {
 
         return (Long) principal;
     }
+
+    /**
+     * JWT 토큰에서 회원 ID를 추출하는 헬퍼 메서드
+     */
+    public Long getMemberIdFromAuthentication() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN);
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof Long)) {
+            throw new BusinessException(ErrorCode.MALFORMED_JWT_TOKEN);
+        }
+
+        // 회원 권한 확인
+        boolean isMember = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ROLE_MEMBER".equals(authority.getAuthority()));
+
+        if (!isMember) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        return (Long) principal;
+    }
 }

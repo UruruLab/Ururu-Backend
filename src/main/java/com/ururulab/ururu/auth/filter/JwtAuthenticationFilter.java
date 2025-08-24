@@ -3,6 +3,7 @@ package com.ururulab.ururu.auth.filter;
 import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.global.exception.BusinessException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -50,8 +51,11 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(token);
                 setAuthentication(validationResult);
+            } catch (final BusinessException e) {
+                log.debug("Token validation failed in filter: {} - {}", e.getErrorCode().getCode(), e.getMessage());
+                SecurityContextHolder.clearContext();
             } catch (final Exception e) {
-                log.debug("Token validation failed in filter: {}", e.getMessage());
+                log.debug("Unexpected token validation error in filter: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

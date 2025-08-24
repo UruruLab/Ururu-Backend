@@ -15,6 +15,8 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 /**
  * 전역 예외 처리기.
@@ -128,6 +130,32 @@ public final class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(HttpStatus.CONFLICT)  // 409가 적절할 것 같음
 				.body(ApiResponseFormat.fail("INVALID_STATE", exception.getMessage()));
+	}
+
+	/**
+	 * Spring Security 권한 부족 예외 처리.
+	 */
+	@ExceptionHandler(AccessDeniedException.class)
+	public ResponseEntity<ApiResponseFormat<Void>> handleAccessDeniedException(
+			final AccessDeniedException exception
+	) {
+		log.warn("Access denied: {}", exception.getMessage());
+		return ResponseEntity
+				.status(HttpStatus.FORBIDDEN)
+				.body(ApiResponseFormat.fail(ErrorCode.ACCESS_DENIED));
+	}
+
+	/**
+	 * Spring Security 인증 실패 예외 처리.
+	 */
+	@ExceptionHandler(AuthenticationException.class)
+	public ResponseEntity<ApiResponseFormat<Void>> handleAuthenticationException(
+			final AuthenticationException exception
+	) {
+		log.warn("Authentication failed: {}", exception.getMessage());
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(ApiResponseFormat.fail(ErrorCode.INVALID_JWT_TOKEN));
 	}
 
 	/**

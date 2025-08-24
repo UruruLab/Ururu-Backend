@@ -71,8 +71,8 @@ public enum ErrorCode {
 	// --- 인증 ---
 	INVALID_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH001", "유효하지 않은 토큰입니다."),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH002", "유효하지 않은 리프레시 토큰입니다."),
-	MISSING_AUTHORIZATION_HEADER(HttpStatus.BAD_REQUEST, "AUTH003", "인증 헤더가 누락되었습니다."),
-	MISSING_REFRESH_TOKEN(HttpStatus.BAD_REQUEST, "AUTH004", "리프레시 토큰이 누락되었습니다."),
+	MISSING_AUTHORIZATION_HEADER(HttpStatus.UNAUTHORIZED, "AUTH003", "인증 헤더가 누락되었습니다."),
+	MISSING_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH004", "리프레시 토큰이 누락되었습니다."),
 	EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH005", "만료된 토큰입니다."),
 	MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH006", "잘못된 형식의 토큰입니다."),
 	UNSUPPORTED_SOCIAL_PROVIDER(HttpStatus.BAD_REQUEST, "AUTH007", "지원하지 않는 소셜 제공자입니다: %s"),
@@ -84,7 +84,7 @@ public enum ErrorCode {
 	TOO_MANY_REFRESH_TOKENS(HttpStatus.TOO_MANY_REQUESTS, "AUTH013", "리프레시 토큰 개수가 제한을 초과했습니다. 다시 로그인해주세요."),
 	INVALID_TOKEN_BLACKLIST_PARAMETERS(HttpStatus.BAD_REQUEST, "AUTH014", "토큰 블랙리스트 파라미터가 유효하지 않습니다."),
 	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
-	INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUTH016", "유효하지 않은 OAuth state입니다."),
+	INVALID_OAUTH_STATE(HttpStatus.UNAUTHORIZED, "AUTH016", "유효하지 않은 OAuth state입니다."),
 	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "AUTH017", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
 
 	// --- 상품 ---
