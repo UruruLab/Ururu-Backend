@@ -60,8 +60,8 @@ public final class TokenExtractor {
             return false;
         }
         
-        // JWT 형식 검증 (3개의 base64 인코딩된 부분으로 구성)
-        return accessToken.matches("^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*$");
+        // JWT 형식 검증 (3개의 base64url 인코딩된 부분으로 구성)
+        return accessToken.matches("^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$");
     }
 
     /**
