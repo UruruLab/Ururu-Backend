@@ -19,27 +19,29 @@ public final class EnvironmentHelper {
     }
 
     /**
+     * 안전하게 프로파일을 체크합니다.
+     */
+    private boolean checkProfile(final String profile) {
+        try {
+            return environment.acceptsProfiles(profile);
+        } catch (Exception e) {
+            log.error("Failed to check profile '{}': {}", profile, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
      * 현재 환경이 개발환경인지 확인합니다.
      */
     public boolean isDevelopmentEnvironment() {
-        try {
-            return environment.acceptsProfiles("dev");
-        } catch (Exception e) {
-            log.warn("Profile check failed, defaulting to production for security: {}", e.getMessage());
-            return false;
-        }
+        return checkProfile("dev");
     }
 
     /**
      * 현재 환경이 운영환경인지 확인합니다.
      */
     public boolean isProductionEnvironment() {
-        try {
-            return environment.acceptsProfiles("prod");
-        } catch (Exception e) {
-            log.error("Profile check failed, checking for non-development environment: {}", e.getMessage());
-            return !isDevelopmentEnvironment();
-        }
+        return checkProfile("prod");
     }
 
     /**
