@@ -107,9 +107,9 @@ public class AuthController {
         final SocialLoginService loginService = socialLoginServiceFactory.getService(socialProvider);
         final SocialLoginResponse loginResponse = loginService.processLogin(code);
         
-        setSecureCookies(response, loginResponse);
+        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
         
-        final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
+        final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(loginResponse, securityLoggingService);
         
         log.info("{} login successful for user: {} (env: {})", 
                 provider, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
@@ -154,14 +154,14 @@ public class AuthController {
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        if (refreshToken == null || refreshToken.isBlank()) {
+        if (!TokenExtractor.isValidRefreshToken(refreshToken)) {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
         
         final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
-        setSecureCookies(response, refreshResponse);
+        AuthCookieHelper.setSecureCookies(response, refreshResponse, jwtCookieHelper);
         
-        final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
+        final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(refreshResponse, securityLoggingService);
         
         log.info("Token refresh successful for user: {} (env: {})", 
                 MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
@@ -256,7 +256,7 @@ public class AuthController {
                         SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
                 );
                 
-                final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
+                final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(authResponse, securityLoggingService);
                 
                 log.debug("Current auth status retrieved for user: {} (type: {}) - using existing access token", 
                         validationResult.userId(), validationResult.userType());
@@ -308,7 +308,7 @@ public class AuthController {
         try {
             validateOAuthState(state, providerName);
             final SocialLoginResponse loginResponse = processOAuthLogin(provider, code);
-            setSecureCookies(response, loginResponse);
+            AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
             cleanupOAuthData(code, state);
             
             final RedirectView redirectView = createSuccessRedirectView();
@@ -412,21 +412,9 @@ public class AuthController {
         }
     }
 
-    /**
-     * JWT 토큰을 안전한 쿠키로 설정.
-     */
-    private void setSecureCookies(final HttpServletResponse response, 
-                                  final SocialLoginResponse loginResponse) {
-        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
-        log.debug("Secure cookies set successfully for {} environment", environmentHelper.getCurrentProfile());
-    }
 
-    /**
-     * 보안을 위해 토큰 정보를 마스킹한 응답 생성
-     */
-    private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
-    }
+
+
 
     /**
      * 에러 페이지로 리다이렉트하는 RedirectView 생성.

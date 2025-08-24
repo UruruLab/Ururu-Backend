@@ -64,13 +64,20 @@ public final class EnvironmentHelper {
                 return frontendUrl.trim();
             }
             
-            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
+            return getDefaultFrontendUrl();
             
         } catch (Exception e) {
             log.warn("Failed to get frontend URL from yml config, using fallback (env: {}): {}", 
                     getCurrentProfile(), e.getMessage());
-            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
+            return getDefaultFrontendUrl();
         }
+    }
+
+    /**
+     * 기본 프론트엔드 URL을 반환합니다.
+     */
+    private String getDefaultFrontendUrl() {
+        return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
     }
 
     /**

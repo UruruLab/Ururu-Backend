@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
+import com.ururulab.ururu.auth.util.EnvironmentHelper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,8 +35,8 @@ public class SellerAuthController {
     private final SellerAuthService sellerAuthService;
     private final JwtCookieHelper jwtCookieHelper;
     private final JwtRefreshService jwtRefreshService;
-    private final Environment environment;
     private final SecurityLoggingService securityLoggingService;
+    private final EnvironmentHelper environmentHelper;
 
     /**
      * 판매자 로그인 API.
@@ -52,13 +52,13 @@ public class SellerAuthController {
         final SocialLoginResponse loginResponse = sellerAuthService.login(request);
         
         // JWT 토큰을 쿠키로 설정
-        setSecureCookies(response, loginResponse);
+        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
         
         // 보안을 위해 토큰 정보는 마스킹해서 응답
-        final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
+        final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(loginResponse, securityLoggingService);
         
         log.info("Seller login successful: {} (env: {})", 
-                securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                securityLoggingService.maskEmail(loginResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("판매자 로그인이 완료되었습니다.", secureResponse)
@@ -90,7 +90,7 @@ public class SellerAuthController {
         // 쿠키 삭제
         jwtCookieHelper.clearTokenCookies(response);
         
-        log.info("Seller logged out successfully, cookies cleared (env: {})", getCurrentProfile());
+        log.info("Seller logged out successfully, cookies cleared (env: {})", environmentHelper.getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("로그아웃되었습니다.")
@@ -105,7 +105,7 @@ public class SellerAuthController {
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
         
-        if (refreshToken == null || refreshToken.isBlank()) {
+        if (!TokenExtractor.isValidRefreshToken(refreshToken)) {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
         
@@ -120,10 +120,10 @@ public class SellerAuthController {
         }
         
         // 보안을 위해 토큰 정보는 마스킹해서 응답
-        final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
+        final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(refreshResponse, securityLoggingService);
         
         log.info("Seller token refresh successful for user: {} (env: {})", 
-                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
+                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
@@ -132,31 +132,9 @@ public class SellerAuthController {
 
     // Private Helper Methods
 
-    /**
-     * JWT 토큰을 안전한 쿠키로 설정.
-     */
-    private void setSecureCookies(final HttpServletResponse response, 
-                                  final SocialLoginResponse loginResponse) {
-        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
-        log.debug("Secure cookies set successfully for seller (env: {})", getCurrentProfile());
-    }
 
-    /**
-     * 보안을 위해 토큰 정보를 마스킹한 응답 생성
-     */
-    private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
-    }
 
-    /**
-     * 현재 활성 프로파일 반환 (로깅용)
-     */
-    private String getCurrentProfile() {
-        try {
-            final String[] activeProfiles = environment.getActiveProfiles();
-            return activeProfiles.length > 0 ? String.join(",", activeProfiles) : "default";
-        } catch (final Exception e) {
-            return "unknown";
-        }
-    }
+
+
+
 } 
