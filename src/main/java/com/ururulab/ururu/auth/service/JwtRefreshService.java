@@ -115,7 +115,7 @@ public final class JwtRefreshService {
      * @param accessToken 액세스 토큰
      */
     public void logoutWithToken(final String accessToken) {
-        if (!TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
+        if (!TokenExtractor.isValidAccessToken(accessToken)) {
             log.warn("Logout attempted with null or blank access token");
             return;
         }

@@ -259,7 +259,7 @@ public class AuthController {
             @CookieValue(name = "access_token", required = false) final String accessToken,
             final HttpServletResponse response) {
         
-        if (TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
+        if (TokenExtractor.isValidAccessToken(accessToken)) {
             try {
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
                 final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), UserType.fromString(validationResult.userType()));

@@ -77,7 +77,7 @@ public abstract class AbstractSocialLoginService {
     }
 
     protected final void validateAccessToken(final String accessToken) {
-        if (!TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
+        if (!TokenExtractor.isValidAccessToken(accessToken)) {
             throw new IllegalArgumentException("액세스 토큰은 필수입니다.");
         }
     }

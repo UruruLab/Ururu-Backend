@@ -79,33 +79,17 @@ public final class TokenExtractor {
     }
 
     /**
-     * 토큰이 null이거나 비어있는지 검증합니다.
-     *
-     * @param token 검증할 토큰
-     * @return 유효하면 true
-     */
-    public static boolean isValidToken(final String token) {
-        return token != null && !token.isBlank();
-    }
-
-    /**
      * Refresh Token이 유효한지 검증합니다.
      *
      * @param refreshToken 검증할 Refresh Token
      * @return 유효하면 true
      */
     public static boolean isValidRefreshToken(final String refreshToken) {
-        return isValidToken(refreshToken);
-    }
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return false;
+        }
 
-    /**
-     * Access Token이 유효한지 검증합니다.
-     *
-     * @param accessToken 검증할 Access Token
-     * @return 유효하면 true
-     */
-    public static boolean isValidAccessTokenForValidation(final String accessToken) {
-        return isValidToken(accessToken);
+        return refreshToken.matches("^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$");
     }
 
     /**
