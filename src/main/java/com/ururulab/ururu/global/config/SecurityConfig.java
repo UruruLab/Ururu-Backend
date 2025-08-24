@@ -78,8 +78,8 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(csrfTokenFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(csrfTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, CsrfTokenFilter.class)
                 .build();
     }
     
@@ -121,8 +121,8 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(csrfTokenFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(csrfTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, CsrfTokenFilter.class)
                 .build();
     }
 }
