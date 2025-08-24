@@ -91,8 +91,13 @@ public final class CsrfTokenFilter extends OncePerRequestFilter {
             ));
             return;
         } catch (final Exception e) {
-            log.debug("CSRF 검증 중 예외 발생: {}", e.getMessage());
-            // 예외 발생 시 요청을 계속 진행 (fail-open)
+            log.error("CSRF 검증 중 예상치 못한 예외 발생: {}", e.getMessage(), e);
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(objectMapper.writeValueAsString(
+                ApiResponseFormat.fail("INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.")
+            ));
+            return;
         }
 
         filterChain.doFilter(request, response);
