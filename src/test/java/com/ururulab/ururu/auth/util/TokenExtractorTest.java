@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 /**
  * TokenExtractor 유틸리티 클래스 테스트.
  */
@@ -14,7 +17,7 @@ class TokenExtractorTest {
     @DisplayName("유효한 JWT 토큰 형식 검증")
     void isValidAccessToken_ValidJwtFormat_ReturnsTrue() {
         // given
-        String validToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        String validToken = buildFakeJwt("sub", "1234567890");
 
         // when
         boolean result = TokenExtractor.isValidAccessToken(validToken);
@@ -70,7 +73,7 @@ class TokenExtractorTest {
     @DisplayName("유효한 Authorization 헤더 검증")
     void isValidAuthorizationHeader_ValidHeader_ReturnsTrue() {
         // given
-        String validHeader = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        String validHeader = "Bearer " + buildFakeJwt("sub", "1234567890");
 
         // when
         boolean result = TokenExtractor.isValidAuthorizationHeader(validHeader);
@@ -90,5 +93,23 @@ class TokenExtractorTest {
 
         // then
         assertThat(result).isFalse();
+    }
+
+    /**
+     * 테스트용 가짜 JWT 토큰을 생성합니다.
+     * 실제 비밀키나 페이로드를 포함하지 않는 안전한 테스트용 토큰입니다.
+     *
+     * @param claimKey 클레임 키
+     * @param claimValue 클레임 값
+     * @return 테스트용 JWT 토큰
+     */
+    private static String buildFakeJwt(String claimKey, String claimValue) {
+        String header = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("{\"alg\":\"HS256\",\"typ\":\"JWT\"}".getBytes(StandardCharsets.UTF_8));
+        String payload = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(("{\"" + claimKey + "\":\"" + claimValue + "\"}").getBytes(StandardCharsets.UTF_8));
+        String signature = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("fake_signature_for_testing".getBytes(StandardCharsets.UTF_8));
+        return header + "." + payload + "." + signature;
     }
 }
