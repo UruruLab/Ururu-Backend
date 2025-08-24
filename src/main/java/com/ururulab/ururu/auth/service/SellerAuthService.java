@@ -82,6 +82,12 @@ public final class SellerAuthService {
     private Seller findAndValidateSeller(final String email) {
         try {
             return sellerService.findByEmail(email);
+        } catch (final BusinessException e) {
+            if (e.getErrorCode() == ErrorCode.SELLER_NOT_FOUND) {
+                log.warn("Seller not found for email: {}", email);
+                throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
+            }
+            throw e;
         } catch (final Exception e) {
             log.warn("Seller not found for email: {}", email);
             throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
