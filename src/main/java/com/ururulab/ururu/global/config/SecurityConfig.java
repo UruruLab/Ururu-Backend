@@ -65,7 +65,6 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers(
-                                "/api/auth/**",      // 인증 API는 CSRF 제외
                                 "/api/public/**",    // 공개 API
                                 "/health",          // 헬스체크
                                 "/h2-console/**"    // H2 콘솔
@@ -114,7 +113,6 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers(
-                                "/api/auth/**",      // 인증 API는 CSRF 제외
                                 "/api/public/**",    // 공개 API
                                 "/health",          // 헬스체크
                                 "/actuator/**"      // 모니터링 API
