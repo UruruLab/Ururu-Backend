@@ -71,7 +71,7 @@ public final class JwtRefreshService {
         final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateRefreshToken(refreshToken);
         
         // 2. 사용자 정보 조회
-        final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
+        final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), UserType.fromString(validationResult.userType()));
         
         // 3. RTR 방식: 기존 토큰 무효화
         invalidatePreviousToken(refreshToken, validationResult);

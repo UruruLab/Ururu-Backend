@@ -262,7 +262,7 @@ public class AuthController {
         if (TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
             try {
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
-                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
+                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), UserType.fromString(validationResult.userType()));
                 
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,

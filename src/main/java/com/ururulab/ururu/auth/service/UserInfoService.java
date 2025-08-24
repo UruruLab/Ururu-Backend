@@ -35,12 +35,14 @@ public final class UserInfoService {
      * @return 사용자 정보 (이메일, 역할)
      * @throws BusinessException 사용자를 찾을 수 없는 경우
      */
-    public UserInfo getUserInfo(final Long userId, final String userType) {
-        if (UserType.SELLER.getValue().equals(userType)) {
-            return getSellerInfo(userId);
-        } else {
-            return getMemberInfo(userId);
+    public UserInfo getUserInfo(final Long userId, final UserType userType) {
+        if (userType == null) {
+            throw new BusinessException(ErrorCode.AUTH_INVALID_USER_TYPE);
         }
+        return switch (userType) {
+            case SELLER -> getSellerInfo(userId);
+            case MEMBER -> getMemberInfo(userId);
+        };
     }
 
     // ==================== Private Helper Methods ====================

@@ -233,8 +233,9 @@ public enum ErrorCode {
 
 	// --- 회원 약관 동의 ---
 	INVALID_AGREEMENT_REQUEST(HttpStatus.BAD_REQUEST, "AGREEMENT001", "약관 동의 요청이 올바르지 않습니다."),
-	AGREEMENT_TYPE_NOT_FOUND(HttpStatus.BAD_REQUEST, "AGREEMENT002", "존재하지 않는 약관 타입입니다."),
-	REQUIRED_AGREEMENT_NOT_AGREED(HttpStatus.BAD_REQUEST, "AGREEMENT003", "필수 약관에 동의해야 합니다."),
+	    AGREEMENT_TYPE_NOT_FOUND(HttpStatus.BAD_REQUEST, "AGREEMENT002", "존재하지 않는 약관 타입입니다."),
+    REQUIRED_AGREEMENT_NOT_AGREED(HttpStatus.BAD_REQUEST, "AGREEMENT003", "필수 약관에 동의해야 합니다."),
+    AUTH_INVALID_USER_TYPE(HttpStatus.BAD_REQUEST, "AUTH015", "유효하지 않은 사용자 타입입니다."),
 
 	// --- 회원 선호도 ---
 	MEMBER_PREFERENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "PREFERENCE001", "회원 선호도를 찾을 수 없습니다."),
