@@ -134,7 +134,7 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 유효한 사용자 타입을 반환합니다.
      */
     private String getValidUserType(final String userType) {
-        return (userType != null && !userType.isBlank()) ? userType : AuthConstants.DEFAULT_USER_TYPE.getValue();
+        return (userType != null && !userType.isBlank()) ? userType : UserType.MEMBER.getValue();
     }
 
     /**

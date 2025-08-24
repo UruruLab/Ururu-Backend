@@ -4,8 +4,8 @@ import com.ururulab.ururu.auth.constants.AuthConstants;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
+import com.ururulab.ururu.auth.util.EnvironmentHelper;
 
 /**
  * JWT 토큰을 안전한 쿠키로 설정하는 헬퍼 클래스.
@@ -29,7 +29,7 @@ public final class JwtCookieHelper {
     private static final String SAME_SITE_PROD = "None";
 
     private final JwtProperties jwtProperties;
-    private final Environment environment;
+    private final EnvironmentHelper environmentHelper;
 
     public void setAccessTokenCookie(final HttpServletResponse response, final String accessToken) {
         final long maxAgeSeconds = jwtProperties.getAccessTokenExpiry();
@@ -120,12 +120,7 @@ public final class JwtCookieHelper {
      * 안전한 프로파일 확인 (null-safe)
      */
     private boolean isDevelopmentProfile() {
-        try {
-            return environment.acceptsProfiles("dev");
-        } catch (Exception e) {
-            log.debug("Profile check failed, defaulting to development: {}", e.getMessage());
-            return true;
-        }
+        return environmentHelper.isDevelopmentEnvironment();
     }
 
     /**
@@ -140,7 +135,7 @@ public final class JwtCookieHelper {
 
         try {
             // 운영환경에서는 프로퍼티에서 가져옴 (필수값)
-            final String cookieDomain = environment.getProperty("app.cookie.domain");
+            final String cookieDomain = environmentHelper.getEnvironment().getProperty("app.cookie.domain");
             if (cookieDomain == null || cookieDomain.trim().isEmpty()) {
                 throw new IllegalStateException("운영환경에서 app.cookie.domain 프로퍼티는 필수입니다");
             }

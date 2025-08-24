@@ -72,18 +72,7 @@ public final class RefreshTokenStorage {
         log.debug("Refresh token stored for user: {} (type: {}), expiry: {} seconds", userId, userType, expirySeconds);
     }
 
-    /**
-     * 저장된 Refresh Token을 조회합니다.
-     *
-     * @param userType 사용자 타입
-     * @param userId 사용자 ID
-     * @param tokenId 토큰 ID
-     * @return 저장된 Refresh Token, 없으면 null
-     */
-    public String getRefreshToken(final String userType, final Long userId, final String tokenId) {
-        final String key = buildRefreshKey(userType, userId, tokenId);
-        return redisTemplate.opsForValue().get(key);
-    }
+
 
     /**
      * 특정 Refresh Token을 삭제합니다.
@@ -176,23 +165,31 @@ public final class RefreshTokenStorage {
 
     /**
      * 토큰 개수 제한 초과 시 오래된 토큰을 삭제합니다.
-     * (fallback 방식 - 원자적 정리 실패 시 사용)
      *
      * @param userType 사용자 타입
      * @param userId 사용자 ID
+     * @param force 강제 정리 여부 (true: 여러 개 삭제, false: 1개만 삭제)
      */
-    public void cleanupOldTokensIfNeeded(final String userType, final Long userId) {
-        final long currentCount = getRefreshTokenCount(userType, userId);
-        if (currentCount >= AuthConstants.MAX_REFRESH_TOKENS_PER_USER) {
-            final String prefix = UserType.MEMBER.getValue().equals(userType) 
-                ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
-                : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
-            final String refreshKeyPattern = prefix + userId + ":*";
-            final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
+    public void cleanupOldTokens(final String userType, final Long userId, final boolean force) {
+        final String prefix = UserType.MEMBER.getValue().equals(userType) 
+            ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
+            : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
+        final String refreshKeyPattern = prefix + userId + ":*";
+        final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
+        
+        if (keys != null && keys.size() > 1) {
+            final List<String> sortedKeys = getSortedKeysByTTL(keys);
             
-            if (keys != null && keys.size() > 1) {
-                // TTL 기반으로 정렬하여 가장 오래된 토큰 삭제
-                final List<String> sortedKeys = getSortedKeysByTTL(keys);
+            if (force) {
+                // 강제 정리: 여러 개 삭제
+                final int tokensToDelete = (int) (sortedKeys.size() - AuthConstants.MAX_REFRESH_TOKENS_PER_USER + 1);
+                if (tokensToDelete > 0) {
+                    final List<String> keysToDelete = sortedKeys.subList(0, tokensToDelete);
+                    redisTemplate.delete(keysToDelete);
+                    log.warn("Force deleted {} old refresh tokens for user: {} (type: {})", tokensToDelete, userId, userType);
+                }
+            } else {
+                // 일반 정리: 1개만 삭제
                 if (!sortedKeys.isEmpty()) {
                     final String oldestKey = sortedKeys.get(0);
                     redisTemplate.delete(oldestKey);
@@ -203,29 +200,27 @@ public final class RefreshTokenStorage {
     }
 
     /**
+     * 토큰 개수 제한 초과 시 오래된 토큰을 삭제합니다.
+     * (fallback 방식 - 원자적 정리 실패 시 사용)
+     *
+     * @param userType 사용자 타입
+     * @param userId 사용자 ID
+     */
+    public void cleanupOldTokensIfNeeded(final String userType, final Long userId) {
+        final long currentCount = getRefreshTokenCount(userType, userId);
+        if (currentCount >= AuthConstants.MAX_REFRESH_TOKENS_PER_USER) {
+            cleanupOldTokens(userType, userId, false);
+        }
+    }
+
+    /**
      * 토큰 개수 제한 초과 시 강제로 오래된 토큰을 삭제합니다.
      *
      * @param userType 사용자 타입
      * @param userId 사용자 ID
      */
     public void forceCleanupOldTokens(final String userType, final Long userId) {
-        final String prefix = UserType.MEMBER.getValue().equals(userType) 
-            ? AuthConstants.REFRESH_MEMBER_KEY_PREFIX 
-            : AuthConstants.REFRESH_SELLER_KEY_PREFIX;
-        final String refreshKeyPattern = prefix + userId + ":*";
-        final Set<String> keys = redisTemplate.keys(refreshKeyPattern);
-        
-        if (keys != null && keys.size() > 1) {
-            // TTL 기반으로 정렬하여 오래된 토큰들을 삭제
-            final List<String> sortedKeys = getSortedKeysByTTL(keys);
-            final int tokensToDelete = (int) (sortedKeys.size() - AuthConstants.MAX_REFRESH_TOKENS_PER_USER + 1);
-            
-            if (tokensToDelete > 0) {
-                final List<String> keysToDelete = sortedKeys.subList(0, tokensToDelete);
-                redisTemplate.delete(keysToDelete);
-                log.warn("Force deleted {} old refresh tokens for user: {} (type: {})", tokensToDelete, userId, userType);
-            }
-        }
+        cleanupOldTokens(userType, userId, true);
     }
 
     /**

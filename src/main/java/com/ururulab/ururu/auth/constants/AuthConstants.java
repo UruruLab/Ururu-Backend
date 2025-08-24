@@ -37,7 +37,5 @@ public final class AuthConstants {
     public static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
     public static final String MASKED_DATA_PLACEHOLDER = "***";
 
-    // ==================== 기본값 ====================
-    public static final UserType DEFAULT_USER_TYPE = UserType.MEMBER;
-    public static final UserRole DEFAULT_ROLE = UserRole.NORMAL;
+
 } 
