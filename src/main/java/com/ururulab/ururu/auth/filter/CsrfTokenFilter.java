@@ -1,7 +1,9 @@
 package com.ururulab.ururu.auth.filter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.auth.service.CsrfTokenService;
 import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -38,6 +40,7 @@ public final class CsrfTokenFilter extends OncePerRequestFilter {
 
     private final CsrfTokenService csrfTokenService;
     private final TokenValidator tokenValidator;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -82,7 +85,10 @@ public final class CsrfTokenFilter extends OncePerRequestFilter {
         } catch (final BusinessException e) {
             log.warn("CSRF 토큰 검증 실패: {} - {}", e.getErrorCode().getCode(), e.getMessage());
             response.setStatus(HttpStatus.FORBIDDEN.value());
-            response.getWriter().write("CSRF 토큰 검증에 실패했습니다.");
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write(objectMapper.writeValueAsString(
+                ApiResponseFormat.fail(e.getErrorCode())
+            ));
             return;
         } catch (final Exception e) {
             log.debug("CSRF 검증 중 예외 발생: {}", e.getMessage());
