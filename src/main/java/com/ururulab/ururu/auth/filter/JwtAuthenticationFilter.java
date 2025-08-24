@@ -146,10 +146,10 @@ public final class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private String determineAuthority(final String userType) {
         if (UserType.SELLER.getValue().equals(userType)) {
-            log.debug("판매자 인증 처리 - sellerId: {}", userType);
+            log.debug("판매자 인증 처리 - userType: {}", userType);
             return AuthConstants.AUTHORITY_ROLE_SELLER;
         } else {
-            log.debug("회원 인증 처리 - memberId: {}", userType);
+            log.debug("회원 인증 처리 - userType: {}", userType);
             return AuthConstants.AUTHORITY_ROLE_MEMBER;
         }
     }
