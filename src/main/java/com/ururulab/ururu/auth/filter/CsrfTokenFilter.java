@@ -3,6 +3,7 @@ package com.ururulab.ururu.auth.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ururulab.ururu.auth.service.CsrfTokenService;
 import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import jakarta.servlet.FilterChain;
@@ -107,23 +108,22 @@ public final class CsrfTokenFilter extends OncePerRequestFilter {
      * 요청에서 JWT 토큰을 추출합니다.
      */
     private String extractTokenFromRequest(final HttpServletRequest request) {
-        // 쿠키에서 토큰 추출
+        // 쿠키에서 access_token 추출
+        String accessToken = null;
         final jakarta.servlet.http.Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (final jakarta.servlet.http.Cookie cookie : cookies) {
                 if ("access_token".equals(cookie.getName())) {
-                    return cookie.getValue();
+                    accessToken = cookie.getValue();
+                    break;
                 }
             }
         }
-
-        // Authorization 헤더에서 토큰 추출
+        
         final String authorizationHeader = request.getHeader("Authorization");
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            return authorizationHeader.substring(7);
-        }
-
-        return null;
+        final String bearerToken = TokenExtractor.extractTokenForLogout(authorizationHeader, accessToken);
+        
+        return bearerToken != null ? TokenExtractor.extractTokenFromBearer(bearerToken) : null;
     }
 
     /**
