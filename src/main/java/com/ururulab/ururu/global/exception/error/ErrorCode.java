@@ -86,6 +86,9 @@ public enum ErrorCode {
 	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
 	INVALID_OAUTH_STATE(HttpStatus.UNAUTHORIZED, "AUTH016", "유효하지 않은 OAuth state입니다."),
 	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "AUTH017", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
+	CSRF_TOKEN_MISSING(HttpStatus.FORBIDDEN, "AUTH018", "CSRF 토큰이 누락되었습니다."),
+	CSRF_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "AUTH019", "CSRF 토큰이 만료되었습니다."),
+	CSRF_TOKEN_MISMATCH(HttpStatus.FORBIDDEN, "AUTH020", "CSRF 토큰이 일치하지 않습니다."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),

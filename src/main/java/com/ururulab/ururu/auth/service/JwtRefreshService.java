@@ -44,6 +44,7 @@ public final class JwtRefreshService {
     private final TokenBlacklistStorage tokenBlacklistStorage;
     private final UserInfoService userInfoService;
     private final TokenValidator tokenValidator;
+    private final CsrfTokenService csrfTokenService;
 
     /**
      * Refresh Token을 저장합니다.
@@ -85,6 +86,17 @@ public final class JwtRefreshService {
                 validationResult.userId(), validationResult.userType());
         
         return newTokens;
+    }
+
+    /**
+     * 새로운 CSRF 토큰을 생성합니다.
+     *
+     * @param userId 사용자 ID
+     * @param userType 사용자 타입
+     * @return 생성된 CSRF 토큰
+     */
+    public String generateNewCsrfToken(final Long userId, final String userType) {
+        return csrfTokenService.generateCsrfToken(userId, userType);
     }
 
     /**
@@ -210,6 +222,9 @@ public final class JwtRefreshService {
     private void performLogout(final TokenValidator.TokenValidationResult validationResult, final String accessToken) {
         // Refresh Token 삭제
         refreshTokenStorage.deleteAllRefreshTokens(validationResult.userType(), validationResult.userId());
+
+        // CSRF 토큰 무효화
+        csrfTokenService.invalidateAllCsrfTokens(validationResult.userId(), validationResult.userType());
 
         // Access Token 블랙리스트 처리
         try {

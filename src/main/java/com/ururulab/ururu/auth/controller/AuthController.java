@@ -60,6 +60,7 @@ public class AuthController {
     private final StringRedisTemplate redisTemplate;
     private final SecurityLoggingService securityLoggingService;
     private final EnvironmentHelper environmentHelper;
+    private final CsrfTokenService csrfTokenService;
 
     // ==================== OAuth 콜백 처리 ====================
 
@@ -108,6 +109,13 @@ public class AuthController {
         final SocialLoginResponse loginResponse = loginService.processLogin(code);
         
         AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
+        
+        // CSRF 토큰 생성 및 응답 헤더에 추가
+        final String csrfToken = csrfTokenService.generateCsrfToken(
+                loginResponse.memberInfo().memberId(), 
+                loginResponse.memberInfo().userType()
+        );
+        response.setHeader("X-CSRF-TOKEN", csrfToken);
         
         final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(loginResponse, securityLoggingService);
         
@@ -160,6 +168,13 @@ public class AuthController {
         
         final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
         AuthCookieHelper.setSecureCookies(response, refreshResponse, jwtCookieHelper);
+        
+        // 새로운 CSRF 토큰 생성 및 응답 헤더에 추가
+        final String newCsrfToken = jwtRefreshService.generateNewCsrfToken(
+                refreshResponse.memberInfo().memberId(), 
+                refreshResponse.memberInfo().userType()
+        );
+        response.setHeader("X-CSRF-TOKEN", newCsrfToken);
         
         final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(refreshResponse, securityLoggingService);
         
@@ -309,6 +324,14 @@ public class AuthController {
             validateOAuthState(state, providerName);
             final SocialLoginResponse loginResponse = processOAuthLogin(provider, code);
             AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
+            
+            // CSRF 토큰 생성 및 응답 헤더에 추가
+            final String csrfToken = csrfTokenService.generateCsrfToken(
+                    loginResponse.memberInfo().memberId(), 
+                    loginResponse.memberInfo().userType()
+            );
+            response.setHeader("X-CSRF-TOKEN", csrfToken);
+            
             cleanupOAuthData(code, state);
             
             final RedirectView redirectView = createSuccessRedirectView();

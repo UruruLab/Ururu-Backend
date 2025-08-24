@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import com.ururulab.ururu.auth.util.EnvironmentHelper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.ururulab.ururu.auth.service.CsrfTokenService;
 
 /**
  * 판매자 인증 관련 API 컨트롤러.
@@ -37,6 +38,7 @@ public class SellerAuthController {
     private final JwtRefreshService jwtRefreshService;
     private final SecurityLoggingService securityLoggingService;
     private final EnvironmentHelper environmentHelper;
+    private final CsrfTokenService csrfTokenService;
 
     /**
      * 판매자 로그인 API.
@@ -53,6 +55,13 @@ public class SellerAuthController {
         
         // JWT 토큰을 쿠키로 설정
         AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
+        
+        // CSRF 토큰 생성 및 응답 헤더에 추가
+        final String csrfToken = csrfTokenService.generateCsrfToken(
+                loginResponse.memberInfo().memberId(), 
+                loginResponse.memberInfo().userType()
+        );
+        response.setHeader("X-CSRF-TOKEN", csrfToken);
         
         // 보안을 위해 토큰 정보는 마스킹해서 응답
         final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(loginResponse, securityLoggingService);
@@ -118,6 +127,13 @@ public class SellerAuthController {
         if (refreshResponse.refreshToken() != null) {
             jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
         }
+        
+        // 새로운 CSRF 토큰 생성 및 응답 헤더에 추가
+        final String newCsrfToken = jwtRefreshService.generateNewCsrfToken(
+                refreshResponse.memberInfo().memberId(), 
+                refreshResponse.memberInfo().userType()
+        );
+        response.setHeader("X-CSRF-TOKEN", newCsrfToken);
         
         // 보안을 위해 토큰 정보는 마스킹해서 응답
         final SocialLoginResponse secureResponse = AuthResponseHelper.createSecureResponse(refreshResponse, securityLoggingService);

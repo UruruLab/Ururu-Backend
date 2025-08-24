@@ -1,6 +1,7 @@
 package com.ururulab.ururu.global.config;
 
 import com.ururulab.ururu.auth.filter.JwtAuthenticationFilter;
+import com.ururulab.ururu.auth.filter.CsrfTokenFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 
@@ -25,16 +27,17 @@ import org.springframework.http.HttpMethod;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CsrfTokenFilter csrfTokenFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+    
     /**
      * 개발 환경용 Security 설정
-     * - 모든 요청 허용 (개발 편의성 우선)
+     * - CSRF 보호 활성화 (JWT 쿠키 사용으로 인해 필요)
      * - H2 콘솔 접근 허용
-     * - CSRF 완전 비활성화
      */
     @Bean
     @Profile("dev")
@@ -59,7 +62,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/*/top6").permitAll()
                         .anyRequest().authenticated()
                 )
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers(
+                                "/api/auth/**",      // 인증 API는 CSRF 제외
+                                "/api/public/**",    // 공개 API
+                                "/health",          // 헬스체크
+                                "/h2-console/**"    // H2 콘솔
+                        )
+                )
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.disable())
                         .contentTypeOptions(contentType -> contentType.disable())
@@ -69,11 +80,13 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(csrfTokenFilter, JwtAuthenticationFilter.class)
                 .build();
     }
+    
     /**
      * 운영 환경용 Security 설정
-     * - 필요한 API만 허용
+     * - CSRF 보호 활성화 (JWT 쿠키 사용으로 인해 필요)
      * - 강화된 보안 설정
      */
     @Bean
@@ -98,11 +111,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/*/top6").permitAll()
                         .anyRequest().authenticated()
                 )
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers(
+                                "/api/auth/**",      // 인증 API는 CSRF 제외
+                                "/api/public/**",    // 공개 API
+                                "/health",          // 헬스체크
+                                "/actuator/**"      // 모니터링 API
+                        )
+                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(csrfTokenFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 }
