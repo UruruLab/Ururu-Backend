@@ -69,7 +69,7 @@ public final class TokenBlacklistStorage {
      * @throws BusinessException 블랙리스트 추가 실패 시
      */
     public void blacklistAccessToken(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
+        if (!TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
             log.error("Access token is null or blank for blacklisting");
             throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
         }

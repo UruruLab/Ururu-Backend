@@ -244,7 +244,7 @@ public class AuthController {
             @CookieValue(name = "access_token", required = false) final String accessToken,
             final HttpServletResponse response) {
         
-        if (accessToken != null && !accessToken.isBlank()) {
+        if (TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
             try {
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
                 final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
@@ -330,11 +330,11 @@ public class AuthController {
      * OAuth 파라미터 검증
      */
     private void validateOAuthParameters(final String code, final String state, final String providerName) {
-        if (code == null || code.trim().isEmpty()) {
+        if (!TokenExtractor.isValidOAuthParameter(code)) {
             throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
 
-        if (state == null || state.trim().isEmpty()) {
+        if (!TokenExtractor.isValidOAuthParameter(state)) {
             log.warn("{} OAuth callback received without state parameter", providerName);
             throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
         }
@@ -443,7 +443,7 @@ public class AuthController {
         final String normalizedPath = path.startsWith("/") ? path : "/" + path;
         
         final String fullUrl = baseUrl + normalizedPath;
-        log.debug("Built frontend URL: {} (env: {})", fullUrl, environmentHelper.getCurrentProfile());
+        log.debug("Built frontend URL: {}", fullUrl);
         
         return fullUrl;
     }

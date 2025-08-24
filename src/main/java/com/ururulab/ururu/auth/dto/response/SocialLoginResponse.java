@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ururulab.ururu.auth.util.TokenExtractor;
 
 /**
  * 소셜 로그인 응답 DTO.
@@ -57,7 +58,7 @@ public record SocialLoginResponse(
     }
 
     private static void validateAccessToken(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
+        if (!TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
             throw new IllegalArgumentException("액세스 토큰은 필수입니다.");
         }
     }
