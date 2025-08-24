@@ -2,6 +2,7 @@ package com.ururulab.ururu.auth.controller;
 
 import com.ururulab.ururu.auth.annotation.RateLimit;
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
