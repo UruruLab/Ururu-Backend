@@ -265,9 +265,8 @@ public class AuthController {
                 final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
                 final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), UserType.fromString(validationResult.userType()));
                 
-                final SocialLoginResponse authResponse = SocialLoginResponse.of(
+                final SocialLoginResponse authResponse = SocialLoginResponse.withValidatedToken(
                         accessToken,
-                        null,
                         accessTokenGenerator.getExpirySeconds(),
                         SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
                 );

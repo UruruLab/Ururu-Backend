@@ -156,6 +156,9 @@ public final class JwtRefreshService {
                     log.error("Refresh token limit still exceeded after cleanup for user: {} (type: {})", userId, userType);
                     throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
                 }
+            } catch (final org.springframework.data.redis.RedisConnectionFailureException e) {
+                log.error("Redis connection failure during token cleanup for user: {} (type: {})", userId, userType, e);
+                throw new BusinessException(ErrorCode.REDIS_CONNECTION_FAILED);
             } catch (final Exception e) {
                 log.error("Failed to cleanup old tokens for user: {} (type: {})", userId, userType, e);
                 throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
@@ -174,6 +177,10 @@ public final class JwtRefreshService {
             refreshTokenStorage.deleteRefreshToken(validationResult.userType(), validationResult.userId(), validationResult.tokenId());
             log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", 
                     validationResult.userId(), validationResult.userType());
+        } catch (final org.springframework.data.redis.RedisConnectionFailureException e) {
+            log.error("Redis connection failure during RTR invalidation for user: {} (type: {})",
+                    validationResult.userId(), validationResult.userType(), e);
+            throw new BusinessException(ErrorCode.REDIS_CONNECTION_FAILED, "Redis 연결 오류로 토큰 갱신을 중단합니다.");
         } catch (final BusinessException e) {
             log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {})", 
                     validationResult.userId(), validationResult.userType(), e);

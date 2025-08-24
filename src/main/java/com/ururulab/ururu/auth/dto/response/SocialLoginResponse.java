@@ -57,6 +57,28 @@ public record SocialLoginResponse(
         return of(accessToken, null, expiresIn, memberInfo);
     }
 
+    /**
+     * 기존 JWT 토큰으로 응답 생성 (검증된 토큰 사용).
+     *
+     * @param validatedAccessToken 이미 검증된 JWT 액세스 토큰
+     * @param expiresIn 토큰 만료 시간 (초)
+     * @param memberInfo 회원 정보
+     * @return 기존 토큰을 사용한 소셜 로그인 응답
+     */
+    public static SocialLoginResponse withValidatedToken(
+            final String validatedAccessToken,
+            final Long expiresIn,
+            final MemberInfo memberInfo
+    ) {
+        if (validatedAccessToken == null || validatedAccessToken.isBlank()) {
+            throw new IllegalArgumentException("검증된 액세스 토큰은 필수입니다.");
+        }
+        validateExpiresIn(expiresIn);
+        validateMemberInfo(memberInfo);
+
+        return new SocialLoginResponse(validatedAccessToken, null, BEARER_TYPE, expiresIn, memberInfo);
+    }
+
     private static void validateAccessToken(final String accessToken) {
         if (!TokenExtractor.isValidAccessToken(accessToken)) {
             throw new IllegalArgumentException("액세스 토큰은 필수입니다.");

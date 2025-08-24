@@ -84,6 +84,9 @@ public final class TokenBlacklistStorage {
             }
             
             addToBlacklist(tokenId, expiry);
+        } catch (final org.springframework.data.redis.RedisConnectionFailureException e) {
+            log.error("Redis connection failure during blacklisting for access token: {}", accessToken, e);
+            throw new BusinessException(ErrorCode.REDIS_CONNECTION_FAILED);
         } catch (final BusinessException e) {
             throw e;
         } catch (final Exception e) {
@@ -114,6 +117,9 @@ public final class TokenBlacklistStorage {
             }
             
             addToBlacklist(tokenId, expiry);
+        } catch (final org.springframework.data.redis.RedisConnectionFailureException e) {
+            log.error("Redis connection failure during blacklisting for token: {}", refreshToken, e);
+            throw new BusinessException(ErrorCode.REDIS_CONNECTION_FAILED);
         } catch (final BusinessException e) {
             throw e;
         } catch (final Exception e) {
