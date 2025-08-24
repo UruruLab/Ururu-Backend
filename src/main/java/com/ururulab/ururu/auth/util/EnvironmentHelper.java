@@ -37,8 +37,8 @@ public final class EnvironmentHelper {
         try {
             return environment.acceptsProfiles("prod");
         } catch (Exception e) {
-            log.error("Profile check failed, defaulting to production for safety: {}", e.getMessage());
-            return true; // 안전을 위해 프로덕션으로 간주
+            log.error("Profile check failed, checking for non-development environment: {}", e.getMessage());
+            return !isDevelopmentEnvironment();
         }
     }
 
