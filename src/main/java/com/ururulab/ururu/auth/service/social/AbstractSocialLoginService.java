@@ -2,12 +2,12 @@ package com.ururulab.ururu.auth.service.social;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.constants.UserRole;
 import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
 import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
+import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.service.MemberService;
@@ -77,7 +77,7 @@ public abstract class AbstractSocialLoginService {
     }
 
     protected final void validateAccessToken(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
+        if (!TokenExtractor.isValidAccessTokenForValidation(accessToken)) {
             throw new IllegalArgumentException("액세스 토큰은 필수입니다.");
         }
     }

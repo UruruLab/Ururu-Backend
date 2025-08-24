@@ -97,4 +97,24 @@ public final class TokenExtractor {
     public static boolean isValidRefreshToken(final String refreshToken) {
         return isValidToken(refreshToken);
     }
+
+    /**
+     * Access Token이 유효한지 검증합니다.
+     *
+     * @param accessToken 검증할 Access Token
+     * @return 유효하면 true
+     */
+    public static boolean isValidAccessTokenForValidation(final String accessToken) {
+        return isValidToken(accessToken);
+    }
+
+    /**
+     * OAuth 파라미터가 유효한지 검증합니다.
+     *
+     * @param parameter 검증할 파라미터
+     * @return 유효하면 true
+     */
+    public static boolean isValidOAuthParameter(final String parameter) {
+        return parameter != null && !parameter.trim().isEmpty();
+    }
 } 
