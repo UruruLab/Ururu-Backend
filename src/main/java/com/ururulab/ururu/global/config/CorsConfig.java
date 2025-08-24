@@ -72,7 +72,8 @@ public class CorsConfig {
         configuration.setExposedHeaders(List.of(
                 "Authorization",
                 "Content-Length",
-                "X-Total-Count"
+                "X-Total-Count",
+                "X-CSRF-TOKEN"
         ));
 
         configuration.setAllowCredentials(true);
