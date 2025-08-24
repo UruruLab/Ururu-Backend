@@ -25,8 +25,8 @@ public final class EnvironmentHelper {
         try {
             return environment.acceptsProfiles("dev");
         } catch (Exception e) {
-            log.debug("Profile check failed, defaulting to development: {}", e.getMessage());
-            return true;
+            log.warn("Profile check failed, defaulting to production for security: {}", e.getMessage());
+            return false;
         }
     }
 
