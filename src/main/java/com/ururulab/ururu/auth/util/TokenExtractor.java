@@ -77,4 +77,24 @@ public final class TokenExtractor {
         }
         return bearerToken.substring(AuthConstants.BEARER_PREFIX.length());
     }
+
+    /**
+     * 토큰이 null이거나 비어있는지 검증합니다.
+     *
+     * @param token 검증할 토큰
+     * @return 유효하면 true
+     */
+    public static boolean isValidToken(final String token) {
+        return token != null && !token.isBlank();
+    }
+
+    /**
+     * Refresh Token이 유효한지 검증합니다.
+     *
+     * @param refreshToken 검증할 Refresh Token
+     * @return 유효하면 true
+     */
+    public static boolean isValidRefreshToken(final String refreshToken) {
+        return isValidToken(refreshToken);
+    }
 } 

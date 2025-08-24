@@ -2,6 +2,7 @@ package com.ururulab.ururu.auth.storage;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
+import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -98,7 +99,7 @@ public final class TokenBlacklistStorage {
      * @throws BusinessException 블랙리스트 추가 실패 시
      */
     public void blacklistRefreshToken(final String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
+        if (!TokenExtractor.isValidRefreshToken(refreshToken)) {
             log.error("Refresh token is null or blank for blacklisting");
             throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
         }

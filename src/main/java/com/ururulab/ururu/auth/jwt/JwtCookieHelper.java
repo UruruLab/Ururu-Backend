@@ -116,12 +116,7 @@ public final class JwtCookieHelper {
         return builder.toString();
     }
 
-    /**
-     * 안전한 프로파일 확인 (null-safe)
-     */
-    private boolean isDevelopmentProfile() {
-        return environmentHelper.isDevelopmentEnvironment();
-    }
+
 
     /**
      * 환경별 도메인 설정
@@ -129,7 +124,7 @@ public final class JwtCookieHelper {
      * @return 개발환경: null, 운영환경: app.cookie.domain 프로퍼티 값
      */
     private String getCookieDomain() {
-        if (isDevelopmentProfile()) {
+        if (environmentHelper.isDevelopmentEnvironment()) {
             return null; // 개발환경에서는 도메인 설정 없음
         }
 
@@ -150,10 +145,10 @@ public final class JwtCookieHelper {
      * 환경별 SameSite 정책
      */
     private String getSameSitePolicy() {
-        return isDevelopmentProfile() ? SAME_SITE_DEV : SAME_SITE_PROD;
+        return environmentHelper.isDevelopmentEnvironment() ? SAME_SITE_DEV : SAME_SITE_PROD;
     }
 
     private boolean isSecureEnvironment() {
-        return !isDevelopmentProfile();
+        return !environmentHelper.isDevelopmentEnvironment();
     }
 }
