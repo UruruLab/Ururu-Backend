@@ -157,7 +157,7 @@ public final class JwtRefreshService {
                     throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
                 }
             } catch (final Exception e) {
-                log.error("Failed to cleanup old tokens for user: {} (type: {}): {}", userId, userType, e.getMessage());
+                log.error("Failed to cleanup old tokens for user: {} (type: {})", userId, userType, e);
                 throw new BusinessException(ErrorCode.TOO_MANY_REFRESH_TOKENS);
             }
         }
@@ -175,12 +175,12 @@ public final class JwtRefreshService {
             log.debug("RTR: Previous refresh token invalidated for user: {} (type: {})", 
                     validationResult.userId(), validationResult.userType());
         } catch (final BusinessException e) {
-            log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {}): {}", 
-                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            log.error("Failed to invalidate previous refresh token during RTR for user: {} (type: {})", 
+                    validationResult.userId(), validationResult.userType(), e);
             throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "기존 토큰 무효화에 실패했습니다. 보안상 토큰 갱신을 중단합니다.");
         } catch (final Exception e) {
-            log.error("Unexpected error during token invalidation for user: {} (type: {}): {}", 
-                    validationResult.userId(), validationResult.userType(), e.getMessage());
+            log.error("Unexpected error during token invalidation for user: {} (type: {})", 
+                    validationResult.userId(), validationResult.userType(), e);
             throw new BusinessException(ErrorCode.INVALID_JWT_TOKEN, "토큰 무효화 중 오류가 발생했습니다.");
         }
     }
@@ -231,7 +231,7 @@ public final class JwtRefreshService {
             tokenBlacklistStorage.blacklistAccessToken(accessToken);
             log.info("Logout successful for user: {} (type: {})", validationResult.userId(), validationResult.userType());
         } catch (final BusinessException e) {
-            log.warn("Failed to blacklist access token during logout: {}", e.getMessage());
+            log.warn("Failed to blacklist access token during logout", e);
             // 블랙리스트 실패는 로그아웃을 중단시키지 않음
         }
     }
