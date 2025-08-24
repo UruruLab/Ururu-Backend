@@ -10,6 +10,7 @@ import com.ururulab.ururu.auth.service.*;
 import com.ururulab.ururu.auth.util.AuthCookieHelper;
 import com.ururulab.ururu.auth.util.AuthResponseHelper;
 import com.ururulab.ururu.auth.util.TokenExtractor;
+import com.ururulab.ururu.auth.util.EnvironmentHelper;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
@@ -58,6 +59,7 @@ public class AuthController {
     private final Environment environment;
     private final StringRedisTemplate redisTemplate;
     private final SecurityLoggingService securityLoggingService;
+    private final EnvironmentHelper environmentHelper;
 
     // ==================== OAuth 콜백 처리 ====================
 
@@ -110,7 +112,7 @@ public class AuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
         
         log.info("{} login successful for user: {} (env: {})", 
-                provider, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                provider, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인이 완료되었습니다.", secureResponse)
@@ -162,7 +164,7 @@ public class AuthController {
         final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
         
         log.info("Token refresh successful for user: {} (env: {})", 
-                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
+                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
@@ -197,7 +199,7 @@ public class AuthController {
         
         jwtCookieHelper.clearTokenCookies(response);
         
-        log.info("User logged out successfully, cookies cleared (env: {})", getCurrentProfile());
+        log.info("User logged out successfully, cookies cleared (env: {})", environmentHelper.getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("로그아웃되었습니다.")
@@ -227,7 +229,7 @@ public class AuthController {
 
         final GetSocialProvidersResponse response = GetSocialProvidersResponse.of(providers);
 
-        log.debug("Social providers response generated for {} environment", getCurrentProfile());
+        log.debug("Social providers response generated for {} environment", environmentHelper.getCurrentProfile());
 
         return ResponseEntity.ok(
                 ApiResponseFormat.success("지원 소셜 로그인 목록을 조회했습니다.", response)
@@ -287,7 +289,7 @@ public class AuthController {
         final String providerName = provider.name().toLowerCase();
         
         log.info("{} OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
-                providerName, error, code != null, state != null, getCurrentProfile());
+                providerName, error, code != null, state != null, environmentHelper.getCurrentProfile());
 
         if (error != null) {
             return redirectToError(error, providerName);
@@ -312,7 +314,7 @@ public class AuthController {
             final RedirectView redirectView = createSuccessRedirectView();
             
             log.info("{} login successful for user: {} (env: {})",
-                    providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                    providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), environmentHelper.getCurrentProfile());
             
             return redirectView;
         } catch (final BusinessException e) {
@@ -416,7 +418,7 @@ public class AuthController {
     private void setSecureCookies(final HttpServletResponse response, 
                                   final SocialLoginResponse loginResponse) {
         AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
-        log.debug("Secure cookies set successfully for {} environment", getCurrentProfile());
+        log.debug("Secure cookies set successfully for {} environment", environmentHelper.getCurrentProfile());
     }
 
     /**
@@ -440,7 +442,7 @@ public class AuthController {
 
         redirectView.setUrl(errorUrl);
         
-        log.warn("{} authentication failed: {} (env: {})", provider, errorMessage, getCurrentProfile());
+        log.warn("{} authentication failed: {} (env: {})", provider, errorMessage, environmentHelper.getCurrentProfile());
         
         return redirectView;
     }
@@ -453,7 +455,7 @@ public class AuthController {
         final String normalizedPath = path.startsWith("/") ? path : "/" + path;
         
         final String fullUrl = baseUrl + normalizedPath;
-        log.debug("Built frontend URL: {} (env: {})", fullUrl, getCurrentProfile());
+        log.debug("Built frontend URL: {} (env: {})", fullUrl, environmentHelper.getCurrentProfile());
         
         return fullUrl;
     }
@@ -462,19 +464,7 @@ public class AuthController {
      * 환경별 프론트엔드 기본 URL 결정.
      */
     private String getFrontendBaseUrl() {
-        try {
-            final String frontendUrl = environment.getProperty("app.frontend.base-url");
-            if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
-                return frontendUrl.trim();
-            }
-            
-            return isProductionEnvironment() ? AuthConstants.FRONTEND_BASE_URL_PROD : AuthConstants.FRONTEND_BASE_URL_DEV;
-            
-        } catch (final Exception e) {
-            log.warn("Failed to get frontend URL from yml config, using fallback (env: {}): {}", 
-                    getCurrentProfile(), e.getMessage());
-            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
-        }
+        return environmentHelper.getFrontendBaseUrl();
     }
 
     /**
@@ -495,29 +485,7 @@ public class AuthController {
         return BASE64_ENCODER.encodeToString(randomBytes);
     }
 
-    /**
-     * 현재 환경이 운영환경인지 확인
-     */
-    private boolean isProductionEnvironment() {
-        try {
-            return environment.acceptsProfiles("prod");
-        } catch (final Exception e) {
-            log.error("Profile check failed, defaulting to production for safety: {}", e.getMessage());
-            return true; // 안전을 위해 프로덕션으로 간주
-        }
-    }
 
-    /**
-     * 현재 활성 프로파일 반환 (로깅용)
-     */
-    private String getCurrentProfile() {
-        try {
-            final String[] activeProfiles = environment.getActiveProfiles();
-            return activeProfiles.length > 0 ? String.join(",", activeProfiles) : "default";
-        } catch (final Exception e) {
-            return "unknown";
-        }
-    }
 
     // ==================== DTOs ====================
 

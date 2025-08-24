@@ -41,6 +41,7 @@ public class AiServiceClient {
      *
      * @return 헬스체크 성공 여부
      */
+    @SuppressWarnings("unchecked")
     public boolean checkHealthStatus() {
         try {
             final var response = aiServiceRestClient
@@ -63,6 +64,7 @@ public class AiServiceClient {
      * @return 헬스체크 결과 정보
      * @throws BusinessException AI 서비스 헬스체크 실패 시
      */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> checkRecommendationHealth() {
         try {
             final var response = aiServiceRestClient
@@ -92,6 +94,7 @@ public class AiServiceClient {
      * @return 연결 상태 정보
      * @throws BusinessException 연결 실패 시
      */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> checkSpringBootConnection() {
         try {
             final var response = aiServiceRestClient
@@ -119,6 +122,7 @@ public class AiServiceClient {
      * @return AI 서비스 원본 응답
      * @throws BusinessException AI 서비스 통신 실패 시
      */
+    @SuppressWarnings("unchecked")
     public Map<String, Object> requestRecommendations(final Map<String, Object> requestBody) {
         try {
             log.debug("AI 추천 서비스 호출 시작");
@@ -164,6 +168,7 @@ public class AiServiceClient {
             maxAttempts = 3,
             backoff = @Backoff(delay = 500)
     )
+    @SuppressWarnings("unchecked")
     public Map<String, Object> testSpringNotification(final Long memberId) {
         try {
             final var response = aiServiceRestClient

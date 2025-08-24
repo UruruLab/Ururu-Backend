@@ -64,40 +64,5 @@ public class SecurityLoggingService {
         return data.substring(0, AuthConstants.SENSITIVE_DATA_PREVIEW_LENGTH) + "...";
     }
 
-    /**
-     * 보안 이벤트를 로깅합니다.
-     *
-     * @param event 이벤트 타입
-     * @param details 이벤트 상세 정보
-     */
-    public void logSecurityEvent(String event, String details) {
-        log.info("Security Event - Type: {}, Details: {}", event, details);
-    }
 
-    /**
-     * 로그인 시도를 로깅합니다.
-     *
-     * @param provider 제공자
-     * @param email 이메일 (마스킹됨)
-     * @param ip 클라이언트 IP
-     * @param userAgent User-Agent
-     * @param result 결과
-     */
-    public void logLoginAttempt(String provider, String email, String ip, String userAgent, String result) {
-        log.info("Login Attempt - Provider: {}, Email: {}, IP: {}, UserAgent: {}, Result: {}", 
-                provider, maskEmail(email), ip, userAgent, result);
-    }
-
-    /**
-     * 토큰 관련 이벤트를 로깅합니다.
-     *
-     * @param event 이벤트 타입
-     * @param userId 사용자 ID
-     * @param userType 사용자 타입
-     * @param tokenId 토큰 ID (마스킹됨)
-     */
-    public void logTokenEvent(String event, Long userId, String userType, String tokenId) {
-        log.info("Token Event - Type: {}, User: {} ({}), Token: {}", 
-                event, userId, userType, maskSensitiveData(tokenId));
-    }
 } 
