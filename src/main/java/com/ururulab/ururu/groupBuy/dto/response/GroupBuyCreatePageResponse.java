@@ -40,17 +40,11 @@ public record GroupBuyCreatePageResponse(
             String optionName,
             String optionUrl
     ) {
-        private static final String DEFAULT_IMAGE_URL = "/images/default-product-option.jpg";
-
         public static ProductOptionResponse from(ProductOption option) {
-            String imageUrl = (option.getImageUrl() != null && !option.getImageUrl().trim().isEmpty())
-                    ? option.getImageUrl()
-                    : DEFAULT_IMAGE_URL;
-
             return new ProductOptionResponse(
                     option.getId(),
                     option.getName(),
-                    imageUrl
+                    option.getImageUrl()
             );
         }
     }

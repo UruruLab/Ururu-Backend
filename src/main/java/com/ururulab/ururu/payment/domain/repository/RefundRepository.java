@@ -62,7 +62,7 @@ public interface RefundRepository extends JpaRepository<Refund, String> {
             "JOIN r.payment p " +
             "WHERE p.order.id = :orderId " +
             "AND p.member.id = :memberId " +
-            "AND r.status = 'INITIATED' " +
+            "AND r.status IN ('INITIATED', 'APPROVED') " +
             "AND r.type != 'GROUPBUY_FAILED'")
     Optional<Refund> findActiveManualRefundByOrderAndMember(
             @Param("orderId") String orderId,

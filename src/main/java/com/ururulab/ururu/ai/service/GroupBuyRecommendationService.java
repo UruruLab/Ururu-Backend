@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +56,8 @@ public class GroupBuyRecommendationService {
             return updateCacheSource(cachedResponse, "CACHE");
         }
 
-        if (!cacheService.tryAcquireProcessingLock(memberId)) {
+        String lockToken = cacheService.tryAcquireProcessingLock(memberId);
+        if (lockToken == null) {
             throw new BusinessException(ErrorCode.AI_RECOMMENDATION_PROCESSING_IN_PROGRESS);
         }
 
@@ -83,37 +83,35 @@ public class GroupBuyRecommendationService {
             return response;
 
         } finally {
-            cacheService.releaseProcessingLock(memberId);
+            cacheService.releaseProcessingLock(memberId, lockToken);
         }
     }
 
     @Async
     public CompletableFuture<Void> refreshRecommendationCache(final Long memberId, final GroupBuyRecommendationRequest request) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                log.info("백그라운드 추천 캐시 갱신 시작 - 회원ID: {}", memberId);
+        try {
+            log.info("백그라운드 추천 캐시 갱신 시작 - 회원ID: {}", memberId);
 
-                // 기본값 적용
-                final GroupBuyRecommendationRequest processedRequest = requestProcessor.applyDefaults(request);
+            final GroupBuyRecommendationRequest processedRequest = requestProcessor.applyDefaults(request);
 
-                final List<RecommendedGroupBuy> recommendations = aiRecommendationService.getRecommendations(memberId, processedRequest);
+            final List<RecommendedGroupBuy> recommendations = aiRecommendationService.getRecommendations(memberId, processedRequest);
 
-                final GroupBuyRecommendationResponse response = GroupBuyRecommendationResponse.of(
-                        recommendations,
-                        "AI가 분석한 맞춤형 추천입니다.", // TODO: AI 서비스에서 추천 이유 제공 시 수정
-                        LocalDateTime.now(),
-                        "AI_SERVICE_REFRESH"
-                );
+            final GroupBuyRecommendationResponse response = GroupBuyRecommendationResponse.of(
+                    recommendations,
+                    "AI가 분석한 맞춤형 추천입니다.",
+                    LocalDateTime.now(),
+                    "AI_SERVICE_REFRESH"
+            );
 
-                cacheService.cacheRecommendation(memberId, response);
+            cacheService.cacheRecommendation(memberId, response);
 
-                log.info("백그라운드 추천 캐시 갱신 완료 - 회원ID: {}", memberId);
+            log.info("백그라운드 추천 캐시 갱신 완료 - 회원ID: {}", memberId);
+            return CompletableFuture.completedFuture(null);
 
-            } catch (final Exception e) {
-                log.error("백그라운드 추천 캐시 갱신 실패 - 회원ID: {}", memberId, e);
-                throw new CompletionException(e);
-            }
-        });
+        } catch (final Exception e) {
+            log.error("백그라운드 추천 캐시 갱신 실패 - 회원ID: {}", memberId, e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     public void evictRecommendationCache(final Long memberId) {

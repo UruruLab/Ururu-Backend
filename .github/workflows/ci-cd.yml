@@ -9,14 +9,29 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
 
     steps:
       # 1. 코드와 설정 파일 체크아웃
       - name: Checkout app repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
 
       - name: Checkout private config repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: UruruLab/Ururu-Backend-Config
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}

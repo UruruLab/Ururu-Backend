@@ -16,6 +16,7 @@ import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
+import com.ururulab.ururu.review.domain.repository.ReviewRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,6 +65,9 @@ public class MemberServiceTest {
 
     @Mock
     private MemberPreferenceRepository memberPreferenceRepository;
+
+    @Mock
+    private ReviewRepository reviewRepository;
 
     @Test
     @DisplayName("소셜 로그인 시 기존 회원 존재하면 해당 회원 반환")

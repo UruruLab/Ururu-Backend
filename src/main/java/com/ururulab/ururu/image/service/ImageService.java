@@ -9,6 +9,7 @@ import com.ururulab.ururu.image.domain.ImageCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.ururulab.ururu.image.domain.ImageFormat;
 import com.ururulab.ururu.image.exception.InvalidImageFormatException;
@@ -44,6 +45,17 @@ public class ImageService {
 		} catch (Exception e) {
 			log.error("Failed to upload file: {}", originalFilename, e);
 			throw new InvalidImageFormatException("파일 업로드 실패: " + e.getMessage());
+		}
+	}
+
+	public String upload(MultipartFile file, ImageCategory category) {
+		String ext = extractExtensionFromFilename(file.getOriginalFilename());
+		ImageFormat format = ImageFormat.fromExtension(ext)
+				.orElseThrow(() -> new InvalidImageFormatException("지원하지 않는 이미지 확장자: " + ext));
+		try (InputStream inputStream = file.getInputStream()) {
+			return uploadStreamToS3(category.getPath(), format, inputStream, file.getSize());
+		} catch (IOException e) {
+			throw new InvalidImageFormatException("이미지 파일을 읽을 수 없습니다.");
 		}
 	}
 

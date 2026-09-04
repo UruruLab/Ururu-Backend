@@ -63,7 +63,7 @@ public class PaymentController {
             @RequestParam String orderId,
             @RequestParam Integer amount
     ) {
-        log.debug("결제 성공 리다이렉트 - paymentKey: {}, orderId: {}", paymentKey, orderId);
+        log.debug("결제 성공 리다이렉트 - orderId: {}", orderId);
 
         paymentService.handlePaymentSuccess(paymentKey, orderId, amount);
 
@@ -80,13 +80,14 @@ public class PaymentController {
     })
     @GetMapping("/fail")
     public ResponseEntity<ApiResponseFormat<PaymentFailResponseDto>> handlePaymentFail(
+            @AuthenticationPrincipal Long memberId,
             @RequestParam String orderId,
             @RequestParam String code,
             @RequestParam String message
     ) {
         log.debug("결제 실패 리다이렉트 - orderId: {}, code: {}", orderId, code);
 
-        PaymentFailResponseDto response = paymentService.handlePaymentFail(orderId, code, message);
+        PaymentFailResponseDto response = paymentService.handlePaymentFail(memberId, orderId, code, message);
 
         return ResponseEntity.ok(
                 ApiResponseFormat.success("결제 실패 처리가 완료되었습니다", response)
@@ -103,12 +104,13 @@ public class PaymentController {
     })
     @PostMapping("/{paymentId}/confirm")
     public ResponseEntity<ApiResponseFormat<PaymentConfirmResponseDto>> confirmPayment(
+            @AuthenticationPrincipal Long memberId,
             @PathVariable Long paymentId,
             @Valid @RequestBody PaymentConfirmRequestDto request
     ) {
-        log.debug("결제 승인 요청 - paymentId: {}, paymentKey: {}", paymentId, request.paymentKey());
+        log.debug("결제 승인 요청 - paymentId: {}", paymentId);
 
-        PaymentConfirmResponseDto response = paymentService.confirmPayment(paymentId, request);
+        PaymentConfirmResponseDto response = paymentService.confirmPayment(memberId, paymentId, request);
 
         return ResponseEntity.ok(
                 ApiResponseFormat.success("결제 승인이 완료되었습니다", response)
@@ -122,11 +124,10 @@ public class PaymentController {
     })
     @PostMapping("/webhooks/toss")
     public ResponseEntity<ApiResponseFormat<Void>> handleTossWebhook(
-            HttpServletRequest request,
-            @RequestHeader(value = "Toss-Signature", required = false) String signature
+            HttpServletRequest request
     ) {
 
-        paymentService.handleTossWebhookWithValidation(request, signature);
+        paymentService.handleTossWebhookWithValidation(request);
         return ResponseEntity.ok(ApiResponseFormat.success("웹훅 처리 완료"));
     }
 
@@ -142,7 +143,7 @@ public class PaymentController {
             @PathVariable String paymentKey,
             @AuthenticationPrincipal Long memberId
     ) {
-        log.debug("결제 상태 조회 - paymentKey: {}, memberId: {}", paymentKey, memberId);
+        log.debug("결제 상태 조회 - memberId: {}", memberId);
 
         PaymentConfirmResponseDto response = paymentService.getPaymentStatusByKey(paymentKey, memberId);
 

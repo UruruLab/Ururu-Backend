@@ -40,6 +40,7 @@ ai:
     timeout: 5000
     retry-count: 1
     max-connections: 5
+    max-recommendations: 10
     enabled: false  # 테스트 환경에서는 AI 서비스 비활성화
     endpoints:
       health: /health

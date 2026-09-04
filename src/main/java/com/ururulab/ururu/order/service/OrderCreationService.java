@@ -23,10 +23,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -53,19 +60,21 @@ public class OrderCreationService {
     public OrderCreateResponse createGroupBuyOrder(Long memberId, Long groupbuyId, GroupBuyOrderCreateRequest request) {
         log.debug("공구 주문서 생성 - 회원ID: {}, 공구ID: {}, 요청: {}", memberId, groupbuyId, request);
 
-        acquireProcessingLock(memberId);
+        String lockToken = acquireProcessingLock(memberId);
 
         try {
-            cancelPendingOrders(memberId);
+            Set<Long> previousOptionIds = cancelPendingOrders(memberId);
 
             OrderCreationContext context = prepareGroupBuyOrderContext(memberId, groupbuyId, request);
             validateOrderCreation(context);
-            reserveStock(context);
+            Map<Long, Integer> previousReservations = getPreviousReservations(context);
+            reserveStock(context, previousReservations);
+            releaseObsoleteReservationsAfterCommit(context, previousOptionIds);
 
             return createAndSaveOrder(context);
 
         } finally {
-            releaseProcessingLockSafely(memberId);
+            releaseProcessingLockSafely(memberId, lockToken);
         }
     }
 
@@ -81,19 +90,21 @@ public class OrderCreationService {
     public OrderCreateResponse createCartOrder(Long memberId, CartOrderCreateRequest request) {
         log.debug("장바구니 주문서 생성 - 회원ID: {}, 요청: {}", memberId, request);
 
-        acquireProcessingLock(memberId);
+        String lockToken = acquireProcessingLock(memberId);
 
         try {
-            cancelPendingOrders(memberId);
+            Set<Long> previousOptionIds = cancelPendingOrders(memberId);
 
             OrderCreationContext context = prepareCartOrderContext(memberId, request);
             validateOrderCreation(context);
-            reserveStock(context);
+            Map<Long, Integer> previousReservations = getPreviousReservations(context);
+            reserveStock(context, previousReservations);
+            releaseObsoleteReservationsAfterCommit(context, previousOptionIds);
 
             return createAndSaveOrder(context);
 
         } finally {
-            releaseProcessingLockSafely(memberId);
+            releaseProcessingLockSafely(memberId, lockToken);
         }
     }
 
@@ -103,10 +114,12 @@ public class OrderCreationService {
      * @param memberId 회원 ID
      * @throws BusinessException 이미 진행 중인 주문이 있거나 시스템 장애 시
      */
-    private void acquireProcessingLock(Long memberId) {
-        if (!stockReservationService.tryAcquireProcessingLock(memberId)) {
+    private String acquireProcessingLock(Long memberId) {
+        String token = stockReservationService.tryAcquireProcessingLock(memberId);
+        if (token == null) {
             throw new BusinessException(ErrorCode.ORDER_PROCESSING_IN_PROGRESS);
         }
+        return token;
     }
 
     /**
@@ -115,9 +128,9 @@ public class OrderCreationService {
      *
      * @param memberId 회원 ID
      */
-    private void releaseProcessingLockSafely(Long memberId) {
+    private void releaseProcessingLockSafely(Long memberId, String token) {
         try {
-            stockReservationService.releaseProcessingLock(memberId);
+            stockReservationService.releaseProcessingLock(memberId, token);
         } catch (Exception e) {
             log.warn("락 해제 중 오류 발생 (무시됨): memberId={}", memberId, e);
             // Redis 장애 등으로 락 해제 실패해도 TTL에 의해 자동 해제되므로 무시
@@ -129,16 +142,21 @@ public class OrderCreationService {
      *
      * @param memberId 회원 ID
      */
-    private void cancelPendingOrders(Long memberId) {
+    private Set<Long> cancelPendingOrders(Long memberId) {
         List<Order> pendingOrders = orderRepository.findByMemberIdAndStatus(memberId, OrderStatus.PENDING);
 
         if (!pendingOrders.isEmpty()) {
             for (Order order : pendingOrders) {
                 order.changeStatus(OrderStatus.CANCELLED, "새로운 주문으로 인한 자동 취소");
             }
-            stockReservationService.releaseAllUserReservations(memberId);
+            Set<Long> optionIds = pendingOrders.stream()
+                    .flatMap(order -> order.getOrderItems().stream())
+                    .map(item -> item.getGroupBuyOption().getId())
+                    .collect(Collectors.toSet());
             log.debug("기존 PENDING 주문 취소 - 회원ID: {}, 취소된 주문 수: {}", memberId, pendingOrders.size());
+            return optionIds;
         }
+        return Set.of();
     }
 
     /**
@@ -171,7 +189,7 @@ public class OrderCreationService {
         }
 
         List<OrderItemRequest> orderItems = request.orderItems();
-        return new OrderCreationContext(member, groupBuy, groupBuyOptions, orderItems);
+        return new OrderCreationContext(member, groupBuyOptions, orderItems);
     }
 
     /**
@@ -191,13 +209,11 @@ public class OrderCreationService {
                 .filter(item -> item.getCart().getMember().getId().equals(memberId))
                 .toList();
 
-        if (cartItems.isEmpty()) {
+        if (cartItems.isEmpty()
+                || cartItems.size() != new HashSet<>(request.cartItemIds()).size()) {
             throw new BusinessException(ErrorCode.CART_ITEMS_EMPTY);
         }
 
-        // 여러 공구 허용 - MULTIPLE_GROUPBUY_NOT_ALLOWED 제약 제거됨
-        // 첫 번째 아이템의 공구를 대표 공구로 사용 (Order 엔티티 호환성을 위한 임시 방편)
-        GroupBuy groupBuy = cartItems.get(0).getGroupBuyOption().getGroupBuy();
         List<GroupBuyOption> groupBuyOptions = cartItems.stream()
                 .map(CartItem::getGroupBuyOption)
                 .toList();
@@ -206,7 +222,7 @@ public class OrderCreationService {
                 .map(item -> new OrderItemRequest(item.getGroupBuyOption().getId(), item.getQuantity()))
                 .toList();
 
-        return new OrderCreationContext(member, groupBuy, groupBuyOptions, orderItems);
+        return new OrderCreationContext(member, groupBuyOptions, orderItems);
     }
 
     /**
@@ -217,13 +233,25 @@ public class OrderCreationService {
      * @throws BusinessException 공구 종료, 재고 부족, 개인 제한 초과 시
      */
     private void validateOrderCreation(OrderCreationContext context) {
-        validateGroupBuyStatus(context.getGroupBuy());
+        long optionCount = context.getGroupBuyOptions().stream().map(GroupBuyOption::getId).distinct().count();
+        if (optionCount != context.getGroupBuyOptions().size()) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "동일한 옵션을 중복 주문할 수 없습니다.");
+        }
+
+        long sellerCount = context.getGroupBuyOptions().stream()
+                .map(option -> option.getGroupBuy().getSeller().getId())
+                .distinct()
+                .count();
+        if (sellerCount > 1) {
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT,
+                    "서로 다른 판매자의 상품은 한 주문으로 결제할 수 없습니다.");
+        }
 
         for (int i = 0; i < context.getOrderItems().size(); i++) {
             OrderItemRequest orderItem = context.getOrderItems().get(i);
             GroupBuyOption option = context.getGroupBuyOptions().get(i);
 
-            validateStock(option, orderItem.quantity());
+            validateGroupBuyStatus(option.getGroupBuy());
             validatePersonalLimit(context.getMember().getId(), option, orderItem.quantity());
         }
     }
@@ -234,13 +262,80 @@ public class OrderCreationService {
      *
      * @param context 주문 생성 컨텍스트
      */
-    private void reserveStock(OrderCreationContext context) {
-        for (int i = 0; i < context.getOrderItems().size(); i++) {
-            OrderItemRequest orderItem = context.getOrderItems().get(i);
-            GroupBuyOption option = context.getGroupBuyOptions().get(i);
-
-            stockReservationService.reserveStock(option.getId(), context.getMember().getId(), orderItem.quantity());
+    private void reserveStock(OrderCreationContext context, Map<Long, Integer> previousReservations) {
+        List<Long> reservedOptionIds = new ArrayList<>();
+        try {
+            for (int i = 0; i < context.getOrderItems().size(); i++) {
+                OrderItemRequest orderItem = context.getOrderItems().get(i);
+                GroupBuyOption option = context.getGroupBuyOptions().get(i);
+                int remaining = stockReservationService.reserveStock(
+                        option.getId(), context.getMember().getId(), orderItem.quantity(), option.getStock());
+                if (remaining < 0) {
+                    throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT, orderItem.quantity(), 0);
+                }
+                reservedOptionIds.add(option.getId());
+            }
+            restoreReservationsOnRollback(context, reservedOptionIds, previousReservations);
+        } catch (RuntimeException e) {
+            restoreReservations(context, reservedOptionIds, previousReservations);
+            throw e;
         }
+    }
+
+    private Map<Long, Integer> getPreviousReservations(OrderCreationContext context) {
+        return context.getGroupBuyOptions().stream().collect(Collectors.toMap(
+                GroupBuyOption::getId,
+                option -> stockReservationService.getReservedQuantity(option.getId(), context.getMember().getId())
+        ));
+    }
+
+    private void restoreReservationsOnRollback(OrderCreationContext context, List<Long> optionIds,
+                                               Map<Long, Integer> previousReservations) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != STATUS_COMMITTED) {
+                    restoreReservations(context, optionIds, previousReservations);
+                }
+            }
+        });
+    }
+
+    private void restoreReservations(OrderCreationContext context, List<Long> optionIds,
+                                     Map<Long, Integer> previousReservations) {
+        Map<Long, GroupBuyOption> optionsById = context.getGroupBuyOptions().stream()
+                .collect(Collectors.toMap(GroupBuyOption::getId, Function.identity()));
+        optionIds.forEach(optionId -> {
+            int previousQuantity = previousReservations.getOrDefault(optionId, 0);
+            if (previousQuantity == 0) {
+                stockReservationService.releaseReservation(optionId, context.getMember().getId());
+            } else {
+                GroupBuyOption option = optionsById.get(optionId);
+                stockReservationService.reserveStock(
+                        optionId, context.getMember().getId(), previousQuantity, option.getStock());
+            }
+        });
+    }
+
+    private void releaseObsoleteReservationsAfterCommit(OrderCreationContext context, Set<Long> previousOptionIds) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            return;
+        }
+        Set<Long> currentOptionIds = context.getGroupBuyOptions().stream()
+                .map(GroupBuyOption::getId)
+                .collect(Collectors.toSet());
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                previousOptionIds.stream()
+                        .filter(optionId -> !currentOptionIds.contains(optionId))
+                        .forEach(optionId -> stockReservationService.releaseReservation(
+                                optionId, context.getMember().getId()));
+            }
+        });
     }
 
     /**
@@ -311,16 +406,6 @@ public class OrderCreationService {
      * @param requestQuantity 요청 수량
      * @throws BusinessException 재고가 부족한 경우
      */
-    private void validateStock(GroupBuyOption groupBuyOption, Integer requestQuantity) {
-        Integer totalStock = groupBuyOption.getStock();
-        Integer reservedQuantity = stockReservationService.getTotalReservedQuantity(groupBuyOption.getId());
-        Integer availableStock = totalStock - reservedQuantity;
-
-        if (availableStock < requestQuantity) {
-            throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT, requestQuantity, availableStock);
-        }
-    }
-
     /**
      * 개인 구매 제한 검증
      * 기존 주문과 새 요청을 합쳐서 개인 제한 초과 여부 확인
@@ -419,20 +504,17 @@ public class OrderCreationService {
      */
     private static class OrderCreationContext {
         private final Member member;
-        private final GroupBuy groupBuy;
         private final List<GroupBuyOption> groupBuyOptions;
         private final List<OrderItemRequest> orderItems;
 
-        public OrderCreationContext(Member member, GroupBuy groupBuy,
-                                    List<GroupBuyOption> groupBuyOptions, List<OrderItemRequest> orderItems) {
+        public OrderCreationContext(Member member, List<GroupBuyOption> groupBuyOptions,
+                                    List<OrderItemRequest> orderItems) {
             this.member = member;
-            this.groupBuy = groupBuy;
             this.groupBuyOptions = groupBuyOptions;
             this.orderItems = orderItems;
         }
 
         public Member getMember() { return member; }
-        public GroupBuy getGroupBuy() { return groupBuy; }
         public List<GroupBuyOption> getGroupBuyOptions() { return groupBuyOptions; }
         public List<OrderItemRequest> getOrderItems() { return orderItems; }
     }

@@ -16,6 +16,7 @@ import com.ururulab.ururu.payment.dto.request.RefundProcessRequestDto;
 import com.ururulab.ururu.payment.dto.request.RefundRequestDto;
 import com.ururulab.ururu.payment.dto.response.RefundCreateResponseDto;
 import com.ururulab.ururu.payment.dto.response.RefundProcessResponseDto;
+import com.ururulab.ururu.payment.infrastructure.TossPaymentClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +61,9 @@ class RefundServiceTest {
     @Mock
     private OrderItemRepository orderItemRepository;
 
+    @Mock
+    private TossPaymentClient tossPaymentClient;
+
     private RefundTestFixture.RefundTestScenario scenario;
 
     @BeforeEach
@@ -94,13 +98,15 @@ class RefundServiceTest {
                     scenario.member.getId(), scenario.order.getId(), request);
 
             // then
-            assertThat(result.status()).isEqualTo(RefundStatus.APPROVED); // 자동 승인
+            assertThat(result.status()).isEqualTo(RefundStatus.COMPLETED);
             assertThat(result.type()).isEqualTo(RefundType.CHANGE_OF_MIND);
             assertThat(result.amount()).isPositive(); // 일단 양수인지만 확인
 
             verify(memberRepository).increasePoints(eq(scenario.member.getId()), anyInt());
             verify(pointTransactionRepository).save(any());
             verify(groupBuyOptionRepository).increaseStock(eq(scenario.groupBuyOption.getId()), anyInt());
+            verify(tossPaymentClient).cancel("test-payment-key", "단순 변심", 16000,
+                    "payment-refund-1-16000-1000");
         }
 
         @Test
@@ -191,12 +197,14 @@ class RefundServiceTest {
 
             // then
             assertThat(result.refundId()).isEqualTo(refundId);
-            assertThat(result.status()).isEqualTo(RefundStatus.APPROVED);
+            assertThat(result.status()).isEqualTo(RefundStatus.COMPLETED);
             assertThat(result.rejectReason()).isNull();
 
             verify(memberRepository).increasePoints(eq(scenario.member.getId()), eq(1000));
             verify(pointTransactionRepository).save(any());
             verify(groupBuyOptionRepository).increaseStock(eq(scenario.groupBuyOption.getId()), eq(2));
+            verify(tossPaymentClient).cancel("test-payment-key", "단순 변심", 15000,
+                    "payment-refund-1-15000-1000");
         }
 
         @Test

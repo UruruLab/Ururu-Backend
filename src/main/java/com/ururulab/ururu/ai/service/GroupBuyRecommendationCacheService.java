@@ -4,10 +4,14 @@ import com.ururulab.ururu.ai.dto.GroupBuyRecommendationResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -15,11 +19,17 @@ import java.util.Set;
 public class GroupBuyRecommendationCacheService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
 
     private static final String AI_PREFIX = "ai:";
     private static final String GROUPBUY_RECOMMENDATION_PREFIX = AI_PREFIX + "groupbuy:recommendation:member:";
     private static final String POPULAR_GROUPBUY_RANKING_KEY = AI_PREFIX + "groupbuy:popular:ranking";
     private static final String PROCESSING_LOCK_PREFIX = AI_PREFIX + "processing:member:";
+    private static final String RECOMMENDATION_KEYS = AI_PREFIX + "groupbuy:recommendation:keys";
+    private static final DefaultRedisScript<Long> RELEASE_LOCK = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end
+            return 0
+            """, Long.class);
 
     private static final Duration RECOMMENDATION_TTL = Duration.ofMinutes(30);
     private static final Duration POPULAR_RANKING_TTL = Duration.ofMinutes(10);
@@ -59,6 +69,7 @@ public class GroupBuyRecommendationCacheService {
 
         try {
             redisTemplate.opsForValue().set(key, response, RECOMMENDATION_TTL);
+            redisTemplate.opsForSet().add(RECOMMENDATION_KEYS, key);
             log.debug("추천 결과 캐시 저장 완료 - 회원ID: {}, TTL: {}분", memberId, RECOMMENDATION_TTL.toMinutes());
 
         } catch (final Exception e) {
@@ -71,6 +82,7 @@ public class GroupBuyRecommendationCacheService {
 
         try {
             final Boolean deleted = redisTemplate.delete(key);
+            redisTemplate.opsForSet().remove(RECOMMENDATION_KEYS, key);
 
             if (Boolean.TRUE.equals(deleted)) {
                 log.debug("회원 추천 캐시 삭제 완료 - 회원ID: {}", memberId);
@@ -85,11 +97,12 @@ public class GroupBuyRecommendationCacheService {
 
     public void evictAllRecommendationCaches() {
         try {
-            final String pattern = GROUPBUY_RECOMMENDATION_PREFIX + "*";
-            final Set<String> keys = redisTemplate.keys(pattern);
+            final Set<Object> registeredKeys = redisTemplate.opsForSet().members(RECOMMENDATION_KEYS);
 
-            if (keys != null && !keys.isEmpty()) {
+            if (registeredKeys != null && !registeredKeys.isEmpty()) {
+                Set<String> keys = registeredKeys.stream().map(Object::toString).collect(java.util.stream.Collectors.toSet());
                 redisTemplate.delete(keys);
+                redisTemplate.delete(RECOMMENDATION_KEYS);
                 log.info("전체 추천 캐시 삭제 완료 - 삭제된 키 수: {}", keys.size());
             } else {
                 log.debug("삭제할 추천 캐시 없음");
@@ -100,31 +113,32 @@ public class GroupBuyRecommendationCacheService {
         }
     }
 
-    public boolean tryAcquireProcessingLock(final Long memberId) {
+    public String tryAcquireProcessingLock(final Long memberId) {
         final String key = PROCESSING_LOCK_PREFIX + memberId;
 
         try {
-            final Boolean success = redisTemplate.opsForValue().setIfAbsent(key, "processing", PROCESSING_LOCK_TTL);
+            String token = UUID.randomUUID().toString();
+            final Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, token, PROCESSING_LOCK_TTL);
 
             if (Boolean.TRUE.equals(success)) {
                 log.debug("AI 추천 처리 락 획득 성공 - 회원ID: {}", memberId);
-                return true;
+                return token;
             } else {
                 log.debug("AI 추천 처리 락 획득 실패 (중복 요청) - 회원ID: {}", memberId);
-                return false;
+                return null;
             }
 
         } catch (final Exception e) {
             log.warn("처리 락 획득 중 오류 발생 - 회원ID: {}", memberId, e);
-            return false;
+            return null;
         }
     }
 
-    public void releaseProcessingLock(final Long memberId) {
+    public void releaseProcessingLock(final Long memberId, String token) {
         final String key = PROCESSING_LOCK_PREFIX + memberId;
 
         try {
-            redisTemplate.delete(key);
+            stringRedisTemplate.execute(RELEASE_LOCK, List.of(key), token);
             log.debug("AI 추천 처리 락 해제 - 회원ID: {}", memberId);
 
         } catch (final Exception e) {

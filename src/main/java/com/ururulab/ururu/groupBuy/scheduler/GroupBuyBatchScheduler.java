@@ -4,7 +4,13 @@ import com.ururulab.ururu.groupBuy.service.GroupBuyBatchCloseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -12,40 +18,29 @@ import org.springframework.stereotype.Component;
 public class GroupBuyBatchScheduler {
 
     private final GroupBuyBatchCloseService batchCloseService;
+    private final StringRedisTemplate redisTemplate;
+    private static final String LOCK_KEY = "batch:groupbuy:close";
+    private static final DefaultRedisScript<Long> RELEASE_LOCK = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) end
+            return 0
+            """, Long.class);
 
-    /**
-     * 매일 자정(00:00)에 만료된 공동구매 배치 종료
-     */
-    @Scheduled(cron = "0 0 0 * * *",  zone = "Asia/Seoul")
-    public void closeExpiredGroupBuysBatch() {
-        log.info("Starting daily batch process for expired group buys...");
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    public void closeExpiredGroupBuys() {
+        log.info("Starting hourly batch process for expired group buys");
 
-        try {
-            batchCloseService.closeExpiredGroupBuys();
-            log.info("Daily batch process completed successfully");
-
-        } catch (Exception e) {
-            log.error("Failed to execute daily batch process for group buy closure", e);
-            // 배치 실패 시 알림 등 추가 처리 가능
+        String token = UUID.randomUUID().toString();
+        if (!Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(LOCK_KEY, token, Duration.ofMinutes(50)))) {
+            log.info("Skipping group buy closure; another instance holds the lock");
+            return;
         }
-    }
-
-    /**
-     * 시간별 헬스체크용
-     * 매 시간마다 급하게 처리해야 할 만료된 공동구매가 있는지 확인
-     */
-    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시간 정각
-    public void hourlyHealthCheck() {
-        log.debug("Running hourly health check for group buy expiration...");
 
         try {
-            // 급하게 처리해야 할 케이스가 있다면 여기서 처리
-            // 예: 자정 배치에서 누락된 케이스 등
             batchCloseService.closeExpiredGroupBuys();
-
         } catch (Exception e) {
-            log.warn("Hourly health check encountered an issue", e);
-            // 헬스체크 실패는 심각하지 않으므로 경고 로그만
+            log.error("Failed to execute group buy closure batch", e);
+        } finally {
+            redisTemplate.execute(RELEASE_LOCK, List.of(LOCK_KEY), token);
         }
     }
 }

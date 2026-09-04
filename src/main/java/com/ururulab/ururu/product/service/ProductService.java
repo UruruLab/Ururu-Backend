@@ -20,7 +20,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -60,13 +59,13 @@ public class ProductService {
     public ProductResponse createProduct(ProductRequest productRequest, List<MultipartFile> optionImages, Long sellerId) {
         log.info("Creating product for seller: {}, productName: {}", sellerId, productRequest.name());
 
-        // 1. 사전 검증 (트랜잭션 외부에서 수행)
+        // 1. 사전 검증
         validateProductCreation(productRequest, optionImages, sellerId);
 
         // 2. 핵심 데이터 저장 (트랜잭션 내부)
         ProductCreationResult result = createProductCore(productRequest, sellerId);
 
-        // 3. 비동기 이미지 업로드 이벤트 발행 (트랜잭션 외부)
+        // 3. 커밋 후 비동기 이미지 업로드 이벤트 발행
         publishImageUploadEventIfNeeded(result.savedProduct(), result.savedOptions(), optionImages);
 
         // 4. 응답 생성
@@ -233,7 +232,6 @@ public class ProductService {
      * @param sellerId
      * @return
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ProductCreationResult createProductCore(ProductRequest productRequest, Long sellerId) {
         log.info("Starting core product creation transaction for seller: {}", sellerId);
 
@@ -272,7 +270,6 @@ public class ProductService {
      * @param sellerId
      * @return
      */
-    @Transactional
     public ProductUpdateResult updateProductCore(Long productId, ProductRequest productRequest,
                                                  List<MultipartFile> optionImages, Long sellerId) {
         log.info("Starting core product update transaction for ID: {}", productId);

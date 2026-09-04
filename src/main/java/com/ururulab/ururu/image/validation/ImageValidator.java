@@ -10,6 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import static com.ururulab.ururu.global.exception.error.ErrorCode.*;
 
@@ -36,9 +39,31 @@ public class ImageValidator {
         ImageFormat extFmt = parseExtension(image);
         ImageFormat mimeFmt = parseMimeType(image);
         ensureMatchingFormats(extFmt, mimeFmt, image);
+        ensureContentSignature(extFmt, image);
 
         long end = System.currentTimeMillis();
         log.info("Image validation took: {}ms for file: {}", end - start, image.getOriginalFilename());
+    }
+
+    private void ensureContentSignature(ImageFormat format, MultipartFile file) {
+        byte[] header = new byte[12];
+        try (InputStream input = file.getInputStream()) {
+            if (input.readNBytes(header, 0, header.length) < header.length) {
+                throw new InvalidImageFormatException("이미지 파일이 손상되었습니다.");
+            }
+        } catch (IOException e) {
+            throw new InvalidImageFormatException("이미지 파일을 읽을 수 없습니다.");
+        }
+
+        boolean valid = switch (format) {
+            case JPG, JPEG -> (header[0] & 0xff) == 0xff && (header[1] & 0xff) == 0xd8 && (header[2] & 0xff) == 0xff;
+            case PNG -> (header[0] & 0xff) == 0x89 && "PNG".equals(new String(header, 1, 3, StandardCharsets.US_ASCII));
+            case WEBP -> "RIFF".equals(new String(header, 0, 4, StandardCharsets.US_ASCII))
+                    && "WEBP".equals(new String(header, 8, 4, StandardCharsets.US_ASCII));
+        };
+        if (!valid) {
+            throw new InvalidImageFormatException("파일 내용과 이미지 형식이 일치하지 않습니다.");
+        }
     }
 
     public void validateAllImages(List<MultipartFile> optionImages) {

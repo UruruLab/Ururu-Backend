@@ -15,14 +15,6 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-    // 판매자의 모든 상품 조회 (삭제되지 않은 것만)
-    // TODO: 판매자 연관관계 추가 후 수정 필요
-    // List<Product> findBySellerIdAndStatusNot(Long sellerId, Status status);
-
-    // 판매자의 활성화된 상품만 조회 (공동구매 등록용)
-    // TODO: 판매자 연관관계 추가 후 수정 필요
-    // List<Product> findBySellerIdAndStatus(Long sellerId, Status status);
-
     /**
      * 특정 판매자의 상품 목록 조회 (페이징)
      */
@@ -33,9 +25,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             Pageable pageable
     );
 
-
-    // 임시: 상품 상태별 조회 (판매자 연관관계 추가 전까지 사용)
-    Page<Product> findByStatusNot(Status status, Pageable pageable);
 
     // 상품 ID와 상태로 조회
     Optional<Product> findByIdAndStatus(Long id, Status status);

@@ -27,6 +27,7 @@ import com.ururulab.ururu.payment.domain.entity.Payment;
 import com.ururulab.ururu.payment.domain.entity.enumerated.PaymentStatus;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
+import com.ururulab.ururu.payment.infrastructure.TossPaymentClient;
 import com.ururulab.ururu.product.domain.entity.Product;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,13 +41,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.RestClient;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -82,7 +81,7 @@ class PaymentServiceTest {
     private CartRepository cartRepository;
 
     @Mock
-    private RestClient restClient;
+    private TossPaymentClient tossPaymentClient;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -94,12 +93,6 @@ class PaymentServiceTest {
     private static final Integer PAYMENT_AMOUNT = 10000;
     private static final Integer USE_POINTS = 5000;
     private static final Integer MEMBER_POINTS = 10000;
-
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(paymentService, "tossSecretKey", "test_secret_key");
-        ReflectionTestUtils.setField(paymentService, "tossBaseUrl", "https://api.tosspayments.com");
-    }
 
     @Nested
     @DisplayName("결제 요청 생성")
@@ -115,7 +108,7 @@ class PaymentServiceTest {
             Payment savedPayment = createPayment(member, order);
 
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(ORDER_ID)).willReturn(Optional.of(order));
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
             given(paymentRepository.save(any(Payment.class))).willReturn(savedPayment);
 
@@ -143,7 +136,9 @@ class PaymentServiceTest {
             // given
             PaymentRequestDto request = createPaymentRequest();
             Payment existingPayment = createPayment(createMember(), createOrder(createMember()));
+            Order order = createOrder(createMember());
 
+            given(orderRepository.findByIdForUpdate(ORDER_ID)).willReturn(Optional.of(order));
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(existingPayment));
 
             // when & then
@@ -152,7 +147,6 @@ class PaymentServiceTest {
                     .extracting(ex -> ((BusinessException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.PAYMENT_ALREADY_EXISTS);
 
-            verify(orderRepository, never()).findById(anyString());
             verify(memberRepository, never()).findById(anyLong());
             verify(paymentRepository, never()).save(any());
         }
@@ -168,7 +162,7 @@ class PaymentServiceTest {
             Order order = createOrder(member);
 
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.of(order));
+            given(orderRepository.findByIdForUpdate(ORDER_ID)).willReturn(Optional.of(order));
             given(memberRepository.findById(MEMBER_ID)).willReturn(Optional.of(member));
 
             // when & then
@@ -186,8 +180,7 @@ class PaymentServiceTest {
             // given
             PaymentRequestDto request = createPaymentRequest();
 
-            given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.empty());
-            given(orderRepository.findById(ORDER_ID)).willReturn(Optional.empty());
+            given(orderRepository.findByIdForUpdate(ORDER_ID)).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() -> paymentService.createPaymentRequest(MEMBER_ID, request))
@@ -221,13 +214,14 @@ class PaymentServiceTest {
             );
 
             given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
-            mockRestClientChain(tossResponse);
+            given(tossPaymentClient.confirm(PAYMENT_KEY, ORDER_ID, PAYMENT_AMOUNT, "payment-confirm-1"))
+                    .willReturn(tossResponse);
             given(memberRepository.decreasePoints(MEMBER_ID, USE_POINTS)).willReturn(1);
             given(groupBuyOptionRepository.decreaseStock(anyLong(), anyInt())).willReturn(1);
             given(cartRepository.findByMemberIdWithCartItems(MEMBER_ID)).willReturn(Optional.empty());
 
             // when
-            PaymentConfirmResponseDto result = paymentService.confirmPayment(paymentId, request);
+            PaymentConfirmResponseDto result = paymentService.confirmPayment(MEMBER_ID, paymentId, request);
 
             // then
             assertThat(result.paymentId()).isEqualTo(paymentId);
@@ -258,12 +252,12 @@ class PaymentServiceTest {
             given(paymentRepository.findById(paymentId)).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request))
+            assertThatThrownBy(() -> paymentService.confirmPayment(MEMBER_ID, paymentId, request))
                     .isInstanceOf(BusinessException.class)
                     .extracting(ex -> ((BusinessException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.PAYMENT_NOT_FOUND);
 
-            verify(restClient, never()).post();
+            verify(tossPaymentClient, never()).confirm(anyString(), anyString(), anyInt(), anyString());
             verify(memberRepository, never()).decreasePoints(anyLong(), anyInt());
         }
 
@@ -285,10 +279,27 @@ class PaymentServiceTest {
 
             // when & then
             // 실제로는 토스 API 호출이 발생할 수 있으므로 해당 예외를 검증
-            assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request))
+            assertThatThrownBy(() -> paymentService.confirmPayment(MEMBER_ID, paymentId, request))
                     .isInstanceOf(BusinessException.class)
                     .extracting(ex -> ((BusinessException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.PAYMENT_NOT_PENDING);
+        }
+
+        @Test
+        @DisplayName("금액 변조는 토스 호출 전에 거부")
+        void confirmPayment_tamperedAmount_failBeforeProviderCall() {
+            Long paymentId = 1L;
+            Member member = createMember();
+            Payment payment = createPayment(member, createOrder(member));
+            given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
+
+            assertThatThrownBy(() -> paymentService.confirmPayment(
+                    MEMBER_ID, paymentId, new PaymentConfirmRequestDto(PAYMENT_KEY, PAYMENT_AMOUNT + 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.PAYMENT_APPROVAL_FAILED);
+
+            verify(tossPaymentClient, never()).confirm(anyString(), anyString(), anyInt(), anyString());
         }
     }
 
@@ -311,7 +322,7 @@ class PaymentServiceTest {
             given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
 
             // when
-            PaymentFailResponseDto result = paymentService.handlePaymentFail(ORDER_ID, code, message);
+            PaymentFailResponseDto result = paymentService.handlePaymentFail(MEMBER_ID, ORDER_ID, code, message);
 
             // then
             assertThat(result.errorCode()).isEqualTo(code);
@@ -330,23 +341,6 @@ class PaymentServiceTest {
     class HandleTossWebhookTest {
 
         @Test
-        @DisplayName("서명 누락 실패")
-        void handleTossWebhookWithValidation_missingSignature_fail() throws Exception {
-            // given
-            String rawBody = "{\"eventType\":\"PAYMENT_STATUS_CHANGED\"}";
-            HttpServletRequest request = mock(HttpServletRequest.class);
-            given(request.getInputStream()).willReturn(new MockServletInputStream(rawBody));
-
-            // when & then
-            assertThatThrownBy(() -> paymentService.handleTossWebhookWithValidation(request, null))
-                    .isInstanceOf(BusinessException.class)
-                    .extracting(ex -> ((BusinessException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.INVALID_SIGNATURE);
-
-            verify(objectMapper, never()).readValue(anyString(), eq(Object.class));
-        }
-
-        @Test
         @DisplayName("빈 본문 실패")
         void handleTossWebhookWithValidation_emptyBody_fail() throws Exception {
             // given
@@ -354,7 +348,7 @@ class PaymentServiceTest {
             given(request.getInputStream()).willReturn(new MockServletInputStream(""));
 
             // when & then
-            assertThatThrownBy(() -> paymentService.handleTossWebhookWithValidation(request, "signature"))
+            assertThatThrownBy(() -> paymentService.handleTossWebhookWithValidation(request))
                     .isInstanceOf(BusinessException.class)
                     .extracting(ex -> ((BusinessException) ex).getErrorCode())
                     .isEqualTo(ErrorCode.INVALID_JSON);
@@ -423,19 +417,6 @@ class PaymentServiceTest {
         Payment payment = Payment.create(member, order, TOTAL_AMOUNT, PAYMENT_AMOUNT, USE_POINTS);
         ReflectionTestUtils.setField(payment, "id", 1L);
         return payment;
-    }
-
-    private void mockRestClientChain(TossPaymentResponseDto tossResponse) {
-        RestClient.RequestBodyUriSpec uriSpec = mock(RestClient.RequestBodyUriSpec.class);
-        RestClient.RequestBodySpec bodySpec = mock(RestClient.RequestBodySpec.class);
-        RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
-
-        given(restClient.post()).willReturn(uriSpec);
-        given(uriSpec.uri(anyString())).willReturn(bodySpec);
-        given(bodySpec.header(anyString(), anyString())).willReturn(bodySpec);
-        given(bodySpec.body(any(Map.class))).willReturn(bodySpec);
-        given(bodySpec.retrieve()).willReturn(responseSpec);
-        given(responseSpec.body(TossPaymentResponseDto.class)).willReturn(tossResponse);
     }
 
     private static class MockServletInputStream extends ServletInputStream {

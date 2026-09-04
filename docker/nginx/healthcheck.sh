@@ -13,10 +13,10 @@ if [ -z "$PORT" ]; then
   exit 1
 fi
 
-echo "[INFO] Health check 시작 (http://localhost:$PORT/health)"
+echo "[INFO] Health check 시작 (http://localhost:$PORT/actuator/health)"
 
 for i in $(seq 1 $RETRIES); do
-  STATUS=$(curl -s --connect-timeout 2 --max-time 3 -o /dev/null -w "%{http_code}" http://localhost:$PORT/health)
+  STATUS=$(curl -s --connect-timeout 2 --max-time 3 -o /dev/null -w "%{http_code}" http://localhost:$PORT/actuator/health)
   if [ "$STATUS" == "200" ]; then
     echo "[SUCCESS] Health check 성공 (포트: $PORT)"
     exit 0

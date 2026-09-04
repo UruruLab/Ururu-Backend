@@ -50,7 +50,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             "  SELECT 1 FROM RefundItem ri " +
             "  JOIN ri.refund r " +
             "  WHERE ri.orderItem.id = oi.id " +
-            "  AND r.status IN ('APPROVED', 'COMPLETED', 'FAILED')" +
+            "  AND r.status IN ('INITIATED', 'APPROVED', 'COMPLETED')" +
             ")")
     List<OrderItem> findRefundableItemsByOrderId(@Param("orderId") String orderId);
 }

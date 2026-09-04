@@ -5,12 +5,19 @@ import com.ururulab.ururu.order.domain.entity.enumerated.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 public interface OrderRepository extends JpaRepository<Order, String>, OrderRepositoryCustom {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Order o WHERE o.id = :orderId")
+    Optional<Order> findByIdForUpdate(@Param("orderId") String orderId);
 
     /**
      * 특정 회원의 PENDING 상태 주문들 조회

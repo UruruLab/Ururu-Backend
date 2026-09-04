@@ -31,15 +31,10 @@
     import jakarta.servlet.http.HttpServletRequest;
     import lombok.RequiredArgsConstructor;
     import lombok.extern.slf4j.Slf4j;
-    import org.apache.commons.io.IOUtils;
-    import org.springframework.beans.factory.annotation.Value;
+    import com.ururulab.ururu.payment.infrastructure.TossPaymentClient;
     import org.springframework.context.ApplicationEventPublisher;
     import org.springframework.stereotype.Service;
     import org.springframework.transaction.annotation.Transactional;
-    import org.springframework.web.client.RestClient;
-
-    import javax.crypto.Mac;
-    import javax.crypto.spec.SecretKeySpec;
     import java.nio.charset.StandardCharsets;
     import java.time.Instant;
     import java.time.ZonedDateTime;
@@ -63,15 +58,9 @@
         private final StockReservationService stockReservationService;
         private final GroupBuyOptionRepository groupBuyOptionRepository;
         private final CartRepository cartRepository;
-        private final RestClient restClient;
+        private final TossPaymentClient tossPaymentClient;
         private final ObjectMapper objectMapper;
         private final ApplicationEventPublisher eventPublisher;
-
-        @Value("${toss.payments.secret-key}")
-        private String tossSecretKey;
-
-        @Value("${toss.payments.base-url}")
-        private String tossBaseUrl;
 
         /**
          * 결제 요청 생성
@@ -82,9 +71,9 @@
          */
         @Transactional
         public PaymentResponseDto createPaymentRequest(Long memberId, PaymentRequestDto request) {
+            Order order = orderRepository.findByIdForUpdate(request.orderId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
             validateDuplicatePayment(request.orderId());
-
-            Order order = findOrderById(request.orderId());
             validateOrderForPayment(order, memberId);
 
             Member member = findMemberById(memberId);
@@ -118,7 +107,7 @@
          */
         public void handlePaymentSuccess(final String paymentKey, final String orderId, @SuppressWarnings("unused") final Integer amount) {
             // 단순히 성공 안내만 함, 실제 처리는 결제 승인에서
-            log.debug("결제 성공 리다이렉트 처리 - paymentKey: {}, orderId: {}", paymentKey, orderId);
+            log.debug("결제 성공 리다이렉트 처리 - orderId: {}", orderId);
         }
 
         /**
@@ -130,17 +119,15 @@
          * @return 실패 정보
          */
         @Transactional
-        public PaymentFailResponseDto handlePaymentFail(String orderId, String code, String message) {
+        public PaymentFailResponseDto handlePaymentFail(Long memberId, String orderId, String code, String message) {
             Order order = findOrderById(orderId);
+            validateOrderOwnership(order, memberId);
             Payment payment = findPaymentByOrderId(orderId);
 
             order.changeStatus(OrderStatus.CANCELLED, "결제 실패로 인한 주문 취소");
             payment.markAsFailed();
 
-            order.getOrderItems().forEach(item -> {
-                Long optionId = item.getGroupBuyOption().getId();
-                stockReservationService.releaseReservation(optionId, order.getMember().getId());
-            });
+            releaseReservationsAfterCommit(payment);
 
             return new PaymentFailResponseDto(code, message, orderId);
         }
@@ -156,23 +143,32 @@
          * @return 승인 결과
          */
         @Transactional
-        public PaymentConfirmResponseDto confirmPayment(Long paymentId, PaymentConfirmRequestDto request) {
+        public PaymentConfirmResponseDto confirmPayment(Long memberId, Long paymentId, PaymentConfirmRequestDto request) {
             Payment payment = findPaymentById(paymentId);
+
+            validateOrderOwnership(payment.getOrder(), memberId);
 
             if (!payment.isPending()) {
                 throw new BusinessException(ErrorCode.PAYMENT_NOT_PENDING);
             }
 
-            TossPaymentResponseDto tossResponse = callTossPaymentConfirmApi(
+            if (!payment.getAmount().equals(request.amount())) {
+                throw new BusinessException(ErrorCode.PAYMENT_APPROVAL_FAILED);
+            }
+
+            TossPaymentResponseDto tossResponse = tossPaymentClient.confirm(
                     request.paymentKey(),
                     payment.getOrder().getId(),
-                    request.amount()
+                    payment.getAmount(),
+                    "payment-confirm-" + paymentId
             );
+
+            validateTossPayment(tossResponse, request.paymentKey(), payment);
 
             PayMethod payMethod = PayMethod.from(tossResponse.method(), tossResponse.easyPayProvider());
             Instant approvedAt = ZonedDateTime.parse(tossResponse.approvedAt()).toInstant();
 
-            payment.updatePaymentInfo(request.paymentKey(), payMethod, request.amount());
+            payment.updatePaymentInfo(request.paymentKey(), payMethod, payment.getAmount());
             payment.markAsPaid(approvedAt);
             payment.getOrder().changeStatus(OrderStatus.ORDERED, "결제 승인 완료");
 
@@ -185,29 +181,14 @@
          * 토스 웹훅 검증 및 처리 (컨트롤러에서 호출)
          *
          * @param request HTTP 요청 (Raw body 읽기용)
-         * @param signature Toss-Signature 헤더값
          */
-        public void handleTossWebhookWithValidation(HttpServletRequest request, String signature) {
+        @Transactional
+        public void handleTossWebhookWithValidation(HttpServletRequest request) {
             try {
-                String rawBody = IOUtils.toString(request.getInputStream(), StandardCharsets.UTF_8);
+                String rawBody = new String(request.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
                 if (rawBody == null || rawBody.trim().isEmpty()) {
                     throw new BusinessException(ErrorCode.INVALID_JSON, "웹훅 본문이 비어있습니다");
-                }
-
-                if (signature == null || signature.trim().isEmpty()) {
-                    throw new BusinessException(ErrorCode.INVALID_SIGNATURE);
-                }
-
-                Mac hmac = Mac.getInstance("HmacSHA256");
-                SecretKeySpec secretKey = new SecretKeySpec(tossSecretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-                hmac.init(secretKey);
-
-                byte[] hash = hmac.doFinal(rawBody.getBytes(StandardCharsets.UTF_8));
-                String expectedSignature = Base64.getEncoder().encodeToString(hash);
-
-                if (!expectedSignature.equals(signature.trim())) {
-                    throw new BusinessException(ErrorCode.INVALID_SIGNATURE);
                 }
 
                 TossWebhookDto webhook = objectMapper.readValue(rawBody, TossWebhookDto.class);
@@ -232,16 +213,27 @@
                 return;
             }
 
-            Payment payment = paymentRepository.findByPaymentKeyWithDetails(webhook.data().paymentKey())
-                    .orElse(null);
+            if (webhook.data() == null || webhook.data().paymentKey() == null) {
+                throw new BusinessException(ErrorCode.INVALID_JSON);
+            }
+
+            TossPaymentResponseDto tossPayment = tossPaymentClient.getPayment(webhook.data().paymentKey());
+            if (tossPayment == null || tossPayment.orderId() == null) {
+                throw new BusinessException(ErrorCode.WEBHOOK_PROCESSING_FAILED);
+            }
+
+            Payment payment = paymentRepository.findByOrderId(tossPayment.orderId()).orElse(null);
 
             if (payment == null || payment.isPaid()) {
                 return;
             }
 
-            if (DONE.equals(webhook.data().status())) {
-                Instant now = Instant.now();
-                payment.markAsPaid(now);
+            if (DONE.equals(tossPayment.status())) {
+                validateTossPayment(tossPayment, webhook.data().paymentKey(), payment);
+                PayMethod payMethod = PayMethod.from(tossPayment.method(), tossPayment.easyPayProvider());
+                Instant approvedAt = ZonedDateTime.parse(tossPayment.approvedAt()).toInstant();
+                payment.updatePaymentInfo(tossPayment.paymentKey(), payMethod, payment.getAmount());
+                payment.markAsPaid(approvedAt);
                 payment.getOrder().changeStatus(OrderStatus.ORDERED, "웹훅을 통한 결제 상태 동기화");
 
                 completePaymentProcessing(payment);
@@ -264,7 +256,7 @@
                 throw new BusinessException(ErrorCode.ACCESS_DENIED);
             }
 
-            log.debug("결제 상태 조회 - paymentKey: {}, status: {}", paymentKey, payment.getStatus());
+            log.debug("결제 상태 조회 - status: {}", payment.getStatus());
 
             return new PaymentConfirmResponseDto(
                     payment.getId(),
@@ -291,8 +283,6 @@
                     throw new BusinessException(ErrorCode.STOCK_INSUFFICIENT);
                 }
 
-                // 예약 해제
-                stockReservationService.releaseReservation(optionId, payment.getMember().getId());
             });
 
             // 포인트 차감
@@ -302,6 +292,8 @@
 
             // 재고 소진 체크 및 이벤트 발행
             handleStockDepletionCheck(payment);
+
+            releaseReservationsAfterCommit(payment);
 
             log.debug("결제 완료 처리 완료 - paymentId: {}, 포인트: {}, 주문아이템: {}개",
                     payment.getId(), payment.getPoint(), payment.getOrder().getOrderItems().size());
@@ -344,27 +336,38 @@
             }
         }
 
-        private TossPaymentResponseDto callTossPaymentConfirmApi(String paymentKey, String orderId, Integer amount) {
-            try {
-                String auth = Base64.getEncoder().encodeToString((tossSecretKey + ":").getBytes());
+        private void validateTossPayment(TossPaymentResponseDto response, String paymentKey, Payment payment) {
+            if (response == null
+                    || !paymentKey.equals(response.paymentKey())
+                    || !payment.getOrder().getId().equals(response.orderId())
+                    || !payment.getAmount().equals(response.totalAmount())
+                    || !DONE.equals(response.status())
+                    || response.approvedAt() == null) {
+                throw new BusinessException(ErrorCode.PAYMENT_APPROVAL_FAILED);
+            }
+        }
 
-                Map<String, Object> requestBody = Map.of(
-                        "paymentKey", paymentKey,
-                        "orderId", orderId,
-                        "amount", amount
-                );
+        private void releaseReservationsAfterCommit(Payment payment) {
+            Runnable release = () -> payment.getOrder().getOrderItems().forEach(item ->
+                    stockReservationService.releaseReservation(
+                            item.getGroupBuyOption().getId(), payment.getMember().getId()));
 
-                return restClient.post()
-                        .uri(tossBaseUrl + "/v1/payments/confirm")
-                        .header("Authorization", "Basic " + auth)
-                        .header("Content-Type", "application/json")
-                        .body(requestBody)
-                        .retrieve()
-                        .body(TossPaymentResponseDto.class);
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                release.run();
+                            }
+                        });
+            } else {
+                release.run();
+            }
+        }
 
-            } catch (Exception e) {
-                log.error("토스 API 호출 실패 - paymentKey: {}, orderId: {}", paymentKey, orderId, e);
-                throw new BusinessException(ErrorCode.TOSS_API_CALL_FAILED);
+        private void validateOrderOwnership(Order order, Long memberId) {
+            if (!order.getMember().getId().equals(memberId)) {
+                throw new BusinessException(ErrorCode.ACCESS_DENIED);
             }
         }
 

@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * HTTP 클라이언트 설정.
@@ -68,13 +67,6 @@ public class HttpClientConfig {
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("Content-Type", "application/json")
                 .build();
-    }
-
-    @Bean
-    public RestTemplate restTemplate(final HttpComponentsClientHttpRequestFactory httpRequestFactory) {
-        final RestTemplate restTemplate = new RestTemplate();
-        restTemplate.setRequestFactory(httpRequestFactory);
-        return restTemplate;
     }
 
     private static final int AI_SERVICE_CONNECTION_TIMEOUT_MILLIS = 10000;

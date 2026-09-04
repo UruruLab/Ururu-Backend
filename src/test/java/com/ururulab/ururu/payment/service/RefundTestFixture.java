@@ -215,6 +215,7 @@ public class RefundTestFixture {
 
         // 간단한 금액 설정: 상품 16000원, 포인트 1000원, 총 17000원
         Payment payment = createPayment(1L, member, order, 17000, 16000, 1000);
+        setFieldValue(payment, "paymentKey", "test-payment-key");
 
         // Order와 Payment의 연결 확실히 하기
         setFieldValue(payment, "order", order);

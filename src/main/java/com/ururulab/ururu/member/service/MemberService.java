@@ -5,6 +5,9 @@ import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.global.util.MaskingUtils;
+import com.ururulab.ururu.image.domain.ImageCategory;
+import com.ururulab.ururu.image.service.ImageService;
+import com.ururulab.ururu.image.validation.ImageValidator;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
@@ -16,10 +19,13 @@ import com.ururulab.ururu.order.domain.repository.CartRepository;
 import com.ururulab.ururu.order.domain.repository.OrderRepository;
 import com.ururulab.ururu.payment.domain.repository.PaymentRepository;
 import com.ururulab.ururu.payment.domain.repository.PointTransactionRepository;
+import com.ururulab.ururu.review.domain.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -40,6 +46,9 @@ public class MemberService {
     private final CartItemRepository cartItemRepository;
     private final PointTransactionRepository pointTransactionRepository;
     private final MemberPreferenceRepository memberPreferenceRepository;
+    private final ReviewRepository reviewRepository;
+    private final ImageService imageService;
+    private final ImageValidator imageValidator;
 
     @Transactional
     public Member findOrCreateMember(final SocialMemberInfo socialMemberInfo) {
@@ -96,9 +105,25 @@ public class MemberService {
         }
 
         final Member member = findActiveMemberById(memberId);
+        imageValidator.validateSingleFileSize(imageFile);
+        imageValidator.validateImage(imageFile);
 
-        // TODO: 이미지 업로드 서비스 구현 후 실제 업로드 처리
-        final String imageUrl = "https://example.com/profile/" + memberId + ".jpg"; // 임시
+        final String previousImageUrl = member.getProfileImage();
+        final String imageUrl = imageService.upload(imageFile, ImageCategory.MEMBERS);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deleteManagedImageSafely(previousImageUrl);
+            }
+
+            @Override
+            public void afterCompletion(int status) {
+                if (status != STATUS_COMMITTED) {
+                    deleteManagedImageSafely(imageUrl);
+                }
+            }
+        });
 
         member.updateProfileImage(imageUrl);
         memberRepository.save(member);
@@ -109,9 +134,16 @@ public class MemberService {
     @Transactional
     public void deleteProfileImage(final Long memberId) {
         final Member member = findActiveMemberById(memberId);
+        final String previousImageUrl = member.getProfileImage();
 
         member.updateProfileImage(null);
         memberRepository.save(member);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deleteManagedImageSafely(previousImageUrl);
+            }
+        });
     }
 
     @Transactional(readOnly = true)
@@ -258,11 +290,7 @@ public class MemberService {
     }
 
     private WithdrawalPreviewResponse.LossInfo calculateLossInfo(final Long memberId, final Member member) {
-        // TODO: 실제 Repository들이 구현되면 아래 주석을 해제하고 실제 데이터 조회
-
-
-        // int reviewCount = reviewRepository.countByMemberIdAndIsDeleteFalse(memberId);
-        int reviewCount = 0; // 임시
+        int reviewCount = reviewRepository.countByMemberIdAndIsDeleteFalse(memberId);
 
         int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
         boolean beautyProfileExists = beautyProfileRepository.existsByMemberId(memberId);
@@ -281,5 +309,16 @@ public class MemberService {
                 cartItemsCount,
                 pointTransactionsCount
         );
+    }
+
+    private void deleteManagedImageSafely(String imageUrl) {
+        if (imageUrl == null || !imageUrl.contains("/" + ImageCategory.MEMBERS.getPath() + "/")) {
+            return;
+        }
+        try {
+            imageService.deleteImage(imageUrl);
+        } catch (RuntimeException e) {
+            log.warn("프로필 이미지 정리 실패: {}", imageUrl, e);
+        }
     }
 }

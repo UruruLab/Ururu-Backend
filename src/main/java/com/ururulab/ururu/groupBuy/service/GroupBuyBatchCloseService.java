@@ -87,33 +87,20 @@ public class GroupBuyBatchCloseService {
             GroupBuy groupBuy = groupBuys.get(i);
             GroupBuyStatistics statistics = statisticsList.get(i);
 
-            try {
-                // 상태를 CLOSED로 변경
-                groupBuy.updateStatus(GroupBuyStatus.CLOSED);
+            groupBuy.updateStatus(GroupBuyStatus.CLOSED);
 
-                // 연관된 상품을 INACTIVE로 변경
-                Product product = groupBuy.getProduct();
-                if (product.getStatus() == Status.ACTIVE) {
-                    product.updateStatus(Status.INACTIVE);
-                    log.info("Product {} deactivated after GroupBuy deletion", product.getId());
-                }
-
-                // 최종 할인율이 있으면 최종 판매가 업데이트
-                if (statistics.getFinalDiscountRate() > 0) {
-                    groupBuyPriceService.updateFinalSalePrices(
-                            groupBuy,
-                            statistics.getFinalDiscountRate()
-                    );
-                }
-
-                log.debug("Updated group buy {}: status=CLOSED, discount={}%, status={}",
-                        groupBuy.getId(), statistics.getFinalDiscountRate(),
-                        statistics.getFinalStatus());
-
-            } catch (Exception e) {
-                log.error("Failed to update group buy {}", groupBuy.getId(), e);
-                // 개별 실패는 전체 배치에 영향주지 않음 (로그만 남기고 계속 진행)
+            Product product = groupBuy.getProduct();
+            if (product.getStatus() == Status.ACTIVE) {
+                product.updateStatus(Status.INACTIVE);
+                log.info("Product {} deactivated after GroupBuy closure", product.getId());
             }
+
+            if (statistics.getFinalDiscountRate() > 0) {
+                groupBuyPriceService.updateFinalSalePrices(groupBuy, statistics.getFinalDiscountRate());
+            }
+
+            log.debug("Updated group buy {}: status=CLOSED, discount={}%, status={}",
+                    groupBuy.getId(), statistics.getFinalDiscountRate(), statistics.getFinalStatus());
         }
 
         // 변경된 GroupBuy들을 일괄 저장

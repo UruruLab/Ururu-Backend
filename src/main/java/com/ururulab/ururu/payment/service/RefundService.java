@@ -24,6 +24,7 @@ import com.ururulab.ururu.payment.dto.request.RefundProcessRequestDto;
 import com.ururulab.ururu.payment.dto.request.RefundRequestDto;
 import com.ururulab.ururu.payment.dto.response.RefundCreateResponseDto;
 import com.ururulab.ururu.payment.dto.response.RefundProcessResponseDto;
+import com.ururulab.ururu.payment.infrastructure.TossPaymentClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ public class RefundService {
     private final MemberRepository memberRepository;
     private final GroupBuyOptionRepository groupBuyOptionRepository;
     private final PointTransactionRepository pointTransactionRepository;
+    private final TossPaymentClient tossPaymentClient;
 
     /**
      * 수동 환불 요청을 생성합니다.
@@ -76,13 +78,13 @@ public class RefundService {
         boolean autoApprove = validateRefundPeriod(order, refundType);
 
         Payment payment = findPaymentByOrderId(orderId);
-        Integer itemAmount = calculateItemAmount(refundableItems);
+        Integer cashAmount = calculateRemainingAmount(payment, orderId);
         Integer pointAmount = calculateRemainingPoint(payment, orderId);
 
         RefundStatus refundStatus = autoApprove ? RefundStatus.APPROVED : RefundStatus.INITIATED;
 
         Refund refund = Refund.create(payment, refundType, request.reason(),
-                itemAmount, pointAmount, request.returnTrackingNumber(), refundStatus);
+                cashAmount, pointAmount, request.returnTrackingNumber(), refundStatus);
 
         refundableItems.forEach(orderItem -> {
             RefundItem refundItem = RefundItem.create(orderItem);
@@ -102,7 +104,7 @@ public class RefundService {
                 savedRefund.getId(),
                 savedRefund.getStatus(),
                 savedRefund.getType(),
-                itemAmount + pointAmount
+                cashAmount + pointAmount
         );
     }
 
@@ -146,9 +148,9 @@ public class RefundService {
     private RefundProcessResponseDto processRefundApproval(Refund refund) {
         log.debug("환불 승인 처리 시작 - 환불ID: {}", refund.getId());
 
+        requestPgRefund(refund);
         restorePointsToCustomer(refund);
         restoreStockToInventory(refund);
-        requestPgRefund(refund);
         updateOrderAndPaymentStatus(refund);
 
         log.debug("환불 승인 처리 완료 - 환불ID: {}", refund.getId());
@@ -220,10 +222,9 @@ public class RefundService {
 
             int updatedRows = groupBuyOptionRepository.increaseStock(optionId, quantity);
             if (updatedRows == 0) {
-                log.warn("재고 복구 실패 - 옵션ID: {}, 수량: {}", optionId, quantity);
-            } else {
-                log.debug("재고 복구 완료 - 옵션ID: {}, 복구 수량: {}개", optionId, quantity);
+                throw new BusinessException(ErrorCode.GROUPBUY_OPTION_NOT_FOUND, optionId);
             }
+            log.debug("재고 복구 완료 - 옵션ID: {}, 복구 수량: {}개", optionId, quantity);
         });
     }
 
@@ -237,6 +238,7 @@ public class RefundService {
         Payment payment = refund.getPayment();
         Order order = payment.getOrder();
 
+        payment.markAsRefunded(Instant.now());
         order.changeStatus(OrderStatus.REFUNDED, "수동 환불 완료");
         refund.markAsCompleted(Instant.now());
 
@@ -251,14 +253,16 @@ public class RefundService {
      * @param refund PG 환불 요청 대상 환불 엔티티
      */
     private void requestPgRefund(Refund refund) {
-        try {
-            // TODO: PaymentService의 PG 환불 메서드 호출 구현 예정
-            // paymentService.requestRefundToToss(refund);
-            log.debug("PG 환불 요청 완료 - 환불ID: {}", refund.getId());
-        } catch (Exception e) {
-            log.error("PG 환불 요청 실패 - 환불ID: {}", refund.getId(), e);
-            refund.markAsFailed();
+        Payment payment = refund.getPayment();
+        if (refund.getAmount() > 0) {
+            tossPaymentClient.cancel(
+                    payment.getPaymentKey(),
+                    refund.getReason(),
+                    refund.getAmount(),
+                    "payment-refund-" + payment.getId() + "-" + refund.getAmount() + "-" + refund.getPoint()
+            );
         }
+        log.debug("PG 환불 요청 완료 - 환불ID: {}", refund.getId());
     }
 
     /**
@@ -291,12 +295,6 @@ public class RefundService {
      * @param refundableItems 환불 대상 주문 아이템 목록
      * @return 총 상품 금액
      */
-    private Integer calculateItemAmount(List<OrderItem> refundableItems) {
-        return refundableItems.stream()
-                .mapToInt(item -> item.getGroupBuyOption().getSalePrice() * item.getQuantity())
-                .sum();
-    }
-
     /**
      * 환불 가능한 남은 포인트를 계산합니다.
      * 전체 사용 포인트에서 이미 다른 환불로 복구된 포인트를 제외합니다.
@@ -316,6 +314,15 @@ public class RefundService {
                 .sum();
 
         return totalUsedPoint - alreadyRefundedPoint;
+    }
+
+    private Integer calculateRemainingAmount(Payment payment, String orderId) {
+        int alreadyRefundedAmount = refundRepository.findByOrderId(orderId).stream()
+                .filter(refund -> refund.getStatus() == RefundStatus.APPROVED
+                        || refund.getStatus() == RefundStatus.COMPLETED)
+                .mapToInt(Refund::getAmount)
+                .sum();
+        return payment.getAmount() - alreadyRefundedAmount;
     }
 
     /**
@@ -413,8 +420,8 @@ public class RefundService {
      * @throws BusinessException 처리 권한이 없는 경우
      */
     private void validateSellerAuthority(Refund refund, Long sellerId) {
-        boolean hasAuthority = refund.getRefundItems().stream()
-                .anyMatch(refundItem -> {
+        boolean hasAuthority = !refund.getRefundItems().isEmpty() && refund.getRefundItems().stream()
+                .allMatch(refundItem -> {
                     Long refundSellerId = refundItem.getOrderItem()
                             .getGroupBuyOption()
                             .getGroupBuy()

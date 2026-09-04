@@ -72,7 +72,7 @@ class GroupBuyRecommendationServiceMockTest {
 
         given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
-        given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(true);
+        given(cacheService.tryAcquireProcessingLock(memberId)).willReturn("lock-token");
         given(aiRecommendationService.getRecommendations(memberId, request)).willReturn(mockRecommendations);
 
         // When
@@ -83,7 +83,7 @@ class GroupBuyRecommendationServiceMockTest {
         assertThat(result.recommendedGroupBuys()).hasSize(2);
         assertThat(result.cacheSource()).isEqualTo("AI_SERVICE");
         then(cacheService).should().cacheRecommendation(any(), any());
-        then(cacheService).should().releaseProcessingLock(memberId);
+        then(cacheService).should().releaseProcessingLock(memberId, "lock-token");
     }
 
     @Test
@@ -95,7 +95,7 @@ class GroupBuyRecommendationServiceMockTest {
 
         given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
-        given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(false);
+        given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(null);
 
         // When & Then
         assertThatThrownBy(() -> recommendationService.getRecommendations(memberId, request))
@@ -115,7 +115,7 @@ class GroupBuyRecommendationServiceMockTest {
 
         given(requestProcessor.applyDefaults(request)).willReturn(request);
         given(cacheService.getCachedRecommendation(memberId)).willReturn(null);
-        given(cacheService.tryAcquireProcessingLock(memberId)).willReturn(true);
+        given(cacheService.tryAcquireProcessingLock(memberId)).willReturn("lock-token");
         given(aiRecommendationService.getRecommendations(memberId, request)).willReturn(List.of());
 
         // When & Then
@@ -124,7 +124,7 @@ class GroupBuyRecommendationServiceMockTest {
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.AI_NO_RECOMMENDATIONS_FOUND);
 
-        then(cacheService).should().releaseProcessingLock(memberId);
+        then(cacheService).should().releaseProcessingLock(memberId, "lock-token");
     }
 
     private GroupBuyRecommendationRequest createMockRequest() {

@@ -16,12 +16,15 @@ import lombok.Getter;
 public final class ApiResponseFormat<T> {
 
     private final boolean success;   // 요청 성공 여부
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final String code;       // 실패 응답의 안정적인 식별자
     private final String message;    // 응답 메시지
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final T data;            // 실제 응답 데이터 (null 가능)
 
-    private ApiResponseFormat(final boolean success, final String message, final T data) {
+    private ApiResponseFormat(final boolean success, final String code, final String message, final T data) {
         this.success = success;
+        this.code = code;
         this.message = message;
         this.data = data;
     }
@@ -35,7 +38,7 @@ public final class ApiResponseFormat<T> {
      * @return 성공 응답
      */
     public static <T> ApiResponseFormat<T> success(final String message, final T data) {
-        return new ApiResponseFormat<>(true, message, data);
+        return new ApiResponseFormat<>(true, null, message, data);
     }
 
     /**
@@ -46,7 +49,7 @@ public final class ApiResponseFormat<T> {
      * @return 데이터가 없는 성공 응답
      */
     public static <T> ApiResponseFormat<T> success(final String message) {
-        return new ApiResponseFormat<>(true, message, null);
+        return new ApiResponseFormat<>(true, null, message, null);
     }
 
     /**
@@ -56,7 +59,7 @@ public final class ApiResponseFormat<T> {
      * @return ErrorCode 기반 실패 응답
      */
     public static ApiResponseFormat<Void> fail(final ErrorCode errorCode) {
-        return new ApiResponseFormat<>(false, errorCode.getMessage(), null);
+        return new ApiResponseFormat<>(false, errorCode.getCode(), errorCode.getMessage(), null);
     }
 
     /**
@@ -67,7 +70,7 @@ public final class ApiResponseFormat<T> {
      * @return 코드와 메시지 기반 실패 응답
      */
     public static ApiResponseFormat<Void> fail(final String code, final String message) {
-        return new ApiResponseFormat<>(false, message, null);
+        return new ApiResponseFormat<>(false, code, message, null);
     }
 
     /**
@@ -78,6 +81,6 @@ public final class ApiResponseFormat<T> {
      * @return 실패 응답
      */
     public static <T> ApiResponseFormat<T> fail(final String message) {
-        return new ApiResponseFormat<>(false, message, null);
+        return new ApiResponseFormat<>(false, null, message, null);
     }
 }

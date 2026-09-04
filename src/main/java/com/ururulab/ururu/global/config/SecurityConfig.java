@@ -111,7 +111,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                     ).permitAll();
                     auth.requestMatchers("/oauth2/authorization/**").permitAll();
                     auth.requestMatchers("/api/sellers/signup", "/api/sellers/check/**").permitAll();
-                    auth.requestMatchers("/health", "/actuator/health").permitAll();
+                    auth.requestMatchers("/actuator/health").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/payments/webhooks/toss").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/ai/groupbuy-recommendations/health").permitAll();
                     auth.requestMatchers(

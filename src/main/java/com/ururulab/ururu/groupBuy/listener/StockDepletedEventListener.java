@@ -4,9 +4,10 @@ import com.ururulab.ururu.groupBuy.event.StockDepletedEvent;
 import com.ururulab.ururu.groupBuy.service.GroupBuyRealtimeCloseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -20,7 +21,7 @@ public class StockDepletedEventListener {
      *
      * @param event 재고 소진 이벤트
      */
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async("stockCheckExecutor")
     public void handleStockDepleted(StockDepletedEvent event) {
         if (!event.hasGroupBuysToProcess()) {

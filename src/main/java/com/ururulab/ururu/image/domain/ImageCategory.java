@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum ImageCategory {
 
 	PRODUCTS("products"),
+	MEMBERS("members"),
 	REVIEWS("reviews"),
 	GROUPBUY_THUMBNAIL("groupbuy/thumbnail"),
 	GROUPBUY_DETAIL("groupbuy/detail");
