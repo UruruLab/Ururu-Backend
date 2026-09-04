@@ -26,10 +26,7 @@ public class AiServiceClient {
 
     private final RestClient aiServiceRestClient;
 
-    @Value("${ai.service.retry-count:3}")
-    private int retryCount;
-
-    @Value("${ai.service.max-recommendations:50}")
+    @Value("${ai.service.max-recommendations}")
     private int maxRecommendations;
 
     public AiServiceClient(@Qualifier("aiServiceRestClient") final RestClient aiServiceRestClient) {
@@ -161,7 +158,7 @@ public class AiServiceClient {
      */
     @Retryable(
             retryFor = {RestClientException.class},
-            maxAttempts = 3,
+            maxAttemptsExpression = "${ai.service.retry-count}",
             backoff = @Backoff(delay = 500)
     )
     public Map<String, Object> testSpringNotification(final Long memberId) {

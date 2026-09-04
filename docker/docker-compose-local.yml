@@ -1,0 +1,76 @@
+name: ururu-backend
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: ururu-mysql
+    environment:
+      MYSQL_DATABASE: ururu
+      MYSQL_USER: ururu
+      MYSQL_PASSWORD: ururu-local
+      MYSQL_ROOT_PASSWORD: root-local
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot-local --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ururu-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ururu-local
+      MINIO_ROOT_PASSWORD: ururu-local-secret
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ururu-local ururu-local-secret;
+      mc mb --ignore-existing local/ururu-local;
+      mc anonymous set download local/ururu-local;
+      "
+    restart: "no"
+
+volumes:
+  mysql-data:
+  redis-data:
+  minio-data:

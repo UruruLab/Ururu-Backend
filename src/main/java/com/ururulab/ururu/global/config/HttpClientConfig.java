@@ -86,22 +86,25 @@ public class HttpClientConfig {
         return restTemplate;
     }
 
-    private static final int AI_SERVICE_READ_TIMEOUT_MILLIS = 45000;
     private static final int AI_SERVICE_CONNECTION_TIMEOUT_MILLIS = 10000;
 
     @Bean("aiServiceConnectionManager")
-    public PoolingHttpClientConnectionManager aiServiceConnectionManager() {
+    public PoolingHttpClientConnectionManager aiServiceConnectionManager(
+            @Value("${ai.service.max-connections}") final int maxConnections
+    ) {
         final PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-        connectionManager.setMaxTotal(MAX_TOTAL_CONNECTIONS);
-        connectionManager.setDefaultMaxPerRoute(MAX_CONNECTIONS_PER_ROUTE);
+        connectionManager.setMaxTotal(maxConnections);
+        connectionManager.setDefaultMaxPerRoute(maxConnections);
         return connectionManager;
     }
 
     @Bean("aiServiceRequestConfig")
-    public RequestConfig aiServiceRequestConfig() {
+    public RequestConfig aiServiceRequestConfig(
+            @Value("${ai.service.timeout}") final int timeout
+    ) {
         return RequestConfig.custom()
                 .setConnectionRequestTimeout(Timeout.ofMilliseconds(AI_SERVICE_CONNECTION_TIMEOUT_MILLIS))
-                .setResponseTimeout(Timeout.ofMilliseconds(AI_SERVICE_READ_TIMEOUT_MILLIS))
+                .setResponseTimeout(Timeout.ofMilliseconds(timeout))
                 .build();
     }
 
@@ -127,7 +130,7 @@ public class HttpClientConfig {
 
     @Bean("aiServiceRestClient")
     public RestClient aiServiceRestClient(
-            @Value("${ai.service.url:http://localhost:8000}") final String aiServiceUrl,
+            @Value("${ai.service.url}") final String aiServiceUrl,
             @Qualifier("aiServiceHttpRequestFactory") final HttpComponentsClientHttpRequestFactory httpRequestFactory
     ) {
         return RestClient.builder()

@@ -1,0 +1,75 @@
+spring:
+  profiles:
+    default: local
+  application:
+    name: ururu
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      port: 6379
+  cache:
+    type: redis
+    cache-names:
+      - realtimeBest
+      - categoryPopular
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 40MB
+
+cloud:
+  aws:
+    region: ap-northeast-2
+
+jwt:
+  access-token-expiry: 900
+  refresh-token-expiry: 1209600
+
+app:
+  cors:
+    enabled: true
+  ai:
+    recommendation:
+      default-use-price-filter: true
+
+oauth2:
+  kakao:
+    authorization-uri: https://kauth.kakao.com/oauth/authorize
+    token-uri: https://kauth.kakao.com/oauth/token
+    member-info-uri: https://kapi.kakao.com/v2/user/me
+    scope: profile_nickname,profile_image,account_email
+  google:
+    authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    member-info-uri: https://www.googleapis.com/oauth2/v2/userinfo
+    scope: openid email profile
+
+toss:
+  payments:
+    base-url: https://api.tosspayments.com
+
+management:
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ururu-backend
+      environment: ${spring.profiles.active:${spring.profiles.default}}
+
+logging:
+  level:
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    com.ururulab.ururu: INFO
+
+server:
+  port: 8080
+  shutdown: graceful

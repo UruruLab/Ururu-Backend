@@ -12,7 +12,7 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("dev")
+@ActiveProfiles("test")
 @DisplayName("Redis Integration Test")
 class RedisIntegrationTest {
 

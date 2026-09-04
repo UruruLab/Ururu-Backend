@@ -1,10 +1,4 @@
 spring:
-  h2:
-    console:
-      enabled: true
-      settings:
-        web-allow-others: true
-      path: /h2-console
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb
@@ -25,6 +19,19 @@ spring:
   sql:
     init:
       mode: always
+
+cloud:
+  aws:
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    s3:
+      bucket: test-bucket
+
+jwt:
+  secret: test-only-jwt-secret-key-that-is-long-enough-for-hmac-signing
+  issuer: ururu-backend-test
+  audience: ururu-test-client
 
 # AI 서비스 테스트 설정 (비활성화)
 ai:
@@ -73,5 +80,4 @@ oauth2:
 toss:
   payments:
     secret-key: test-secret-key
-    client-key: test-client-key
     base-url: https://api.tosspayments.com

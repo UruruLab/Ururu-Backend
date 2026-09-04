@@ -86,6 +86,7 @@ public enum ErrorCode {
 	TOKEN_BLACKLIST_OPERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AUTH015", "토큰 블랙리스트 작업에 실패했습니다."),
 	INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUTH016", "유효하지 않은 OAuth state입니다."),
 	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "AUTH017", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
+	SOCIAL_LOGIN_NOT_CONFIGURED(HttpStatus.SERVICE_UNAVAILABLE, "AUTH018", "소셜 로그인 설정이 완료되지 않았습니다."),
 
 	// --- 상품 ---
 	PRODUCT_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT001", "존재하지 않는 상품 옵션입니다"),

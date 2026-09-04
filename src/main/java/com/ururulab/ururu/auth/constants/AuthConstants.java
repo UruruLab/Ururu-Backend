@@ -30,13 +30,10 @@ public final class AuthConstants {
     
     // OAuth 관련 상수
     public static final String OAUTH_CODE_KEY_PREFIX = "oauth:code:";
+    public static final String OAUTH_STATE_KEY_PREFIX = "oauth:state:";
     public static final int OAUTH_CODE_TTL_SECONDS = 300; // 5분
-    
-    // 프론트엔드 URL 관련
-    public static final String FRONTEND_BASE_URL_PROD = "https://www.ururu.shop";
-    public static final String FRONTEND_BASE_URL_DEV = "http://localhost:3000";
     
     // 로깅 관련
     public static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
     public static final String MASKED_DATA_PLACEHOLDER = "***";
-} 
+}

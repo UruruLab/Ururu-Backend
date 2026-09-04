@@ -66,26 +66,26 @@ public class GroupBuyRecommendationController {
     }
 
     @Operation(
-            summary = "개발용 AI 추천 테스트 (인증 불필요)",
-            description = "개발 환경에서 AI 추천 기능을 테스트하기 위한 API입니다. 고정된 테스트 회원 ID(1L)를 사용합니다."
+            summary = "로컬 AI 추천 테스트 (인증 불필요)",
+            description = "로컬 환경에서 AI 추천 기능을 테스트하기 위한 API입니다. 고정된 테스트 회원 ID(1L)를 사용합니다."
     )
     @PostMapping("/test")
-    @Profile("dev")
+    @Profile("local")
     public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> testGroupBuyRecommendations(
             @Parameter(description = "공동구매 추천 요청 정보", required = true)
             @Valid @RequestBody final GroupBuyRecommendationRequest request
     ) {
-        final Long testMemberId = 1L; // 개발용 고정 회원 ID
+        final Long testMemberId = 1L; // 로컬 테스트용 고정 회원 ID
         
-        log.info("개발용 공동구매 추천 API 호출 - 테스트 회원ID: {}, 피부타입: {}",
+        log.info("로컬 공동구매 추천 API 호출 - 테스트 회원ID: {}, 피부타입: {}",
                 testMemberId, request.beautyProfile().skinType());
 
         final GroupBuyRecommendationResponse response = recommendationService.getRecommendations(testMemberId, request);
 
-        log.info("개발용 공동구매 추천 API 응답 완료 - 테스트 회원ID: {}, 추천 수: {}",
+        log.info("로컬 공동구매 추천 API 응답 완료 - 테스트 회원ID: {}, 추천 수: {}",
                 testMemberId, response.recommendedGroupBuys().size());
 
-        return ResponseEntity.ok(ApiResponseFormat.success("개발용 공동구매 추천이 완료되었습니다.", response));
+        return ResponseEntity.ok(ApiResponseFormat.success("로컬 공동구매 추천이 완료되었습니다.", response));
     }
 
     @Operation(

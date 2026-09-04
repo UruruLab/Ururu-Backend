@@ -58,7 +58,7 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
 
         try {
             final String requestBody = kakaoOAuthProperties.buildTokenRequestBody(code);
-            log.debug("카카오 토큰 요청 - URI: {}, Body: {}", kakaoOAuthProperties.getTokenUri());
+            log.debug("카카오 토큰 요청 - URI: {}", kakaoOAuthProperties.getTokenUri());
 
             final String response = socialLoginRestClient.post()
                     .uri(kakaoOAuthProperties.getTokenUri())
@@ -67,7 +67,7 @@ public final class KakaoLoginService extends AbstractSocialLoginService implemen
                     .retrieve()
                     .onStatus(status -> !status.is2xxSuccessful(), (req, res) -> {
                         final String errorMsg = String.format("카카오 토큰 요청 실패: %s", res.getStatusCode());
-                        log.error("{} - URI: {}, RequestBody: {}", errorMsg, kakaoOAuthProperties.getTokenUri(), requestBody);
+                        log.error("{} - URI: {}", errorMsg, kakaoOAuthProperties.getTokenUri());
                         throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
                     })
                     .body(String.class);

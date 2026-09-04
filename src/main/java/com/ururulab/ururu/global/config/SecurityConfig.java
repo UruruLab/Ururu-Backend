@@ -29,14 +29,11 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
     /**
-     * 개발 환경용 Security 설정
-     * - 모든 요청 허용 (개발 편의성 우선)
-     * - H2 콘솔 접근 허용
-     * - CSRF 완전 비활성화
+     * 로컬 환경용 Security 설정.
      */
     @Bean
-    @Profile("dev")
-    public SecurityFilterChain devFilterChain(
+    @Profile("local")
+    public SecurityFilterChain localFilterChain(
             final HttpSecurity http,
             @Qualifier("corsConfigurationSource") final CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
@@ -48,9 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/sellers/signup").permitAll()
                         .requestMatchers("/api/sellers/check/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll()  // AI API 전체 인증 제외
-                        .requestMatchers("/health").permitAll()
+                        .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/groupbuys/top3").permitAll()
@@ -58,11 +54,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
-                .headers(headers -> headers
-                        .frameOptions(frameOptions -> frameOptions.disable())
-                        .contentTypeOptions(contentType -> contentType.disable())
-                        .httpStrictTransportSecurity(hstsConfig -> hstsConfig.disable())
-                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )

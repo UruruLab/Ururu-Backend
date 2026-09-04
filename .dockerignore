@@ -1,0 +1,8 @@
+.git/
+.gradle/
+.idea/
+.vscode/
+build/
+config/
+.env
+src/main/resources/application-local.yml

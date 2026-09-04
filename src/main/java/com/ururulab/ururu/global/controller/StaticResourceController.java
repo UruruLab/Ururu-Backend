@@ -6,11 +6,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- * 정적 리소스 라우팅 컨트롤러 (개발 환경 전용).
+ * 정적 리소스 라우팅 컨트롤러 (로컬 환경 전용).
  */
 @Slf4j
 @Controller
-@Profile("dev")
+@Profile("local")
 public final class StaticResourceController {
 
     @GetMapping("/")

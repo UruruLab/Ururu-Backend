@@ -11,9 +11,9 @@ import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 @Component
 @Order(2)
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.sample-data.enabled", havingValue = "true")
 public class ProductSampleDataLoader implements CommandLineRunner{
 
     private final ProductRepository productRepository;

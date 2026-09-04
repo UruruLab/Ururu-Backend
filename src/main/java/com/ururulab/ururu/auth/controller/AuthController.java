@@ -127,18 +127,16 @@ public class AuthController {
         // 소셜 제공자 확인
         final SocialProvider socialProvider = validateSocialProvider(provider);
         
-        // 인증 URL 생성
-        final String authUrl = generateAuthUrl(socialProvider);
-        final String state = generateSecureState();
+        final OAuthAuthorization authorization = createOAuthAuthorization(socialProvider);
         
         final Object response = java.util.Map.of(
             "provider", provider,
-            "authUrl", authUrl,
-            "state", state,
+            "authUrl", authorization.url(),
+            "state", authorization.state(),
             "redirectUri", environment.getProperty("oauth2." + provider.toLowerCase() + ".redirect-uri", "NOT_SET")
         );
         
-        log.info("Generated auth URL for {}: {}", provider, authUrl);
+        log.info("Generated auth URL for provider: {}", provider);
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("소셜 로그인 URL이 생성되었습니다.", response)
@@ -223,14 +221,13 @@ public class AuthController {
     public ResponseEntity<ApiResponseFormat<GetSocialProvidersResponse>> getSocialProviders() {
         final List<SocialProviderInfo> providers = Arrays.stream(SocialProvider.values())
                 .map(provider -> {
-                    final String authUrl = generateAuthUrl(provider);
-                    final String state = generateSecureState();
+                    final OAuthAuthorization authorization = createOAuthAuthorization(provider);
                     
                     return SocialProviderInfo.of(
                             provider.name().toLowerCase(),
                             provider.name(),
-                            authUrl,
-                            state
+                            authorization.url(),
+                            authorization.state()
                     );
                 })
                 .toList();
@@ -309,20 +306,17 @@ public class AuthController {
         log.info("{} OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
                 providerName, error, code != null, state != null, getCurrentProfile());
 
-        // 에러 처리
+        if (!consumeOAuthState(state, provider)) {
+            log.warn("{} OAuth callback received with invalid state", providerName);
+            return redirectToError("invalid_state", providerName);
+        }
+
         if (error != null) {
             return redirectToError(error, providerName);
         }
 
-        // 인증 코드 필수 검증
-        if (code == null || code.trim().isEmpty()) {
-            throw new BusinessException(ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED);
-        }
-
-        // state 검증 (CSRF 공격 방지)
-        if (state == null || state.trim().isEmpty()) {
-            log.warn("{} OAuth callback received without state parameter", providerName);
-            return redirectToError("missing_state", providerName);
+        if (code == null || code.isBlank()) {
+            return redirectToError("missing_code", providerName);
         }
 
         // 중복 코드 사용 방지
@@ -335,25 +329,12 @@ public class AuthController {
         }
 
         try {
-            // state를 Redis에 저장 (중복 방지)
-            final String redisStateKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state;
-            final Boolean isStateUsed = redisTemplate.opsForValue().setIfAbsent(redisStateKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
-
-            if (isStateUsed == null || !isStateUsed) {
-                log.warn("{} OAuth state already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(state));
-                return redirectToError("state_already_used", providerName);
-            }
-
             // 소셜로그인 처리
             final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
             final SocialLoginResponse loginResponse = loginService.processLogin(code);
 
             // JWT 토큰을 쿠키로 설정
             setSecureCookies(response, loginResponse);
-
-            // 성공 시 인증 코드와 state 즉시 삭제 (일회성 보장)
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
 
             // 프론트엔드 성공 페이지로 리다이렉트
             final RedirectView redirectView = new RedirectView();
@@ -367,16 +348,7 @@ public class AuthController {
 
             return redirectView;
         } catch (final BusinessException e) {
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
-
             return handleBusinessExceptionRedirect(e, providerName);
-
-        } catch (final Exception e) {
-            // 실패시 코드와 state를 사용된 목록에서 제거 (재시도 가능하도록)
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + code);
-            redisTemplate.delete(AuthConstants.OAUTH_CODE_KEY_PREFIX + "state:" + state);
-            throw e;
         }
     }
 
@@ -462,30 +434,37 @@ public class AuthController {
      * 환경별 프론트엔드 기본 URL 결정.
      */
     private String getFrontendBaseUrl() {
-        try {
-            // 설정에서 프론트엔드 URL 가져오기
-            final String frontendUrl = environment.getProperty("app.frontend.base-url");
-            if (frontendUrl != null && !frontendUrl.trim().isEmpty()) {
-                return frontendUrl.trim();
-            }
-            
-            // 설정이 없을 경우 fallback
-            return isProductionEnvironment() ? AuthConstants.FRONTEND_BASE_URL_PROD : AuthConstants.FRONTEND_BASE_URL_DEV;
-            
-        } catch (final Exception e) {
-            log.warn("Failed to get frontend URL from yml config, using fallback (env: {}): {}", 
-                    getCurrentProfile(), e.getMessage());
-            return isProductionEnvironment() ? "https://www.ururu.shop" : "http://localhost:3000";
+        final String frontendUrl = environment.getProperty("app.frontend.base-url");
+        if (frontendUrl == null || frontendUrl.isBlank()) {
+            throw new IllegalStateException("app.frontend.base-url 설정은 필수입니다");
         }
+        return frontendUrl.trim();
     }
 
     /**
      * 환경별 소셜 인증 URL 생성.
      */
-    private String generateAuthUrl(final SocialProvider provider) {
+    private OAuthAuthorization createOAuthAuthorization(final SocialProvider provider) {
         final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
         final String state = generateSecureState();
-        return loginService.getAuthorizationUrl(state);
+        final String url = loginService.getAuthorizationUrl(state);
+        redisTemplate.opsForValue().set(
+                AuthConstants.OAUTH_STATE_KEY_PREFIX + state,
+                provider.name(),
+                Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS)
+        );
+        return new OAuthAuthorization(url, state);
+    }
+
+    private boolean consumeOAuthState(final String state, final SocialProvider provider) {
+        if (state == null || state.isBlank()) {
+            return false;
+        }
+
+        final String expectedProvider = redisTemplate.opsForValue().getAndDelete(
+                AuthConstants.OAUTH_STATE_KEY_PREFIX + state
+        );
+        return provider.name().equals(expectedProvider);
     }
 
     /**
@@ -495,18 +474,6 @@ public class AuthController {
         final byte[] randomBytes = new byte[32];
         SECURE_RANDOM.nextBytes(randomBytes);
         return BASE64_ENCODER.encodeToString(randomBytes);
-    }
-
-    /**
-     * 현재 환경이 운영환경인지 확인
-     */
-    private boolean isProductionEnvironment() {
-        try {
-            return environment.acceptsProfiles("prod");
-        } catch (final Exception e) {
-            log.error("Profile check failed, defaulting to production for safety: {}", e.getMessage());
-            return true; // 안전을 위해 프로덕션으로 간주
-        }
     }
 
     /**
@@ -536,6 +503,9 @@ public class AuthController {
                                           final String authUrl, final String state) {
             return new SocialProviderInfo(id, name, authUrl, state);
         }
+    }
+
+    private record OAuthAuthorization(String url, String state) {
     }
 
     /**

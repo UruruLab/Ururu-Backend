@@ -1,5 +1,7 @@
 package com.ururulab.ururu.auth.oauth;
 
+import com.ururulab.ururu.global.exception.BusinessException;
+import com.ururulab.ururu.global.exception.error.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -19,7 +21,6 @@ public final class GoogleOAuthProperties {
     private static final String GRANT_TYPE = "authorization_code";
     private static final String ACCESS_TYPE = "offline";
     private static final String PROMPT = "consent";
-
     private String clientId;
     private String clientSecret;
     private String redirectUri;
@@ -32,6 +33,7 @@ public final class GoogleOAuthProperties {
         if (state == null || state.isBlank()) {
             throw new IllegalArgumentException("state 매개변수는 필수입니다");
         }
+        validateCredentials();
         return UriComponentsBuilder.fromUriString(authorizationUri)
                 .queryParam("client_id", clientId)
                 .queryParam("redirect_uri", redirectUri)
@@ -48,6 +50,7 @@ public final class GoogleOAuthProperties {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("인증 코드는 필수입니다");
         }
+        validateCredentials();
         try {
             return String.format(
                     "grant_type=%s&client_id=%s&client_secret=%s&redirect_uri=%s&code=%s",
@@ -60,5 +63,15 @@ public final class GoogleOAuthProperties {
         } catch (final Exception e) {
             throw new IllegalStateException("URL 인코딩 실패", e);
         }
+    }
+
+    private void validateCredentials() {
+        if (isMissing(clientId) || isMissing(clientSecret)) {
+            throw new BusinessException(ErrorCode.SOCIAL_LOGIN_NOT_CONFIGURED);
+        }
+    }
+
+    private boolean isMissing(final String value) {
+        return value == null || value.isBlank();
     }
 }
