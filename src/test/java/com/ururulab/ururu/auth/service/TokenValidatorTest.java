@@ -14,6 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * TokenValidator 테스트.
@@ -41,7 +43,7 @@ class TokenValidatorTest extends AuthServiceTestBase {
     @DisplayName("유효한 Access Token 검증 성공")
     void validateAccessToken_validToken_success() {
         // Given
-        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
         String tokenId = jwtTokenProvider.getTokenId(validToken);
         givenTokenIsNotBlacklisted(tokenId);
 
@@ -123,12 +125,12 @@ class TokenValidatorTest extends AuthServiceTestBase {
     @DisplayName("만료된 Access Token 검증 시 예외")
     void validateAccessToken_expiredToken_throwsException() {
         // Given
-        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When & Then
         thenBusinessExceptionShouldBeThrown(
                 () -> whenValidateAccessToken(tokenValidator, expiredToken),
-                ErrorCode.INVALID_JWT_TOKEN
+                ErrorCode.EXPIRED_JWT_TOKEN
         );
     }
 
@@ -136,7 +138,7 @@ class TokenValidatorTest extends AuthServiceTestBase {
     @DisplayName("블랙리스트에 있는 Access Token 검증 시 예외")
     void validateAccessToken_blacklistedToken_throwsException() {
         // Given
-        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
         String tokenId = jwtTokenProvider.getTokenId(validToken);
         lenient().when(tokenBlacklistStorage.isTokenBlacklisted(tokenId)).thenReturn(true);
 
@@ -222,7 +224,7 @@ class TokenValidatorTest extends AuthServiceTestBase {
     @DisplayName("Access Token을 Refresh Token으로 검증 시 예외")
     void validateRefreshToken_accessToken_throwsException() {
         // Given
-        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When & Then
         thenBusinessExceptionShouldBeThrown(
@@ -235,12 +237,12 @@ class TokenValidatorTest extends AuthServiceTestBase {
     @DisplayName("만료된 Refresh Token 검증 시 예외")
     void validateRefreshToken_expiredToken_throwsException() {
         // Given
-        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When & Then
         thenBusinessExceptionShouldBeThrown(
                 () -> whenValidateRefreshToken(tokenValidator, expiredToken),
-                ErrorCode.INVALID_JWT_TOKEN
+                ErrorCode.EXPIRED_JWT_TOKEN
         );
     }
 
@@ -253,6 +255,21 @@ class TokenValidatorTest extends AuthServiceTestBase {
         lenient().when(tokenBlacklistStorage.isTokenBlacklisted(tokenId)).thenReturn(true);
 
         // When & Then
+        thenBusinessExceptionShouldBeThrown(
+                () -> whenValidateRefreshToken(tokenValidator, validToken),
+                ErrorCode.INVALID_REFRESH_TOKEN
+        );
+    }
+
+    @Test
+    @DisplayName("계정 단위로 폐기된 Refresh Token 검증 시 예외")
+    void validateRefreshToken_revokedUser_throwsException() {
+        final String validToken = AuthTestFixture.createValidRefreshToken(1L, UserType.MEMBER);
+        final String tokenId = jwtTokenProvider.getTokenId(validToken);
+        lenient().when(tokenBlacklistStorage.isTokenBlacklisted(tokenId)).thenReturn(false);
+        lenient().when(tokenBlacklistStorage.isUserTokenRevoked(
+                eq(1L), eq(UserType.MEMBER.getValue()), anyLong())).thenReturn(true);
+
         thenBusinessExceptionShouldBeThrown(
                 () -> whenValidateRefreshToken(tokenValidator, validToken),
                 ErrorCode.INVALID_REFRESH_TOKEN
@@ -356,7 +373,7 @@ class TokenValidatorTest extends AuthServiceTestBase {
     @DisplayName("Access Token과 Refresh Token 동시 검증 성공")
     void validateBothTokens_success() {
         // Given
-        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
         String refreshToken = AuthTestFixture.createValidRefreshToken(1L, UserType.MEMBER);
         String accessTokenId = jwtTokenProvider.getTokenId(accessToken);
         String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
@@ -383,4 +400,4 @@ class TokenValidatorTest extends AuthServiceTestBase {
         verifyCompleteTokenValidation(tokenValidator, accessToken, 1L, UserType.SELLER.getValue());
         verifyCompleteRefreshTokenValidation(tokenValidator, refreshToken, 1L, UserType.SELLER.getValue());
     }
-} 
+}

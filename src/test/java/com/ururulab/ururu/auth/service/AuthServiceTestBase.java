@@ -112,15 +112,6 @@ public abstract class AuthServiceTestBase {
     }
 
     /**
-     * 테스트용 Refresh Token을 Storage Mock에 설정합니다.
-     */
-    protected void givenRefreshTokenExists(String userType, Long userId, String tokenId, String refreshToken) {
-        given(refreshTokenStorage.getRefreshToken(userType, userId, tokenId)).willReturn(refreshToken);
-        given(refreshTokenStorage.getRefreshTokenCount(userType, userId)).willReturn(1L);
-        given(refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)).willReturn(false);
-    }
-
-    /**
      * 테스트용 토큰을 Blacklist Mock에 설정합니다.
      */
     protected void givenTokenIsBlacklisted(String tokenId) {
@@ -133,14 +124,6 @@ public abstract class AuthServiceTestBase {
     protected void givenTokenIsNotBlacklisted(String tokenId) {
         // lenient를 사용하여 불필요한 stubbing 경고 방지
         lenient().when(tokenBlacklistStorage.isTokenBlacklisted(tokenId)).thenReturn(false);
-    }
-
-    /**
-     * 테스트용 Refresh Token 개수 제한 초과를 Mock에 설정합니다.
-     */
-    protected void givenRefreshTokenLimitExceeded(String userType, Long userId) {
-        given(refreshTokenStorage.isRefreshTokenLimitExceeded(userType, userId)).willReturn(true);
-        given(refreshTokenStorage.getRefreshTokenCount(userType, userId)).willReturn(6L); // 기본 제한 5개 초과
     }
 
     // ==================== When 메서드들 (테스트 액션) ====================
@@ -320,37 +303,10 @@ public abstract class AuthServiceTestBase {
     }
 
     /**
-     * Refresh Token이 삭제되었는지 검증합니다.
-     */
-    protected void thenRefreshTokenShouldBeDeleted(String userType, Long userId, String tokenId) {
-        verify(refreshTokenStorage).deleteRefreshToken(userType, userId, tokenId);
-    }
-
-    /**
      * 모든 Refresh Token이 삭제되었는지 검증합니다.
      */
     protected void thenAllRefreshTokensShouldBeDeleted(String userType, Long userId) {
         verify(refreshTokenStorage).deleteAllRefreshTokens(userType, userId);
     }
 
-    /**
-     * 토큰이 블랙리스트에 추가되었는지 검증합니다.
-     */
-    protected void thenTokenShouldBeBlacklisted(String tokenId) {
-        verify(tokenBlacklistStorage).addToBlacklist(tokenId, any(Long.class));
-    }
-
-    /**
-     * Access Token이 블랙리스트에 추가되었는지 검증합니다.
-     */
-    protected void thenAccessTokenShouldBeBlacklisted(String accessToken) {
-        verify(tokenBlacklistStorage).blacklistAccessToken(accessToken);
-    }
-
-    /**
-     * Refresh Token이 블랙리스트에 추가되었는지 검증합니다.
-     */
-    protected void thenRefreshTokenShouldBeBlacklisted(String refreshToken) {
-        verify(tokenBlacklistStorage).blacklistRefreshToken(refreshToken);
-    }
-} 
+}

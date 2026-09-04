@@ -14,17 +14,14 @@ import com.ururulab.ururu.member.service.MemberService;
 import com.ururulab.ururu.seller.service.SellerService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.eq;
 
-import org.springframework.http.MediaType;
 
 /**
  * Auth 테스트를 위한 헬퍼 클래스.
@@ -149,32 +146,6 @@ public final class AuthTestHelper {
     /**
      * RestClient 체인 모킹을 위한 헬퍼 메서드
      */
-    @SuppressWarnings("unchecked")
-    public static void setupRestClientChain(RestClient restClient, String tokenUri, String memberInfoUri) {
-        RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
-        RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
-        RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
-        
-        @SuppressWarnings("rawtypes")
-        RestClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(RestClient.RequestHeadersUriSpec.class);
-        @SuppressWarnings("rawtypes")
-        RestClient.RequestHeadersSpec requestHeadersSpec = mock(RestClient.RequestHeadersSpec.class);
-        RestClient.ResponseSpec memberInfoResponseSpec = mock(RestClient.ResponseSpec.class);
-        
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(tokenUri)).thenReturn(requestBodySpec);
-        when(requestBodySpec.contentType(MediaType.APPLICATION_FORM_URLENCODED)).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.onStatus(any(), any())).thenReturn(responseSpec);
-        
-        when(restClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri(memberInfoUri)).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.header(anyString(), anyString())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(memberInfoResponseSpec);
-        when(memberInfoResponseSpec.onStatus(any(), any())).thenReturn(memberInfoResponseSpec);
-    }
-
     // ==================== 통합 검증 헬퍼 ====================
 
     /**
@@ -376,4 +347,4 @@ public final class AuthTestHelper {
         verify(accessTokenGenerator).generateAccessToken(eq(expectedUserId), eq(expectedEmail), eq(UserRole.SELLER), eq(UserType.SELLER));
         verify(refreshTokenGenerator).generateRefreshToken(eq(expectedUserId), eq(UserType.SELLER));
     }
-} 
+}

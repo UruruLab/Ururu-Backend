@@ -1,6 +1,7 @@
 package com.ururulab.ururu.auth.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ururulab.ururu.auth.constants.AuthConstants;
 
 /**
  * 소셜 로그인 응답 DTO.
@@ -54,6 +55,15 @@ public record SocialLoginResponse(
             final MemberInfo memberInfo
     ) {
         return of(accessToken, null, expiresIn, memberInfo);
+    }
+
+    public SocialLoginResponse redacted() {
+        return of(
+                AuthConstants.MASKED_DATA_PLACEHOLDER,
+                refreshToken == null ? null : AuthConstants.MASKED_DATA_PLACEHOLDER,
+                expiresIn,
+                memberInfo
+        );
     }
 
     private static void validateAccessToken(final String accessToken) {

@@ -1,14 +1,12 @@
 package com.ururulab.ururu.auth.controller;
 
 import com.ururulab.ururu.auth.annotation.RateLimit;
-import com.ururulab.ururu.auth.constants.AuthConstants;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
-import com.ururulab.ururu.auth.jwt.JwtTokenProvider;
 import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
-import com.ururulab.ururu.auth.service.*;
-import com.ururulab.ururu.auth.util.AuthCookieHelper;
-import com.ururulab.ururu.auth.util.AuthResponseHelper;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
+import com.ururulab.ururu.auth.service.TokenValidator;
+import com.ururulab.ururu.auth.service.UserInfoService;
 import com.ururulab.ururu.auth.util.TokenExtractor;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
@@ -18,502 +16,144 @@ import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 인증 관련 API 컨트롤러.
- * 
- * OAuth 콜백 처리, 토큰 갱신, 로그아웃 등의 인증 관련 기능을 제공합니다.
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final Base64.Encoder BASE64_ENCODER = Base64.getUrlEncoder();
+    private static final String OAUTH2_AUTHORIZATION_BASE_URI = "/oauth2/authorization/";
 
-    private final SocialLoginServiceFactory socialLoginServiceFactory;
     private final JwtCookieHelper jwtCookieHelper;
     private final JwtRefreshService jwtRefreshService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final AccessTokenGenerator accessTokenGenerator;
     private final UserInfoService userInfoService;
     private final TokenValidator tokenValidator;
-    private final Environment environment;
-    private final StringRedisTemplate redisTemplate;
-    private final SecurityLoggingService securityLoggingService;
 
-    /**
-     * 카카오 OAuth 콜백 처리.
-     */
-    @GetMapping("/oauth/kakao")
-    public RedirectView handleKakaoCallback(
-            @RequestParam(required = false) final String code,
-            @RequestParam(required = false) final String state,
-            @RequestParam(required = false) final String error,
-            final HttpServletResponse response) {
-
-        return handleOAuthCallback(code, state, error, SocialProvider.KAKAO, response);
+    @GetMapping("/csrf")
+    public ResponseEntity<ApiResponseFormat<Void>> csrf(final CsrfToken csrfToken) {
+        csrfToken.getToken();
+        return ResponseEntity.ok(ApiResponseFormat.success("CSRF 쿠키가 발급되었습니다."));
     }
 
-    /**
-     * 구글 OAuth 콜백 처리.
-     */
-    @GetMapping("/oauth/google")
-    public RedirectView handleGoogleCallback(
-            @RequestParam(required = false) final String code,
-            @RequestParam(required = false) final String state,
-            @RequestParam(required = false) final String error,
-            final HttpServletResponse response) {
-
-        return handleOAuthCallback(code, state, error, SocialProvider.GOOGLE, response);
-    }
-
-    /**
-     * 소셜 로그인 처리 API (프론트엔드에서 직접 호출용).
-     */
-    @RateLimit(value = 5, timeUnit = TimeUnit.MINUTES)
-    @PostMapping("/social/login/{provider}")
-    public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> processSocialLogin(
-            @PathVariable final String provider,
-            @RequestParam final String code,
-            final HttpServletResponse response) {
-        
-        log.info("Processing social login for provider: {} with code", provider);
-        
-        // 소셜 제공자 확인
-        final SocialProvider socialProvider = validateSocialProvider(provider);
-        
-        // 소셜 로그인 처리
-        final SocialLoginService loginService = socialLoginServiceFactory.getService(socialProvider);
-        final SocialLoginResponse loginResponse = loginService.processLogin(code);
-        
-        // JWT 토큰을 쿠키로 설정
-        setSecureCookies(response, loginResponse);
-        
-        // 보안을 위해 토큰 정보는 마스킹해서 응답
-        final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
-        
-        log.info("{} login successful for user: {} (env: {})", 
-                provider, MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("소셜 로그인이 완료되었습니다.", secureResponse)
-        );
-    }
-
-    /**
-     * 소셜 로그인 URL 생성 API
-     */
     @GetMapping("/social/auth-url/{provider}")
+    @RateLimit(value = 30, timeUnit = TimeUnit.MINUTES)
     public ResponseEntity<ApiResponseFormat<Object>> getSocialAuthUrl(@PathVariable final String provider) {
-        log.info("Generating auth URL for provider: {}", provider);
-        
-        // 소셜 제공자 확인
-        final SocialProvider socialProvider = validateSocialProvider(provider);
-        
-        final OAuthAuthorization authorization = createOAuthAuthorization(socialProvider);
-        
-        final Object response = java.util.Map.of(
-            "provider", provider,
-            "authUrl", authorization.url(),
-            "state", authorization.state(),
-            "redirectUri", environment.getProperty("oauth2." + provider.toLowerCase() + ".redirect-uri", "NOT_SET")
-        );
-        
-        log.info("Generated auth URL for provider: {}", provider);
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("소셜 로그인 URL이 생성되었습니다.", response)
-        );
+        final String registrationId = registrationId(provider);
+        return ResponseEntity.ok(ApiResponseFormat.success(
+                "소셜 로그인 URL이 생성되었습니다.",
+                Map.of("provider", registrationId, "authUrl", OAUTH2_AUTHORIZATION_BASE_URI + registrationId)
+        ));
     }
 
-    /**
-     * 토큰 갱신 API.
-     */
+    @GetMapping("/social/providers")
+    @RateLimit(value = 30, timeUnit = TimeUnit.MINUTES)
+    public ResponseEntity<ApiResponseFormat<GetSocialProvidersResponse>> getSocialProviders() {
+        final List<SocialProviderInfo> providers = Arrays.stream(SocialProvider.values())
+                .map(provider -> SocialProviderInfo.of(
+                        provider.name().toLowerCase(Locale.ROOT),
+                        provider.name(),
+                        OAUTH2_AUTHORIZATION_BASE_URI + provider.name().toLowerCase(Locale.ROOT)
+                ))
+                .toList();
+        return ResponseEntity.ok(ApiResponseFormat.success(
+                "지원하는 소셜 로그인 목록을 조회했습니다.", GetSocialProvidersResponse.of(providers)
+        ));
+    }
+
     @PostMapping("/refresh")
+    @RateLimit(value = 20, timeUnit = TimeUnit.MINUTES)
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshToken(
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
-            final HttpServletResponse response) {
-        
+            final HttpServletResponse response
+    ) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
-        
-        final SocialLoginResponse refreshResponse = jwtRefreshService.refreshAccessToken(refreshToken);
-        
-        // 새로운 토큰을 쿠키로 설정
-        jwtCookieHelper.setAccessTokenCookie(response, refreshResponse.accessToken());
-        if (refreshResponse.refreshToken() != null) {
-            jwtCookieHelper.setRefreshTokenCookie(response, refreshResponse.refreshToken());
-        }
-        
-        // 보안을 위해 토큰 정보는 마스킹해서 응답
-        final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
-        
-        log.info("Token refresh successful for user: {} (env: {})", 
-                MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("토큰이 갱신되었습니다.", secureResponse)
-        );
+        final SocialLoginResponse refreshed = jwtRefreshService.refreshAccessToken(refreshToken);
+        jwtCookieHelper.setTokenCookies(response, refreshed);
+        log.info("Token refresh successful for user: {}",
+                MaskingUtils.maskEmail(refreshed.memberInfo().email()));
+        return ResponseEntity.ok(ApiResponseFormat.success("토큰이 갱신되었습니다.", refreshed.redacted()));
     }
 
-    /**
-     * 로그아웃 처리 API.
-     */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponseFormat<Void>> logout(
             @RequestHeader(name = "Authorization", required = false) final String authorization,
             @CookieValue(name = "access_token", required = false) final String accessToken,
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
-            final HttpServletResponse response) {
-        
-        // TokenExtractor를 사용하여 토큰 추출
+            final HttpServletResponse response
+    ) {
         final String tokenToLogout = TokenExtractor.extractTokenForLogout(authorization, accessToken);
-        
-        if (tokenToLogout != null) {
-            try {
-                jwtRefreshService.logoutWithToken(tokenToLogout);
-            } catch (final Exception e) {
-                log.warn("Failed to logout from Redis: {}", e.getMessage());
-                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
-            }
-        } else if (TokenExtractor.isValidAccessToken(accessToken)) {
-            // Authorization 헤더가 없어도 쿠키에서 토큰 추출하여 로그아웃 처리
-            try {
-                jwtRefreshService.logoutWithToken(accessToken);
-            } catch (final Exception e) {
-                log.warn("Failed to logout from Redis using cookie token: {}", e.getMessage());
-                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
-            }
+        try {
+            jwtRefreshService.logoutWithTokens(tokenToLogout, refreshToken);
+        } finally {
+            jwtCookieHelper.clearTokenCookies(response);
         }
-        
-        // 쿠키 삭제
-        jwtCookieHelper.clearTokenCookies(response);
-        
-        log.info("User logged out successfully, cookies cleared (env: {})", getCurrentProfile());
-        
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("로그아웃되었습니다.")
-        );
+        return ResponseEntity.ok(ApiResponseFormat.success("로그아웃되었습니다."));
     }
 
-    /**
-     * 소셜 제공자 목록 조회 API.
-     */
-    @GetMapping("/social/providers")
-    public ResponseEntity<ApiResponseFormat<GetSocialProvidersResponse>> getSocialProviders() {
-        final List<SocialProviderInfo> providers = Arrays.stream(SocialProvider.values())
-                .map(provider -> {
-                    final OAuthAuthorization authorization = createOAuthAuthorization(provider);
-                    
-                    return SocialProviderInfo.of(
-                            provider.name().toLowerCase(),
-                            provider.name(),
-                            authorization.url(),
-                            authorization.state()
-                    );
-                })
-                .toList();
-
-        final GetSocialProvidersResponse response = GetSocialProvidersResponse.of(providers);
-
-        log.debug("Social providers response generated for {} environment", getCurrentProfile());
-
-        return ResponseEntity.ok(
-                ApiResponseFormat.success("지원 소셜 로그인 목록을 조회했습니다.", response)
-        );
-    }
-
-    /**
-     * 현재 인증 상태 조회 API.
-     * 액세스 토큰이 유효하면 사용자 정보를 반환하고,
-     * 액세스 토큰이 만료된 경우 401 상태를 반환합니다.
-     * 토큰 갱신은 /refresh API에서만 처리합니다.
-     */
     @GetMapping("/me")
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> getCurrentAuthStatus(
-            @CookieValue(name = "access_token", required = false) final String accessToken,
-            final HttpServletResponse response) {
-        
-        // 액세스 토큰이 있으면 검증
+            @CookieValue(name = "access_token", required = false) final String accessToken
+    ) {
         if (accessToken != null && !accessToken.isBlank()) {
             try {
-                // TokenValidator를 사용하여 토큰 검증 및 사용자 정보 추출
-                final TokenValidator.TokenValidationResult validationResult = tokenValidator.validateAccessToken(accessToken);
-                
-                // 사용자 정보 조회
-                final UserInfoService.UserInfo userInfo = userInfoService.getUserInfo(validationResult.userId(), validationResult.userType());
-                
-                // 현재 토큰을 그대로 사용 (새로운 토큰 발급하지 않음)
+                final TokenValidator.TokenValidationResult validation =
+                        tokenValidator.validateAccessToken(accessToken);
+                final UserInfoService.UserInfo userInfo =
+                        userInfoService.getUserInfo(validation.userId(), validation.userType());
                 final SocialLoginResponse authResponse = SocialLoginResponse.of(
                         accessToken,
-                        null, // 리프레시 토큰은 /me API에서 반환하지 않음
+                        null,
                         accessTokenGenerator.getExpirySeconds(),
-                        SocialLoginResponse.MemberInfo.of(validationResult.userId(), userInfo.email(), null, null, validationResult.userType())
+                        SocialLoginResponse.MemberInfo.of(
+                                validation.userId(), userInfo.email(), null, null, validation.userType()
+                        )
                 );
-                
-                // 보안을 위해 토큰 정보는 마스킹해서 응답
-                final SocialLoginResponse secureResponse = createSecureResponse(authResponse);
-                
-                log.debug("Current auth status retrieved for user: {} (type: {}) - using existing access token", validationResult.userId(), validationResult.userType());
-                
-                return ResponseEntity.ok(
-                        ApiResponseFormat.success("현재 인증 상태를 조회했습니다.", secureResponse)
-                );
+                return ResponseEntity.ok(ApiResponseFormat.success(
+                        "현재 인증 상태를 조회했습니다.", authResponse.redacted()
+                ));
             } catch (final Exception e) {
                 log.debug("Access token validation failed: {}", e.getMessage());
-                // 액세스 토큰이 유효하지 않으면 401 반환
             }
         }
-        
-        // 인증되지 않은 상태
-        return ResponseEntity.status(401).body(
-                ApiResponseFormat.success("인증되지 않은 사용자입니다.")
-        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponseFormat.success("인증되지 않은 사용자입니다."));
     }
 
-    // Private Helper Methods
-
-    /**
-     * OAuth 콜백 공통 처리 메서드
-     */
-    private RedirectView handleOAuthCallback(
-            final String code,
-            final String state,
-            final String error, 
-            final SocialProvider provider,
-            final HttpServletResponse response) {
-        
-        final String providerName = provider.name().toLowerCase();
-        
-        log.info("{} OAuth callback received - error: {}, hasCode: {}, hasState: {}, environment: {}", 
-                providerName, error, code != null, state != null, getCurrentProfile());
-
-        if (!consumeOAuthState(state, provider)) {
-            log.warn("{} OAuth callback received with invalid state", providerName);
-            return redirectToError("invalid_state", providerName);
-        }
-
-        if (error != null) {
-            return redirectToError(error, providerName);
-        }
-
-        if (code == null || code.isBlank()) {
-            return redirectToError("missing_code", providerName);
-        }
-
-        // 중복 코드 사용 방지
-        final String redisKey = AuthConstants.OAUTH_CODE_KEY_PREFIX + code;
-        final Boolean isCodeUsed = redisTemplate.opsForValue().setIfAbsent(redisKey, "1", Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS));
-
-        if (isCodeUsed == null || !isCodeUsed) {
-            log.warn("{} OAuth code already used or expired: {}...", providerName, securityLoggingService.maskSensitiveData(code));
-            return redirectToError("code_already_used", providerName);
-        }
-
+    private String registrationId(final String provider) {
         try {
-            // 소셜로그인 처리
-            final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
-            final SocialLoginResponse loginResponse = loginService.processLogin(code);
-
-            // JWT 토큰을 쿠키로 설정
-            setSecureCookies(response, loginResponse);
-
-            // 프론트엔드 성공 페이지로 리다이렉트
-            final RedirectView redirectView = new RedirectView();
-            redirectView.setContextRelative(false);
-            final String redirectUrl = buildFrontendUrl("/auth/success");
-            redirectView.setUrl(redirectUrl);
-
-            log.info("{} login successful for user: {} (env: {})",
-                    providerName, securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
-            log.info("Redirecting to: {}", redirectUrl);
-
-            return redirectView;
-        } catch (final BusinessException e) {
-            return handleBusinessExceptionRedirect(e, providerName);
-        }
-    }
-
-    private RedirectView handleBusinessExceptionRedirect(final BusinessException e, final String provider) {
-        final ErrorCode errorCode = e.getErrorCode();
-        String errorReason = "login_failed";
-
-        if (errorCode == ErrorCode.MEMBER_DELETED || errorCode == ErrorCode.MEMBER_LOGIN_DENIED) {
-            errorReason = "withdrawn_member";
-        } else if (errorCode == ErrorCode.SOCIAL_TOKEN_EXCHANGE_FAILED) {
-            errorReason = "token_exchange_failed";
-        } else if (errorCode == ErrorCode.SOCIAL_MEMBER_INFO_FAILED) {
-            errorReason = "member_info_failed";
-        }
-
-        log.warn("{} authentication failed with business exception: {} ({})",
-                provider, errorCode.getCode(), e.getMessage());
-        return redirectToError(errorReason, provider);
-    }
-
-    /**
-     * 소셜 제공자 유효성 검증
-     */
-    private SocialProvider validateSocialProvider(final String provider) {
-        try {
-            return SocialProvider.valueOf(provider.toUpperCase());
-        } catch (final IllegalArgumentException e) {
+            return SocialProvider.valueOf(provider.toUpperCase(Locale.ROOT)).name().toLowerCase(Locale.ROOT);
+        } catch (final RuntimeException e) {
             throw new BusinessException(ErrorCode.UNSUPPORTED_SOCIAL_PROVIDER, provider);
         }
     }
 
-    /**
-     * JWT 토큰을 안전한 쿠키로 설정.
-     */
-    private void setSecureCookies(final HttpServletResponse response, 
-                                  final SocialLoginResponse loginResponse) {
-        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
-        log.debug("Secure cookies set successfully for {} environment", getCurrentProfile());
-    }
-
-    /**
-     * 보안을 위해 토큰 정보를 마스킹한 응답 생성
-     */
-    private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
-    }
-
-    /**
-     * 에러 페이지로 리다이렉트하는 RedirectView 생성.
-     */
-    private RedirectView redirectToError(final String errorMessage, final String provider) {
-        final RedirectView redirectView = new RedirectView();
-        redirectView.setContextRelative(false);
-
-        
-        final String errorUrl = buildFrontendUrl("/auth/callback")
-                + "?result=error"
-                + "&reason=" + URLEncoder.encode(errorMessage, StandardCharsets.UTF_8)
-                + "&provider=" + URLEncoder.encode(provider, StandardCharsets.UTF_8);
-
-
-        redirectView.setUrl(errorUrl);
-        
-        log.warn("{} authentication failed: {} (env: {})", provider, errorMessage, getCurrentProfile());
-        
-        return redirectView;
-    }
-
-    /**
-     * 환경별 프론트엔드 URL 빌드.
-     */
-    private String buildFrontendUrl(final String path) {
-        final String baseUrl = getFrontendBaseUrl();
-        final String normalizedPath = path.startsWith("/") ? path : "/" + path;
-        
-        final String fullUrl = baseUrl + normalizedPath;
-        log.debug("Built frontend URL: {} (env: {})", fullUrl, getCurrentProfile());
-        
-        return fullUrl;
-    }
-
-    /**
-     * 환경별 프론트엔드 기본 URL 결정.
-     */
-    private String getFrontendBaseUrl() {
-        final String frontendUrl = environment.getProperty("app.frontend.base-url");
-        if (frontendUrl == null || frontendUrl.isBlank()) {
-            throw new IllegalStateException("app.frontend.base-url 설정은 필수입니다");
-        }
-        return frontendUrl.trim();
-    }
-
-    /**
-     * 환경별 소셜 인증 URL 생성.
-     */
-    private OAuthAuthorization createOAuthAuthorization(final SocialProvider provider) {
-        final SocialLoginService loginService = socialLoginServiceFactory.getService(provider);
-        final String state = generateSecureState();
-        final String url = loginService.getAuthorizationUrl(state);
-        redisTemplate.opsForValue().set(
-                AuthConstants.OAUTH_STATE_KEY_PREFIX + state,
-                provider.name(),
-                Duration.ofSeconds(AuthConstants.OAUTH_CODE_TTL_SECONDS)
-        );
-        return new OAuthAuthorization(url, state);
-    }
-
-    private boolean consumeOAuthState(final String state, final SocialProvider provider) {
-        if (state == null || state.isBlank()) {
-            return false;
-        }
-
-        final String expectedProvider = redisTemplate.opsForValue().getAndDelete(
-                AuthConstants.OAUTH_STATE_KEY_PREFIX + state
-        );
-        return provider.name().equals(expectedProvider);
-    }
-
-    /**
-     * CSRF 방지를 위한 안전한 state 생성
-     */
-    private String generateSecureState() {
-        final byte[] randomBytes = new byte[32];
-        SECURE_RANDOM.nextBytes(randomBytes);
-        return BASE64_ENCODER.encodeToString(randomBytes);
-    }
-
-    /**
-     * 현재 활성 프로파일 반환 (로깅용)
-     */
-    private String getCurrentProfile() {
-        try {
-            final String[] activeProfiles = environment.getActiveProfiles();
-            return activeProfiles.length > 0 ? String.join(",", activeProfiles) : "default";
-        } catch (final Exception e) {
-            return "unknown";
+    public record SocialProviderInfo(String id, String name, String authUrl) {
+        public static SocialProviderInfo of(final String id, final String name, final String authUrl) {
+            return new SocialProviderInfo(id, name, authUrl);
         }
     }
 
-    // DTOs
-
-    /**
-     * 소셜 제공자 정보 DTO
-     */
-    public record SocialProviderInfo(
-            String id,
-            String name,
-            String authUrl,
-            String state
-    ) {
-        public static SocialProviderInfo of(final String id, final String name, 
-                                          final String authUrl, final String state) {
-            return new SocialProviderInfo(id, name, authUrl, state);
-        }
-    }
-
-    private record OAuthAuthorization(String url, String state) {
-    }
-
-    /**
-     * 소셜 제공자 목록 응답 DTO
-     */
-    public record GetSocialProvidersResponse(
-            List<SocialProviderInfo> providers
-    ) {
+    public record GetSocialProvidersResponse(List<SocialProviderInfo> providers) {
         public static GetSocialProvidersResponse of(final List<SocialProviderInfo> providers) {
             return new GetSocialProvidersResponse(providers);
         }

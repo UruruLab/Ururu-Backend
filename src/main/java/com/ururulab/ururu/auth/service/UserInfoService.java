@@ -6,6 +6,7 @@ import com.ururulab.ururu.auth.constants.UserType;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
 import com.ururulab.ururu.member.domain.entity.Member;
+import com.ururulab.ururu.member.domain.entity.enumerated.Role;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.domain.repository.SellerRepository;
@@ -33,11 +34,10 @@ public final class UserInfoService {
      * @return 사용자 정보 (이메일, 역할)
      */
     public UserInfo getUserInfo(final Long userId, final String userType) {
-                                    if (UserType.SELLER.getValue().equals(userType)) {
-            return getSellerInfo(userId);
-        } else {
-            return getMemberInfo(userId);
-        }
+        return switch (UserType.fromString(userType)) {
+            case SELLER -> getSellerInfo(userId);
+            case MEMBER -> getMemberInfo(userId);
+        };
     }
 
     /**
@@ -71,7 +71,9 @@ public final class UserInfoService {
         
         return UserInfo.of(
                 member.getEmail(),
-                member.getRole().name()
+                member.getRole() == Role.ADMIN
+                        ? UserRole.ADMIN.getValue()
+                        : UserRole.MEMBER.getValue()
         );
     }
 
@@ -83,4 +85,4 @@ public final class UserInfoService {
             return new UserInfo(email, role);
         }
     }
-} 
+}

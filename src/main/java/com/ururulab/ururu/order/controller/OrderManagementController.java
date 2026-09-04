@@ -13,12 +13,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
+@PreAuthorize("hasRole('SELLER')")
 @Tag(name = "주문 관리", description = "판매자용 주문 관리 API")
 public class OrderManagementController {
 

@@ -7,6 +7,7 @@ import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.repository.BeautyProfileRepository;
 import com.ururulab.ururu.member.domain.repository.MemberAgreementRepository;
 import com.ururulab.ururu.member.domain.repository.MemberRepository;
+import com.ururulab.ururu.member.domain.repository.MemberPreferenceRepository;
 import com.ururulab.ururu.member.domain.repository.ShippingAddressRepository;
 import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
@@ -60,6 +61,9 @@ public class MemberServiceTest {
 
     @Mock
     private PointTransactionRepository pointTransactionRepository;
+
+    @Mock
+    private MemberPreferenceRepository memberPreferenceRepository;
 
     @Test
     @DisplayName("소셜 로그인 시 기존 회원 존재하면 해당 회원 반환")
@@ -265,6 +269,7 @@ public class MemberServiceTest {
         then(paymentRepository).should().existsPendingPaymentsByMemberId(memberId);
 
         then(memberAgreementRepository).should().deleteByMemberId(memberId);
+        then(memberPreferenceRepository).should().deleteByMemberId(memberId);
         then(shippingAddressRepository).should().deleteByMemberId(memberId);
         then(beautyProfileRepository).should().deleteByMemberId(memberId);
         then(cartRepository).should().findByMemberId(memberId);
@@ -291,6 +296,23 @@ public class MemberServiceTest {
         then(beautyProfileRepository).should(never()).deleteByMemberId(any());
         then(memberAgreementRepository).should(never()).deleteByMemberId(any());
         then(memberRepository).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("회원 삭제 - 진행 중인 결제가 있으면 실패")
+    void deleteMember_hasPendingPayment_fail() {
+        final Long memberId = 1L;
+        final Member member = MemberTestFixture.createMember(memberId, "testuser", "test@example.com");
+        given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+        given(orderRepository.countActiveOrdersByMemberId(memberId)).willReturn(0);
+        given(paymentRepository.existsPendingPaymentsByMemberId(memberId)).willReturn(true);
+
+        assertThatThrownBy(() -> memberService.deleteMember(memberId))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorCode.MEMBER_PENDING_PAYMENTS_EXIST.getMessage());
+
+        then(memberRepository).should(never()).save(any());
+        then(memberAgreementRepository).shouldHaveNoInteractions();
     }
 
     @Test

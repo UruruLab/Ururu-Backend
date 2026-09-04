@@ -2,6 +2,8 @@ package com.ururulab.ururu.auth.dto.info;
 
 import com.ururulab.ururu.member.domain.entity.enumerated.SocialProvider;
 
+import java.util.Locale;
+
 /**
  * 소셜 제공자별 회원 정보를 통일된 형태로 표현하는 DTO.
  *
@@ -14,6 +16,14 @@ public record SocialMemberInfo(
         String profileImage,
         SocialProvider provider
 ) {
+
+    public SocialMemberInfo {
+        validateRequiredFields(socialId, email, nickname, provider);
+        socialId = socialId.trim();
+        email = email.trim().toLowerCase(Locale.ROOT);
+        nickname = nickname.trim();
+        profileImage = profileImage == null || profileImage.isBlank() ? null : profileImage.trim();
+    }
 
     /**
      * 완전한 회원 정보로 SocialMemberInfo 생성 (이펙티브 자바 아이템 1).
@@ -33,13 +43,22 @@ public record SocialMemberInfo(
             final String profileImage,
             final SocialProvider provider
     ) {
-        validateRequiredFields(socialId, provider);
         return new SocialMemberInfo(socialId, email, nickname, profileImage, provider);
     }
 
-    private static void validateRequiredFields(final String socialId, final SocialProvider provider) {
+    private static void validateRequiredFields(
+            final String socialId,
+            final String email,
+            final String nickname,
+            final SocialProvider provider) {
         if (socialId == null || socialId.isBlank()) {
             throw new IllegalArgumentException("소셜 ID는 필수입니다.");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("이메일은 필수입니다.");
+        }
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임은 필수입니다.");
         }
         if (provider == null) {
             throw new IllegalArgumentException("소셜 제공자는 필수입니다.");

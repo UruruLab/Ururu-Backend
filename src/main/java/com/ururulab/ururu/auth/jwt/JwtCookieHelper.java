@@ -1,9 +1,11 @@
 package com.ururulab.ururu.auth.jwt;
 
 import com.ururulab.ururu.auth.constants.AuthConstants;
+import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
@@ -30,19 +32,25 @@ public final class JwtCookieHelper {
     private final boolean secure;
     private final String sameSite;
 
+    @Autowired
     public JwtCookieHelper(
             final JwtProperties jwtProperties,
-            @Value("${app.cookie.domain:}") final String cookieDomain
+            @Value("${app.cookie.domain:}") final String cookieDomain,
+            @Value("${app.cookie.secure:false}") final boolean secure
     ) {
         this.jwtProperties = jwtProperties;
         this.cookieDomain = cookieDomain.isBlank() ? null : cookieDomain.trim();
-        this.secure = this.cookieDomain != null;
-        this.sameSite = secure ? "None" : "Lax";
+        this.secure = secure || this.cookieDomain != null;
+        this.sameSite = this.secure ? "None" : "Lax";
+    }
+
+    JwtCookieHelper(final JwtProperties jwtProperties, final String cookieDomain) {
+        this(jwtProperties, cookieDomain, false);
     }
 
     public void setAccessTokenCookie(final HttpServletResponse response, final String accessToken) {
         final long maxAgeSeconds = jwtProperties.getAccessTokenExpiry();
-        addCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME, accessToken, maxAgeSeconds);
+        addCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME, accessToken, maxAgeSeconds, "/");
 
         log.debug("Access token cookie set with expiry: {} seconds for domain: {}",
                 maxAgeSeconds, cookieDomain);
@@ -50,25 +58,34 @@ public final class JwtCookieHelper {
 
     public void setRefreshTokenCookie(final HttpServletResponse response, final String refreshToken) {
         final long maxAgeSeconds = jwtProperties.getRefreshTokenExpiry();
-        addCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken, maxAgeSeconds);
+        addCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, "", 0, "/");
+        addCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, refreshToken, maxAgeSeconds, "/api/auth");
 
         log.debug("Refresh token cookie set with expiry: {} seconds for domain: {}",
                 maxAgeSeconds, cookieDomain);
     }
 
     public void clearTokenCookies(final HttpServletResponse response) {
-        addCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME, "", 0);
-        addCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, "", 0);
+        addCookie(response, AuthConstants.ACCESS_TOKEN_COOKIE_NAME, "", 0, "/");
+        addCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, "", 0, "/api/auth");
+        addCookie(response, AuthConstants.REFRESH_TOKEN_COOKIE_NAME, "", 0, "/");
 
         log.info("All JWT token cookies cleared for domain: {}", cookieDomain);
     }
 
+    public void setTokenCookies(final HttpServletResponse response, final SocialLoginResponse tokens) {
+        setAccessTokenCookie(response, tokens.accessToken());
+        if (tokens.refreshToken() != null) {
+            setRefreshTokenCookie(response, tokens.refreshToken());
+        }
+    }
+
     private void addCookie(final HttpServletResponse response, final String name,
-                           final String value, final long maxAgeSeconds) {
+                           final String value, final long maxAgeSeconds, final String path) {
         final ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(secure)
-                .path("/")
+                .path(path)
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))
                 .sameSite(sameSite);
 

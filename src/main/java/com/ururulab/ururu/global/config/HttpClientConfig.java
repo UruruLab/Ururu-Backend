@@ -70,15 +70,6 @@ public class HttpClientConfig {
                 .build();
     }
 
-    @Bean("socialLoginRestClient")
-    public RestClient socialLoginRestClient(final HttpComponentsClientHttpRequestFactory httpRequestFactory) {
-        return RestClient.builder()
-                .requestFactory(httpRequestFactory)
-                .defaultHeader("Accept", "application/json")
-                .defaultHeader("User-Agent", "UruruApp/1.0")
-                .build();
-    }
-
     @Bean
     public RestTemplate restTemplate(final HttpComponentsClientHttpRequestFactory httpRequestFactory) {
         final RestTemplate restTemplate = new RestTemplate();

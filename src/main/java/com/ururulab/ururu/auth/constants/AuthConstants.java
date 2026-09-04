@@ -10,8 +10,6 @@ public final class AuthConstants {
     }
 
     // Spring Security 권한 상수
-    public static final String AUTHORITY_ROLE_MEMBER = "ROLE_MEMBER";
-    public static final String AUTHORITY_ROLE_SELLER = "ROLE_SELLER";
 
     // 토큰 관련 상수
     public static final int MAX_REFRESH_TOKENS_PER_USER = 5;
@@ -23,17 +21,10 @@ public final class AuthConstants {
     public static final String REFRESH_MEMBER_KEY_PREFIX = "refresh:member:";
     public static final String REFRESH_SELLER_KEY_PREFIX = "refresh:seller:";
     public static final String BLACKLIST_KEY_PREFIX = "blacklist:";
+    public static final String USER_REVOCATION_KEY_PREFIX = "revoked:user:";
 
-    // 기본값
-    public static final UserType DEFAULT_USER_TYPE = UserType.MEMBER;
-    public static final UserRole DEFAULT_ROLE = UserRole.NORMAL;
-    
     // OAuth 관련 상수
-    public static final String OAUTH_CODE_KEY_PREFIX = "oauth:code:";
-    public static final String OAUTH_STATE_KEY_PREFIX = "oauth:state:";
-    public static final int OAUTH_CODE_TTL_SECONDS = 300; // 5분
     
     // 로깅 관련
-    public static final int SENSITIVE_DATA_PREVIEW_LENGTH = 8;
     public static final String MASKED_DATA_PLACEHOLDER = "***";
 }

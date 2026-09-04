@@ -31,7 +31,7 @@ class AuthTestFixtureTest {
         // Given
         Long userId = 1L;
         String email = "test@example.com";
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
         UserType userType = UserType.MEMBER;
 
         // When
@@ -58,7 +58,7 @@ class AuthTestFixtureTest {
         // Given
         Long userId = 1L;
         String email = "test@example.com";
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
         UserType userType = UserType.MEMBER;
 
         // When
@@ -93,14 +93,8 @@ class AuthTestFixtureTest {
     @Test
     @DisplayName("이메일이 없는 소셜 회원 정보 생성 테스트")
     void createSocialMemberInfoWithoutEmail() {
-        // When
-        SocialMemberInfo info = AuthTestFixture.createSocialMemberInfoWithoutEmail();
-
-        // Then
-        assertThat(info.socialId()).isEqualTo("noemail123");
-        assertThat(info.email()).isNull();
-        assertThat(info.nickname()).isEqualTo("이메일없는유저");
-        assertThat(info.provider()).isEqualTo(SocialProvider.GOOGLE);
+        assertThatThrownBy(AuthTestFixture::createSocialMemberInfoWithoutEmail)
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -204,7 +198,7 @@ class AuthTestFixtureTest {
     @DisplayName("소셜 로그인 응답 생성 테스트")
     void createSocialLoginResponse() {
         // Given
-        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
         String refreshToken = AuthTestFixture.createValidRefreshToken(1L, UserType.MEMBER);
         Long expiresIn = 3600L;
         SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
@@ -272,4 +266,4 @@ class AuthTestFixtureTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("소셜 ID는 필수입니다");
     }
-} 
+}

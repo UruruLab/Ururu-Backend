@@ -9,9 +9,9 @@ import com.ururulab.ururu.auth.jwt.token.AccessTokenGenerator;
 import com.ururulab.ururu.auth.jwt.token.RefreshTokenGenerator;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.seller.domain.entity.Seller;
 import com.ururulab.ururu.seller.service.SellerService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public final class SellerAuthService {
 
     private final SellerService sellerService;
@@ -31,6 +30,21 @@ public final class SellerAuthService {
     private final RefreshTokenGenerator refreshTokenGenerator;
     private final JwtRefreshService jwtRefreshService;
     private final PasswordEncoder passwordEncoder;
+    private final String dummyPasswordHash;
+
+    public SellerAuthService(
+            final SellerService sellerService,
+            final AccessTokenGenerator accessTokenGenerator,
+            final RefreshTokenGenerator refreshTokenGenerator,
+            final JwtRefreshService jwtRefreshService,
+            final PasswordEncoder passwordEncoder) {
+        this.sellerService = sellerService;
+        this.accessTokenGenerator = accessTokenGenerator;
+        this.refreshTokenGenerator = refreshTokenGenerator;
+        this.jwtRefreshService = jwtRefreshService;
+        this.passwordEncoder = passwordEncoder;
+        this.dummyPasswordHash = passwordEncoder.encode("invalid-login-password");
+    }
 
     /**
      * 판매자 로그인 처리.
@@ -41,18 +55,21 @@ public final class SellerAuthService {
      */
     public SocialLoginResponse login(final SellerLoginRequest request) {
         // 판매자 조회 (이메일로 조회하는 메서드가 없으므로 Repository에서 직접 조회)
-        final Seller seller = sellerService.findByEmail(request.email());
-        
-        // 비밀번호 검증
-        if (!passwordEncoder.matches(request.password(), seller.getPassword())) {
-            log.warn("Invalid password attempt for seller email: {}", request.email());
+        final Seller seller;
+        try {
+            seller = sellerService.findByEmail(request.email());
+        } catch (final BusinessException e) {
+            if (e.getErrorCode() != ErrorCode.SELLER_NOT_FOUND) {
+                throw e;
+            }
+            passwordEncoder.matches(request.password(), dummyPasswordHash);
             throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
         }
         
-        // 계정 상태 확인 (삭제된 계정인지 확인)
-        if (seller.getIsDeleted()) {
-            log.warn("Deleted seller login attempt: {}", request.email());
-            throw new BusinessException(ErrorCode.INACTIVE_ACCOUNT);
+        // 비밀번호 검증
+        if (!passwordEncoder.matches(request.password(), seller.getPassword()) || seller.getIsDeleted()) {
+            log.warn("Invalid seller login attempt: {}", MaskingUtils.maskEmail(request.email()));
+            throw new BusinessException(ErrorCode.INVALID_LOGIN_CREDENTIALS);
         }
         
         // JWT 토큰 생성 (판매자는 SELLER 역할)
@@ -80,7 +97,7 @@ public final class SellerAuthService {
                 UserType.SELLER.getValue()
         );
         
-        log.info("Seller login successful: {} (ID: {})", seller.getEmail(), seller.getId());
+        log.info("Seller login successful: {} (ID: {})", MaskingUtils.maskEmail(seller.getEmail()), seller.getId());
         
         return SocialLoginResponse.of(
                 accessToken,
@@ -90,23 +107,4 @@ public final class SellerAuthService {
         );
     }
 
-    /**
-     * 판매자 로그아웃 처리.
-     *
-     * @param authorization Authorization 헤더 값
-     */
-    public void logout(final String authorization) {
-        jwtRefreshService.logout(authorization);
-        log.info("Seller logout completed");
-    }
-
-    /**
-     * 토큰으로 판매자 로그아웃 처리.
-     *
-     * @param accessToken 액세스 토큰
-     */
-    public void logoutWithToken(final String accessToken) {
-        jwtRefreshService.logoutWithToken(accessToken);
-        log.info("Seller logout with token completed");
-    }
-} 
+}

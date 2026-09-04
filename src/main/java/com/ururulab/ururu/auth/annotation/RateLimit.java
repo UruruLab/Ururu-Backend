@@ -23,9 +23,4 @@ public @interface RateLimit {
      * 최대 요청 수
      */
     int value() default 5;
-    
-    /**
-     * 키 생성 전략 (기본값: IP 주소)
-     */
-    String keyStrategy() default "IP";
-} 
+}

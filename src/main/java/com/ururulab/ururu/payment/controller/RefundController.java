@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -37,6 +38,7 @@ public class RefundController {
             @ApiResponse(responseCode = "409", description = "이미 진행 중인 환불 요청 또는 중복 환불")
     })
     @PostMapping("/orders/{orderId}/refund")
+    @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<ApiResponseFormat<RefundCreateResponseDto>> createRefundRequest(
             @AuthenticationPrincipal Long memberId,
             @PathVariable String orderId,
@@ -62,6 +64,7 @@ public class RefundController {
             @ApiResponse(responseCode = "500", description = "PG 환불 처리 실패")
     })
     @PatchMapping("/refunds/{refundId}")
+    @PreAuthorize("hasRole('SELLER')")
     public ResponseEntity<ApiResponseFormat<RefundProcessResponseDto>> processRefundRequest(
             @AuthenticationPrincipal Long sellerId,
             @PathVariable String refundId,

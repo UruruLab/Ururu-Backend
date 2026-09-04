@@ -126,7 +126,7 @@ class SellerAuthServiceTest {
         // When & Then
         assertThatThrownBy(() -> sellerAuthService.login(request))
                 .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INACTIVE_ACCOUNT);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_LOGIN_CREDENTIALS);
     }
 
     @Test
@@ -140,32 +140,7 @@ class SellerAuthServiceTest {
         // When & Then
         assertThatThrownBy(() -> sellerAuthService.login(request))
                 .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SELLER_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_LOGIN_CREDENTIALS);
     }
 
-    @Test
-    @DisplayName("로그아웃 성공 - jwtRefreshService.logout 호출")
-    void logout_success() {
-        // Given
-        String authorization = "Bearer token";
-        
-        // When
-        sellerAuthService.logout(authorization);
-        
-        // Then
-        verify(jwtRefreshService).logout(authorization);
-    }
-
-    @Test
-    @DisplayName("토큰으로 로그아웃 성공 - jwtRefreshService.logoutWithToken 호출")
-    void logoutWithToken_success() {
-        // Given
-        String accessToken = "access";
-        
-        // When
-        sellerAuthService.logoutWithToken(accessToken);
-        
-        // Then
-        verify(jwtRefreshService).logoutWithToken(accessToken);
-    }
-} 
+}

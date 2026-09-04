@@ -37,6 +37,7 @@ public class GroupBuyRecommendationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "AI 서비스 이용 불가")
     })
     @GetMapping("/by-profile")
+    @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> getRecommendationsByProfile(
             @AuthenticationPrincipal final Long memberId,
             @Parameter(description = "추천 상품 개수", example = "40") 
@@ -100,6 +101,7 @@ public class GroupBuyRecommendationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "AI 서비스 이용 불가")
     })
     @PostMapping
+    @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<ApiResponseFormat<GroupBuyRecommendationResponse>> getGroupBuyRecommendations(
             @AuthenticationPrincipal final Long memberId,
             @Parameter(description = "공동구매 추천 요청 정보", required = true)
@@ -121,6 +123,7 @@ public class GroupBuyRecommendationController {
             description = "인증된 회원의 추천 캐시를 백그라운드에서 갱신합니다."
     )
     @PostMapping("/refresh")
+    @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<ApiResponseFormat<Void>> refreshRecommendationCache(
             @AuthenticationPrincipal final Long memberId,
             @Parameter(description = "공동구매 추천 요청 정보", required = true)

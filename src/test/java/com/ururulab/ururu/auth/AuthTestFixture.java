@@ -301,7 +301,7 @@ public final class AuthTestFixture {
      * 유효한 소셜 로그인 응답 생성
      */
     public static SocialLoginResponse createValidSocialLoginResponse() {
-        String accessToken = createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String accessToken = createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
         String refreshToken = createValidRefreshToken(1L, UserType.MEMBER);
         SocialLoginResponse.MemberInfo memberInfo = SocialLoginResponse.MemberInfo.of(
                 1L, "test@example.com", "테스트유저", null, UserType.MEMBER.getValue()

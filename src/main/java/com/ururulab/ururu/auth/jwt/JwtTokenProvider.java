@@ -27,7 +27,7 @@ public final class JwtTokenProvider {
     private static final String CLAIM_TYPE = "type";
     private static final String CLAIM_ROLE = "role";
     private static final String CLAIM_USER_TYPE = "userType"; // 사용자 타입 (MEMBER/SELLER)
-    private static final String CLAIM_JTI = "jti"; // jti 고유 토큰ID (표준 클레임)
+    private static final String CLAIM_ISSUED_AT_MILLIS = "iat_ms";
 
     private final JwtProperties jwtProperties;
 
@@ -142,6 +142,12 @@ public final class JwtTokenProvider {
         return claims.getId();
     }
 
+    public long getIssuedAtMillis(final String token) {
+        final Claims claims = parseToken(token);
+        final Number issuedAtMillis = claims.get(CLAIM_ISSUED_AT_MILLIS, Number.class);
+        return issuedAtMillis != null ? issuedAtMillis.longValue() : claims.getIssuedAt().getTime();
+    }
+
     public long getRemainingExpiry(final String token) {
         final Claims claims = parseToken(token);
         Date expiration = claims.getExpiration();
@@ -160,6 +166,7 @@ public final class JwtTokenProvider {
                 .issuer(jwtProperties.getIssuer())
                 .audience().add(jwtProperties.getAudience()).and()
                 .issuedAt(now)
+                .claim(CLAIM_ISSUED_AT_MILLIS, now.getTime())
                 .expiration(expiry)
                 .id(UUID.randomUUID().toString()) // jti 고유값 자동 부여
                 .signWith(getSecretKey());

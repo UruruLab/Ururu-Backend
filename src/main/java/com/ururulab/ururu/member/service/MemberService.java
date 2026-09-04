@@ -2,10 +2,9 @@ package com.ururulab.ururu.member.service;
 
 import com.ururulab.ururu.auth.dto.info.SocialMemberInfo;
 import com.ururulab.ururu.global.domain.entity.enumerated.Gender;
-import com.ururulab.ururu.global.domain.entity.enumerated.SkinTone;
-import com.ururulab.ururu.global.domain.entity.enumerated.SkinType;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.member.domain.entity.BeautyProfile;
 import com.ururulab.ururu.member.domain.entity.Member;
 import com.ururulab.ururu.member.domain.entity.enumerated.Role;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,7 +51,7 @@ public class MemberService {
                     // 탈퇴한 회원인 경우 예외 처리
                     if (member.isDeleted()) {
                         log.warn("Deleted member attempted to login: {} (provider: {})",
-                                socialMemberInfo.email(), socialMemberInfo.provider());
+                                MaskingUtils.maskEmail(socialMemberInfo.email()), socialMemberInfo.provider());
                         throw new BusinessException(ErrorCode.MEMBER_LOGIN_DENIED);
                     }
                     return member;
@@ -140,25 +138,30 @@ public class MemberService {
 
     @Transactional
     public void deleteMember(final Long memberId) {
-        final Member member = findActiveMemberById(memberId);
-
-        // 최소한의 검증만
-        try {
-            int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
-            if (activeOrders > 0) {
-                throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST);
-            }
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            log.warn("검증 실패했지만 탈퇴 진행: {}", e.getMessage());
+        final Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.MEMBER_NOT_EXIST));
+        if (member.isDeleted()) {
+            return;
         }
 
-        // 회원만 소프트 삭제 (관련 데이터는 나중에 배치로 정리)
+        final int activeOrders = orderRepository.countActiveOrdersByMemberId(memberId);
+        if (activeOrders > 0) {
+            throw new BusinessException(ErrorCode.MEMBER_ACTIVE_ORDERS_EXIST, activeOrders);
+        }
+        if (paymentRepository.existsPendingPaymentsByMemberId(memberId)) {
+            throw new BusinessException(ErrorCode.MEMBER_PENDING_PAYMENTS_EXIST);
+        }
+
+        memberPreferenceRepository.deleteByMemberId(memberId);
+        memberAgreementRepository.deleteByMemberId(memberId);
+        shippingAddressRepository.deleteByMemberId(memberId);
+        beautyProfileRepository.deleteByMemberId(memberId);
+        cartRepository.findByMemberId(memberId).ifPresent(cartRepository::delete);
+
         member.delete();
         memberRepository.save(member);
 
-        log.info("회원 탈퇴 완료 - 회원ID: {} (관련 데이터는 배치에서 정리 예정)", memberId);
+        log.info("회원 탈퇴 완료 - 회원ID: {}", memberId);
     }
 
 
@@ -192,51 +195,28 @@ public class MemberService {
 
 
     private Member createNewMember(final SocialMemberInfo socialMemberInfo) {
-        final LocalDate defaultBirthDate = LocalDate.parse("1990-01-01");
+        if (memberRepository.existsByEmail(socialMemberInfo.email())) {
+            throw new BusinessException(ErrorCode.DUPLICATE_EMAIL_MEMBER);
+        }
 
         final Member member = Member.of(
                 socialMemberInfo.nickname(),
                 socialMemberInfo.email(),
                 socialMemberInfo.provider(),
                 socialMemberInfo.socialId(),
-                Gender.FEMALE,
-                defaultBirthDate,
+                null,
+                null,
                 null,
                 socialMemberInfo.profileImage(),
-                Role.NORMAL
+                Role.MEMBER
         );
 
         final Member savedMember = memberRepository.save(member);
-        createDefaultBeautyProfile(savedMember);
         log.debug("New social member created with ID: {} for provider: {}",
                 savedMember.getId(), socialMemberInfo.provider());
 
         return savedMember;
     }
-
-    private void createDefaultBeautyProfile(final Member member) {
-        try{
-            final BeautyProfile defaultProfile = BeautyProfile.of(
-                    member,
-                    SkinType.NEUTRAL,
-                    SkinTone.NEUTRAL,
-                    List.of(),
-                    false,
-                    List.of(),
-                    List.of("스킨케어"),
-                    10,
-                    100000,
-                    ""
-            );
-            beautyProfileRepository.save(defaultProfile);
-            log.debug("Default beauty profile created for member ID: {}", member.getId());
-
-        } catch (Exception e) {
-            log.warn("Failed to create default beauty profile for member ID: {} - {}",
-                    member.getId(), e.getMessage());
-        }
-    }
-
 
     private void updateMemberFields(final Member member, final MemberUpdateRequest request) {
         // 닉네임 업데이트

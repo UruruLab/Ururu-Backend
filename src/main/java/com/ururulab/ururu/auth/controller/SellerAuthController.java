@@ -1,18 +1,16 @@
 package com.ururulab.ururu.auth.controller;
 
+import com.ururulab.ururu.auth.annotation.RateLimit;
 import com.ururulab.ururu.auth.dto.request.SellerLoginRequest;
 import com.ururulab.ururu.auth.dto.response.SocialLoginResponse;
 import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
 import com.ururulab.ururu.auth.service.SellerAuthService;
 import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.auth.util.TokenExtractor;
-import com.ururulab.ururu.auth.service.SecurityLoggingService;
-import com.ururulab.ururu.auth.util.AuthResponseHelper;
-import com.ururulab.ururu.auth.util.AuthCookieHelper;
+import com.ururulab.ururu.global.util.MaskingUtils;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.global.exception.BusinessException;
 import com.ururulab.ururu.global.exception.error.ErrorCode;
-import com.ururulab.ururu.global.util.MaskingUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 판매자 인증 관련 API 컨트롤러.
@@ -36,17 +36,17 @@ public class SellerAuthController {
     private final JwtCookieHelper jwtCookieHelper;
     private final JwtRefreshService jwtRefreshService;
     private final Environment environment;
-    private final SecurityLoggingService securityLoggingService;
 
     /**
      * 판매자 로그인 API.
      */
     @PostMapping("/login")
+    @RateLimit(value = 5, timeUnit = TimeUnit.MINUTES)
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> login(
             @Valid @RequestBody final SellerLoginRequest request,
             final HttpServletResponse response) {
         
-        log.info("Seller login attempt: {}", securityLoggingService.maskEmail(request.email()));
+        log.info("Seller login attempt: {}", MaskingUtils.maskEmail(request.email()));
         
         // 판매자 로그인 처리
         final SocialLoginResponse loginResponse = sellerAuthService.login(request);
@@ -55,10 +55,10 @@ public class SellerAuthController {
         setSecureCookies(response, loginResponse);
         
         // 보안을 위해 토큰 정보는 마스킹해서 응답
-        final SocialLoginResponse secureResponse = createSecureResponse(loginResponse);
+        final SocialLoginResponse secureResponse = loginResponse.redacted();
         
         log.info("Seller login successful: {} (env: {})", 
-                securityLoggingService.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
+                MaskingUtils.maskEmail(loginResponse.memberInfo().email()), getCurrentProfile());
         
         return ResponseEntity.ok(
                 ApiResponseFormat.success("판매자 로그인이 완료되었습니다.", secureResponse)
@@ -78,17 +78,11 @@ public class SellerAuthController {
         // TokenExtractor를 사용하여 토큰 추출
         final String tokenToLogout = TokenExtractor.extractTokenForLogout(authorization, accessToken);
         
-        if (tokenToLogout != null) {
-            try {
-                sellerAuthService.logoutWithToken(tokenToLogout);
-            } catch (final Exception e) {
-                log.warn("Failed to logout seller from Redis: {}", e.getMessage());
-                // Redis 삭제 실패는 로그아웃을 중단시키지 않음
-            }
+        try {
+            jwtRefreshService.logoutWithTokens(tokenToLogout, refreshToken);
+        } finally {
+            jwtCookieHelper.clearTokenCookies(response);
         }
-        
-        // 쿠키 삭제
-        jwtCookieHelper.clearTokenCookies(response);
         
         log.info("Seller logged out successfully, cookies cleared (env: {})", getCurrentProfile());
         
@@ -101,6 +95,7 @@ public class SellerAuthController {
      * 판매자 토큰 갱신 API.
      */
     @PostMapping("/refresh")
+    @RateLimit(value = 20, timeUnit = TimeUnit.MINUTES)
     public ResponseEntity<ApiResponseFormat<SocialLoginResponse>> refreshToken(
             @CookieValue(name = "refresh_token", required = false) final String refreshToken,
             final HttpServletResponse response) {
@@ -120,7 +115,7 @@ public class SellerAuthController {
         }
         
         // 보안을 위해 토큰 정보는 마스킹해서 응답
-        final SocialLoginResponse secureResponse = createSecureResponse(refreshResponse);
+        final SocialLoginResponse secureResponse = refreshResponse.redacted();
         
         log.info("Seller token refresh successful for user: {} (env: {})", 
                 MaskingUtils.maskEmail(refreshResponse.memberInfo().email()), getCurrentProfile());
@@ -137,17 +132,13 @@ public class SellerAuthController {
      */
     private void setSecureCookies(final HttpServletResponse response, 
                                   final SocialLoginResponse loginResponse) {
-        AuthCookieHelper.setSecureCookies(response, loginResponse, jwtCookieHelper);
+        jwtCookieHelper.setTokenCookies(response, loginResponse);
         log.debug("Secure cookies set successfully for seller (env: {})", getCurrentProfile());
     }
 
     /**
      * 보안을 위해 토큰 정보를 마스킹한 응답 생성
      */
-    private SocialLoginResponse createSecureResponse(final SocialLoginResponse original) {
-        return AuthResponseHelper.createSecureResponse(original, securityLoggingService);
-    }
-
     /**
      * 현재 활성 프로파일 반환 (로깅용)
      */
@@ -159,4 +150,4 @@ public class SellerAuthController {
             return "unknown";
         }
     }
-} 
+}

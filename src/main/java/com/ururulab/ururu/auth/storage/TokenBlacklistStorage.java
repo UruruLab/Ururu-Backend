@@ -24,29 +24,6 @@ public final class TokenBlacklistStorage {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * 토큰을 블랙리스트에 추가합니다.
-     *
-     * @param tokenId 블랙리스트에 추가할 토큰 ID
-     * @param expirySeconds 블랙리스트 유지 시간 (초)
-     * @throws BusinessException 블랙리스트 추가 실패 시
-     */
-    public void addToBlacklist(final String tokenId, final long expirySeconds) {
-        if (tokenId == null || expirySeconds <= 0) {
-            log.error("Invalid blacklist parameters - tokenId: {}, expirySeconds: {}", tokenId, expirySeconds);
-            throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
-        }
-
-        try {
-            final String blacklistKey = AuthConstants.BLACKLIST_KEY_PREFIX + tokenId;
-            redisTemplate.opsForValue().set(blacklistKey, "1", Duration.ofSeconds(expirySeconds));
-            log.debug("Token added to blacklist: {}, expiry: {} seconds", tokenId, expirySeconds);
-        } catch (final Exception e) {
-            log.error("Failed to add token to blacklist: {}, error: {}", tokenId, e.getMessage());
-            throw new BusinessException(ErrorCode.TOKEN_BLACKLIST_OPERATION_FAILED);
-        }
-    }
-
-    /**
      * 토큰이 블랙리스트에 있는지 확인합니다.
      *
      * @param tokenId 확인할 토큰 ID
@@ -61,63 +38,38 @@ public final class TokenBlacklistStorage {
         return Boolean.TRUE.equals(redisTemplate.hasKey(blacklistKey));
     }
 
-    /**
-     * Access Token을 블랙리스트에 추가합니다.
-     *
-     * @param accessToken 블랙리스트에 추가할 Access Token
-     * @throws BusinessException 블랙리스트 추가 실패 시
-     */
-    public void blacklistAccessToken(final String accessToken) {
-        if (accessToken == null || accessToken.isBlank()) {
-            log.error("Access token is null or blank for blacklisting");
+    public void revokeUserTokens(final Long userId, final String userType) {
+        if (userId == null || userType == null || userType.isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
         }
-        
         try {
-            final String tokenId = jwtTokenProvider.getTokenId(accessToken);
-            final long expiry = jwtTokenProvider.getRemainingExpiry(accessToken);
-            
-            if (tokenId == null || expiry <= 0) {
-                log.error("Invalid access token for blacklisting - tokenId: {}, expiry: {}", tokenId, expiry);
-                throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
-            }
-            
-            addToBlacklist(tokenId, expiry);
-        } catch (final BusinessException e) {
-            throw e;
+            redisTemplate.opsForValue().set(
+                    buildUserRevocationKey(userId, userType),
+                    String.valueOf(System.currentTimeMillis()),
+                    Duration.ofSeconds(jwtTokenProvider.getRefreshTokenExpirySeconds())
+            );
         } catch (final Exception e) {
-            log.error("Failed to blacklist access token: {}", e.getMessage());
+            log.error("Failed to revoke access tokens for user {}", userId, e);
             throw new BusinessException(ErrorCode.TOKEN_BLACKLIST_OPERATION_FAILED);
         }
     }
 
-    /**
-     * Refresh Token을 블랙리스트에 추가합니다.
-     *
-     * @param refreshToken 블랙리스트에 추가할 Refresh Token
-     * @throws BusinessException 블랙리스트 추가 실패 시
-     */
-    public void blacklistRefreshToken(final String refreshToken) {
-        if (refreshToken == null || refreshToken.isBlank()) {
-            log.error("Refresh token is null or blank for blacklisting");
-            throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
-        }
-        
+    public boolean isUserTokenRevoked(
+            final Long userId,
+            final String userType,
+            final long issuedAtMillis
+    ) {
         try {
-            final String tokenId = jwtTokenProvider.getTokenId(refreshToken);
-            final long expiry = jwtTokenProvider.getRemainingExpiry(refreshToken);
-            
-            if (tokenId == null || expiry <= 0) {
-                log.error("Invalid refresh token for blacklisting - tokenId: {}, expiry: {}", tokenId, expiry);
-                throw new BusinessException(ErrorCode.INVALID_TOKEN_BLACKLIST_PARAMETERS);
-            }
-            
-            addToBlacklist(tokenId, expiry);
-        } catch (final BusinessException e) {
-            throw e;
+            final String revokedAt = redisTemplate.opsForValue().get(buildUserRevocationKey(userId, userType));
+            return revokedAt != null && issuedAtMillis <= Long.parseLong(revokedAt);
         } catch (final Exception e) {
-            log.error("Failed to blacklist refresh token: {}", e.getMessage());
+            log.error("Failed to check token revocation for user {}", userId, e);
             throw new BusinessException(ErrorCode.TOKEN_BLACKLIST_OPERATION_FAILED);
         }
     }
-} 
+
+    private String buildUserRevocationKey(final Long userId, final String userType) {
+        return AuthConstants.USER_REVOCATION_KEY_PREFIX + userType + ":" + userId;
+    }
+
+}

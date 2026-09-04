@@ -1,5 +1,8 @@
 package com.ururulab.ururu.member.controller;
 
+import com.ururulab.ururu.auth.constants.UserType;
+import com.ururulab.ururu.auth.jwt.JwtCookieHelper;
+import com.ururulab.ururu.auth.service.JwtRefreshService;
 import com.ururulab.ururu.global.domain.dto.ApiResponseFormat;
 import com.ururulab.ururu.member.dto.request.MemberUpdateRequest;
 import com.ururulab.ururu.member.dto.response.*;
@@ -9,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,8 @@ import java.util.Map;
 public class MemberController {
 
     private final MemberService memberService;
+    private final JwtRefreshService jwtRefreshService;
+    private final JwtCookieHelper jwtCookieHelper;
 
     @Operation(summary = "내 정보 조회", description = "현재 로그인한 회원의 프로필 정보를 조회합니다.")
     @ApiResponses({
@@ -166,6 +172,7 @@ public class MemberController {
             @PathVariable final Long memberId
     ) {
         memberService.deleteMember(memberId);
+        jwtRefreshService.revokeAllTokens(memberId, UserType.MEMBER);
         return ResponseEntity.ok(
                 ApiResponseFormat.success("회원 탈퇴가 완료되었습니다.")
         );
@@ -181,9 +188,15 @@ public class MemberController {
     })
     @DeleteMapping("/me")
     public ResponseEntity<ApiResponseFormat<Void>> deleteMyAccount(
-            @AuthenticationPrincipal final Long memberId
+            @AuthenticationPrincipal final Long memberId,
+            final HttpServletResponse response
     ) {
-        memberService.deleteMember(memberId);
+        try {
+            memberService.deleteMember(memberId);
+            jwtRefreshService.revokeAllTokens(memberId, UserType.MEMBER);
+        } finally {
+            jwtCookieHelper.clearTokenCookies(response);
+        }
         return ResponseEntity.ok(
                 ApiResponseFormat.success("탈퇴가 완료되었습니다.")
         );

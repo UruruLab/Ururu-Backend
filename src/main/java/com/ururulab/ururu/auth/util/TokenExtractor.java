@@ -20,19 +20,19 @@ public final class TokenExtractor {
      *
      * @param authorization Authorization 헤더 값
      * @param accessToken 쿠키의 액세스 토큰
-     * @return 추출된 토큰 (Bearer 형식), 추출할 수 없으면 null
+     * @return Bearer 접두사를 제거한 JWT, 추출할 수 없으면 null
      */
     public static String extractTokenForLogout(final String authorization, final String accessToken) {
         // Authorization 헤더 우선 확인
         if (isValidAuthorizationHeader(authorization)) {
             log.debug("Token extracted from Authorization header");
-            return authorization;
+            return extractTokenFromBearer(authorization);
         }
         
         // 쿠키에서 액세스 토큰 확인
         if (isValidAccessToken(accessToken)) {
             log.debug("Token extracted from cookie");
-            return AuthConstants.BEARER_PREFIX + accessToken;
+            return accessToken;
         }
         
         log.debug("No valid token found in Authorization header or cookie");
@@ -46,7 +46,10 @@ public final class TokenExtractor {
      * @return 유효하면 true
      */
     public static boolean isValidAuthorizationHeader(final String authorization) {
-        return authorization != null && !authorization.isBlank() && authorization.startsWith(AuthConstants.BEARER_PREFIX);
+        return authorization != null
+                && authorization.length() > AuthConstants.BEARER_PREFIX.length()
+                && authorization.regionMatches(
+                        true, 0, AuthConstants.BEARER_PREFIX, 0, AuthConstants.BEARER_PREFIX.length());
     }
 
     /**
@@ -67,9 +70,9 @@ public final class TokenExtractor {
      * @throws IllegalArgumentException Bearer 형식이 아닌 경우
      */
     public static String extractTokenFromBearer(final String bearerToken) {
-        if (bearerToken == null || !bearerToken.startsWith(AuthConstants.BEARER_PREFIX)) {
+        if (!isValidAuthorizationHeader(bearerToken)) {
             throw new IllegalArgumentException("Invalid Bearer token format");
         }
         return bearerToken.substring(AuthConstants.BEARER_PREFIX.length());
     }
-} 
+}

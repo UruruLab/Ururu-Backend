@@ -37,7 +37,7 @@ class JwtTokenProviderTest {
         // Given
         Long userId = 1L;
         String email = "test@example.com";
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
         UserType userType = UserType.MEMBER;
 
         // When
@@ -101,7 +101,7 @@ class JwtTokenProviderTest {
     void generateAccessToken_nullUserId_throwsException() {
         // Given
         String email = "test@example.com";
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
         UserType userType = UserType.MEMBER;
 
         // When & Then
@@ -115,7 +115,7 @@ class JwtTokenProviderTest {
     void generateAccessToken_nullEmail_throwsException() {
         // Given
         Long userId = 1L;
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
         UserType userType = UserType.MEMBER;
 
         // When & Then
@@ -129,7 +129,7 @@ class JwtTokenProviderTest {
     void generateAccessToken_emptyEmail_throwsException() {
         // Given
         Long userId = 1L;
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
         UserType userType = UserType.MEMBER;
 
         // When & Then
@@ -158,7 +158,7 @@ class JwtTokenProviderTest {
         // Given
         Long userId = 1L;
         String email = "test@example.com";
-        UserRole role = UserRole.NORMAL;
+        UserRole role = UserRole.MEMBER;
 
         // When & Then
         assertThatThrownBy(() -> jwtTokenProvider.generateAccessToken(userId, email, role, null))
@@ -196,7 +196,7 @@ class JwtTokenProviderTest {
     @DisplayName("유효한 토큰 검증 성공")
     void validateToken_validToken_returnsTrue() {
         // Given
-        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         boolean isValid = jwtTokenProvider.validateToken(validToken);
@@ -250,7 +250,7 @@ class JwtTokenProviderTest {
     @DisplayName("유효한 토큰 만료 확인")
     void isTokenExpired_validToken_returnsFalse() {
         // Given
-        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String validToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         boolean isExpired = jwtTokenProvider.isTokenExpired(validToken);
@@ -263,7 +263,7 @@ class JwtTokenProviderTest {
     @DisplayName("만료된 토큰 확인")
     void isTokenExpired_expiredToken_returnsTrue() {
         // Given
-        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         boolean isExpired = jwtTokenProvider.isTokenExpired(expiredToken);
@@ -291,7 +291,7 @@ class JwtTokenProviderTest {
     void getMemberId_success() {
         // Given
         Long expectedUserId = 1L;
-        String token = AuthTestFixture.createValidAccessToken(expectedUserId, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String token = AuthTestFixture.createValidAccessToken(expectedUserId, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         Long userId = jwtTokenProvider.getMemberId(token);
@@ -305,7 +305,7 @@ class JwtTokenProviderTest {
     void getEmail_success() {
         // Given
         String expectedEmail = "test@example.com";
-        String token = AuthTestFixture.createValidAccessToken(1L, expectedEmail, UserRole.NORMAL, UserType.MEMBER);
+        String token = AuthTestFixture.createValidAccessToken(1L, expectedEmail, UserRole.MEMBER, UserType.MEMBER);
 
         // When
         String email = jwtTokenProvider.getEmail(token);
@@ -347,7 +347,7 @@ class JwtTokenProviderTest {
     void getUserTypeAsEnum_success() {
         // Given
         UserType expectedUserType = UserType.MEMBER;
-        String token = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, expectedUserType);
+        String token = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, expectedUserType);
 
         // When
         UserType userType = jwtTokenProvider.getUserTypeAsEnum(token);
@@ -374,7 +374,7 @@ class JwtTokenProviderTest {
     @DisplayName("토큰에서 토큰 ID 추출 성공")
     void getTokenId_success() {
         // Given
-        String token = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String token = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         String tokenId = jwtTokenProvider.getTokenId(token);
@@ -389,7 +389,7 @@ class JwtTokenProviderTest {
     @DisplayName("Access Token 타입 확인 성공")
     void isAccessToken_success() {
         // Given
-        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         boolean isAccessToken = jwtTokenProvider.isAccessToken(accessToken);
@@ -415,7 +415,7 @@ class JwtTokenProviderTest {
     @DisplayName("Access Token이 Refresh Token이 아님 확인")
     void isRefreshToken_accessToken_returnsFalse() {
         // Given
-        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String accessToken = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         boolean isRefreshToken = jwtTokenProvider.isRefreshToken(accessToken);
@@ -443,7 +443,7 @@ class JwtTokenProviderTest {
     @DisplayName("토큰 남은 만료 시간 확인")
     void getRemainingExpiry_success() {
         // Given
-        String token = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String token = AuthTestFixture.createValidAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When
         long remainingExpiry = jwtTokenProvider.getRemainingExpiry(token);
@@ -457,7 +457,7 @@ class JwtTokenProviderTest {
     @DisplayName("만료된 토큰의 남은 시간은 0")
     void getRemainingExpiry_expiredToken_returnsZero() {
         // Given
-        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.NORMAL, UserType.MEMBER);
+        String expiredToken = AuthTestFixture.createExpiredAccessToken(1L, "test@example.com", UserRole.MEMBER, UserType.MEMBER);
 
         // When & Then
         assertThatThrownBy(() -> jwtTokenProvider.getRemainingExpiry(expiredToken))

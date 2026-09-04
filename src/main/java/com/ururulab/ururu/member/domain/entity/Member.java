@@ -16,7 +16,13 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "members")
+@Table(
+        name = "members",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_members_social_provider_id",
+                columnNames = {"social_provider", "social_id"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends BaseEntity {
 
@@ -38,7 +44,6 @@ public class Member extends BaseEntity {
     private String socialId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Gender gender;
 
     private LocalDate birth;
@@ -91,7 +96,7 @@ public class Member extends BaseEntity {
         member.birth = birth;
         member.phone = phone;
         member.profileImage = profileImage;
-        member.role = role != null ? role : Role.NORMAL;
+        member.role = role != null ? role : Role.MEMBER;
         return member;
     }
 
